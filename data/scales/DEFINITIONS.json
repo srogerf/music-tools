@@ -1,0 +1,70 @@
+{
+  "scales": [
+    {
+      "name": "Major",
+      "common_name": "Ionian",
+      "type": "diatonic",
+      "intervals": [0, 2, 4, 5, 7, 9, 11]
+    },
+    {
+      "name": "Natural Minor",
+      "common_name": "Aeolian",
+      "type": "diatonic",
+      "intervals": [0, 2, 3, 5, 7, 8, 10]
+    },
+    {
+      "name": "Harmonic Minor",
+      "common_name": "Harmonic Minor",
+      "type": "diatonic",
+      "intervals": [0, 2, 3, 5, 7, 8, 11]
+    },
+    {
+      "name": "Melodic Minor",
+      "common_name": "Melodic Minor",
+      "type": "diatonic",
+      "intervals": [0, 2, 3, 5, 7, 9, 11]
+    },
+    {
+      "name": "Major Pentatonic",
+      "common_name": "Major Pentatonic",
+      "type": "pentation",
+      "intervals": [0, 2, 4, 7, 9]
+    },
+    {
+      "name": "Minor Pentatonic",
+      "common_name": "Minor Pentatonic",
+      "type": "pentation",
+      "intervals": [0, 3, 5, 7, 10]
+    },
+    {
+      "name": "Major Seventh",
+      "common_name": "Maj7",
+      "type": "quadad",
+      "intervals": [0, 4, 7, 11]
+    },
+    {
+      "name": "Dominant Seventh",
+      "common_name": "7",
+      "type": "quadad",
+      "intervals": [0, 4, 7, 10]
+    },
+    {
+      "name": "Minor Seventh",
+      "common_name": "Min7",
+      "type": "quadad",
+      "intervals": [0, 3, 7, 10]
+    },
+    {
+      "name": "Half-Diminished Seventh",
+      "common_name": "m7b5",
+      "type": "quadad",
+      "intervals": [0, 3, 6, 10]
+    },
+    {
+      "name": "Diminished Seventh",
+      "common_name": "dim7",
+      "type": "quadad",
+      "intervals": [0, 3, 6, 9]
+    }
+  ]
+}
