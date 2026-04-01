@@ -1,6 +1,9 @@
 package scales
 
-import "testing"
+import (
+	"math/rand"
+	"testing"
+)
 
 func TestLoadDefinitions(t *testing.T) {
 	set, err := LoadDefinitions("../../data/scales/DEFINITIONS.json")
@@ -49,5 +52,41 @@ func TestNotesForEMajor(t *testing.T) {
 		if notes[i] != note {
 			t.Fatalf("note %d: expected %s, got %s", i, note, notes[i])
 		}
+	}
+}
+
+func TestRandomScaleSelectorDefaults(t *testing.T) {
+	set, err := LoadDefinitions("../../data/scales/DEFINITIONS.json")
+	if err != nil {
+		t.Fatalf("load definitions: %v", err)
+	}
+
+	rng := rand.New(rand.NewSource(42))
+	selection, err := set.RandomScaleSelector(&RandomScaleSelectorOptions{
+		Rand: rng,
+	})
+	if err != nil {
+		t.Fatalf("random scale selector: %v", err)
+	}
+
+	if selection.Key == "" {
+		t.Fatalf("expected a key to be selected")
+	}
+
+	if selection.Scale.Name != "Major" && selection.Scale.Name != "Natural Minor" {
+		t.Fatalf("expected major or natural minor, got %s", selection.Scale.Name)
+	}
+
+	if selection.Accidentals > 5 {
+		t.Fatalf("expected 5 or fewer accidentals, got %d", selection.Accidentals)
+	}
+
+	notes, err := set.NotesFor(selection.Key, selection.Scale.Name)
+	if err != nil {
+		t.Fatalf("notes for %s %s: %v", selection.Key, selection.Scale.Name, err)
+	}
+
+	if len(notes) != len(selection.Scale.Intervals) {
+		t.Fatalf("expected %d notes, got %d", len(selection.Scale.Intervals), len(notes))
 	}
 }

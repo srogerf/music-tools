@@ -9,5 +9,5 @@ Behavior:
 
 Usage:
 ```bash
-go run . --max-accidentals 5
+go run ./tools/scale_selector --max-accidentals 5
 ```

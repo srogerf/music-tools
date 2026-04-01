@@ -4,9 +4,9 @@ CLI for listing and looking up scale definitions.
 
 ## Usage
 ```bash
-go run . --list
-go run . --name "Harmonic Minor"
-go run .
+go run ./tools/scales --list
+go run ./tools/scales --name "Harmonic Minor"
+go run ./tools/scales
 ```
 
 ## Flags
