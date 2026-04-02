@@ -7,10 +7,40 @@
       "intervals": [0, 2, 4, 5, 7, 9, 11]
     },
     {
+      "name": "Dorian",
+      "common_name": "Dorian",
+      "type": "diatonic",
+      "intervals": [0, 2, 3, 5, 7, 9, 10]
+    },
+    {
+      "name": "Phrygian",
+      "common_name": "Phrygian",
+      "type": "diatonic",
+      "intervals": [0, 1, 3, 5, 7, 8, 10]
+    },
+    {
+      "name": "Lydian",
+      "common_name": "Lydian",
+      "type": "diatonic",
+      "intervals": [0, 2, 4, 6, 7, 9, 11]
+    },
+    {
+      "name": "Mixolydian",
+      "common_name": "Mixolydian",
+      "type": "diatonic",
+      "intervals": [0, 2, 4, 5, 7, 9, 10]
+    },
+    {
       "name": "Natural Minor",
       "common_name": "Aeolian",
       "type": "diatonic",
       "intervals": [0, 2, 3, 5, 7, 8, 10]
+    },
+    {
+      "name": "Locrian",
+      "common_name": "Locrian",
+      "type": "diatonic",
+      "intervals": [0, 1, 3, 5, 6, 8, 10]
     },
     {
       "name": "Harmonic Minor",
