@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"music-tools/src/chords"
+	"music-tools/src/interval"
 	"music-tools/src/scales"
 )
 
@@ -70,8 +71,8 @@ func main() {
 		quality, found := qualityIndex[intervalKey(chord.Intervals)]
 		if !found {
 			unknown[intervalKey(chord.Intervals)] = chord.Intervals
-			fmt.Printf("%d: %s (unknown) intervals=%v notes=%s\n",
-				chord.Degree, chord.Root, chord.Intervals, strings.Join(chord.Notes, " "))
+			fmt.Printf("%d: %s (unknown) intervals=%s notes=%s\n",
+				chord.Degree, chord.Root, formatIntervals(chord.Intervals), strings.Join(chord.Notes, " "))
 			continue
 		}
 
@@ -80,8 +81,8 @@ func main() {
 			label = fmt.Sprintf("%s (%s)", quality.Name, quality.CommonName)
 		}
 
-		fmt.Printf("%d: %s %s intervals=%v notes=%s\n",
-			chord.Degree, chord.Root, label, chord.Intervals, strings.Join(chord.Notes, " "))
+		fmt.Printf("%d: %s %s intervals=%s notes=%s\n",
+			chord.Degree, chord.Root, label, formatIntervals(chord.Intervals), strings.Join(chord.Notes, " "))
 	}
 
 	if len(unknown) == 0 {
@@ -176,6 +177,19 @@ func intervalKey(intervals []int) string {
 		parts = append(parts, fmt.Sprintf("%d", value))
 	}
 	return strings.Join(parts, ",")
+}
+
+func formatIntervals(intervals []int) string {
+	labels := make([]string, 0, len(intervals))
+	for _, value := range intervals {
+		_, short, ok := interval.Name(value)
+		if !ok {
+			labels = append(labels, fmt.Sprintf("%d", value))
+			continue
+		}
+		labels = append(labels, short)
+	}
+	return strings.Join(labels, " ")
 }
 
 func confirmAddIntervals(reader *bufio.Reader, intervals []int) bool {

@@ -1,0 +1,69 @@
+openapi: 3.0.3
+info:
+  title: Music Tools API
+  version: 0.1.0
+paths:
+  /api/v1/scales/random:
+    get:
+      summary: Get a random scale
+      description: Returns a random diatonic scale selection for the given scale filters and accidental limits.
+      parameters:
+        - name: maxAccidentals
+          in: query
+          description: Maximum number of sharps or flats allowed (0-7).
+          required: false
+          schema:
+            type: integer
+            default: 5
+            minimum: 0
+            maximum: 7
+        - name: scale
+          in: query
+          description: Scale name or common name. Repeat to provide multiple scale filters.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        "200":
+          description: Random scale selection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RandomScaleResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    RandomScaleResponse:
+      type: object
+      required:
+        - scale
+        - key
+        - notes
+      properties:
+        scale:
+          type: string
+          description: Scale name.
+        key:
+          type: string
+          description: Root key.
+        notes:
+          type: array
+          items:
+            type: string
+          description: Note names in the selected scale.
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string

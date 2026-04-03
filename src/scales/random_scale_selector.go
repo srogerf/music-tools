@@ -24,6 +24,13 @@ type RandomScaleSelection struct {
 	Accidentals int
 }
 
+type RandomScaleSelectionWithNotes struct {
+	Key         string
+	Scale       Definition
+	Accidentals int
+	Notes       []string
+}
+
 func (set DefinitionSet) RandomScaleSelector(options *RandomScaleSelectorOptions) (RandomScaleSelection, error) {
 	scaleNames := []string{"Major", "Natural Minor"}
 	maxAccidentals := 5
@@ -70,6 +77,26 @@ func (set DefinitionSet) RandomScaleSelector(options *RandomScaleSelectorOptions
 		Key:         choice.key,
 		Scale:       scale,
 		Accidentals: choice.accidentals,
+	}, nil
+}
+
+// RandomScaleWithNotes returns a random scale selection alongside note names.
+func (set DefinitionSet) RandomScaleWithNotes(options *RandomScaleSelectorOptions) (RandomScaleSelectionWithNotes, error) {
+	selection, err := set.RandomScaleSelector(options)
+	if err != nil {
+		return RandomScaleSelectionWithNotes{}, err
+	}
+
+	notes, err := set.NotesFor(selection.Key, selection.Scale.Name)
+	if err != nil {
+		return RandomScaleSelectionWithNotes{}, err
+	}
+
+	return RandomScaleSelectionWithNotes{
+		Key:         selection.Key,
+		Scale:       selection.Scale,
+		Accidentals: selection.Accidentals,
+		Notes:       notes,
 	}, nil
 }
 
