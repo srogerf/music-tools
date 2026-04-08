@@ -5,6 +5,9 @@ import (
 	"math/rand"
 	"strings"
 	"time"
+
+	"music-tools/src/key_signatures"
+	"music-tools/src/util"
 )
 
 type RandomScaleSelectorOptions struct {
@@ -14,6 +17,8 @@ type RandomScaleSelectorOptions struct {
 	// MaxAccidentals limits the key signature to this many sharps or flats.
 	// When zero or negative, defaults to 5.
 	MaxAccidentals int
+	// KeySignatures provides key signature definitions for selection.
+	KeySignatures *key_signatures.KeySignatureSet
 	// Rand provides the randomness source. When nil, a time-seeded RNG is used.
 	Rand *rand.Rand
 }
@@ -35,6 +40,7 @@ func (set DefinitionSet) RandomScaleSelector(options *RandomScaleSelectorOptions
 	scaleNames := []string{"Major", "Natural Minor"}
 	maxAccidentals := 5
 	var rng *rand.Rand
+	var keySignatures *key_signatures.KeySignatureSet
 
 	if options != nil {
 		if len(options.ScaleNames) > 0 {
@@ -43,6 +49,9 @@ func (set DefinitionSet) RandomScaleSelector(options *RandomScaleSelectorOptions
 		if options.MaxAccidentals > 0 {
 			maxAccidentals = options.MaxAccidentals
 		}
+		if options.KeySignatures != nil {
+			keySignatures = options.KeySignatures
+		}
 		if options.Rand != nil {
 			rng = options.Rand
 		}
@@ -50,6 +59,9 @@ func (set DefinitionSet) RandomScaleSelector(options *RandomScaleSelectorOptions
 
 	if rng == nil {
 		rng = rand.New(rand.NewSource(time.Now().UnixNano()))
+	}
+	if keySignatures == nil {
+		return RandomScaleSelection{}, fmt.Errorf("key signatures are required")
 	}
 
 	scales := make([]Definition, 0, len(scaleNames))
@@ -67,7 +79,7 @@ func (set DefinitionSet) RandomScaleSelector(options *RandomScaleSelectorOptions
 
 	scale := scales[rng.Intn(len(scales))]
 
-	keys := keysForScale(scale, maxAccidentals)
+	keys := keysForScale(scale, maxAccidentals, keySignatures)
 	if len(keys) == 0 {
 		return RandomScaleSelection{}, fmt.Errorf("no keys available with %d or fewer accidentals", maxAccidentals)
 	}
@@ -76,7 +88,7 @@ func (set DefinitionSet) RandomScaleSelector(options *RandomScaleSelectorOptions
 	return RandomScaleSelection{
 		Key:         choice.key,
 		Scale:       scale,
-		Accidentals: choice.accidentals,
+		Accidentals: util.Abs(choice.accidentals),
 	}, nil
 }
 
@@ -105,26 +117,16 @@ type keyAccidental struct {
 	accidentals int
 }
 
-var majorKeyAccidentals = []keyAccidental{
-	{"C", 0}, {"G", 1}, {"D", 2}, {"A", 3}, {"E", 4}, {"B", 5}, {"F#", 6}, {"C#", 7},
-	{"F", 1}, {"Bb", 2}, {"Eb", 3}, {"Ab", 4}, {"Db", 5}, {"Gb", 6}, {"Cb", 7},
-}
-
-var minorKeyAccidentals = []keyAccidental{
-	{"A", 0}, {"E", 1}, {"B", 2}, {"F#", 3}, {"C#", 4}, {"G#", 5}, {"D#", 6}, {"A#", 7},
-	{"D", 1}, {"G", 2}, {"C", 3}, {"F", 4}, {"Bb", 5}, {"Eb", 6}, {"Ab", 7},
-}
-
-func keysForScale(scale Definition, maxAccidentals int) []keyAccidental {
-	source := majorKeyAccidentals
+func keysForScale(scale Definition, maxAccidentals int, keySignatures *key_signatures.KeySignatureSet) []keyAccidental {
+	source := keySignatures.Major
 	if usesMinorSignature(scale) {
-		source = minorKeyAccidentals
+		source = keySignatures.Minor
 	}
 
 	keys := make([]keyAccidental, 0, len(source))
 	for _, key := range source {
-		if key.accidentals <= maxAccidentals {
-			keys = append(keys, key)
+		if util.Abs(key.Accidentals) <= maxAccidentals {
+			keys = append(keys, keyAccidental{key: key.Key, accidentals: key.Accidentals})
 		}
 	}
 	return keys

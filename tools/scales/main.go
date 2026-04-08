@@ -8,35 +8,28 @@ import (
 	"strings"
 	"time"
 
+	"music-tools/src/key_signatures"
 	"music-tools/src/scales"
 )
 
 func main() {
 	definitionsPath := flag.String("definitions", "", "path to scale definitions JSON")
+	keySignaturesPath := flag.String("key-signatures", "", "path to key signatures JSON")
 	list := flag.Bool("list", false, "list all available scales")
 	name := flag.String("name", "", "lookup a scale by name or common name")
 	random := flag.Bool("random", false, "pick a random scale and print the notes")
 	maxAccidentals := flag.Int("max-accidentals", 5, "maximum number of accidentals for random selection (0-7)")
 	flag.Parse()
 
-	path := *definitionsPath
-	if path == "" {
-		candidates := []string{
-			"data/scales/DEFINITIONS.json",
-			"../../data/scales/DEFINITIONS.json",
-		}
-		for _, candidate := range candidates {
-			if _, err := os.Stat(candidate); err == nil {
-				path = candidate
-				break
-			}
-		}
-		if path == "" {
-			path = "data/scales/DEFINITIONS.json"
-		}
-	}
+	path := resolvePath(*definitionsPath, "data/scales/DEFINITIONS.json", "../../data/scales/DEFINITIONS.json")
+	keyPath := resolvePath(*keySignaturesPath, "data/scales/KEY_SIGNATURES.json", "../../data/scales/KEY_SIGNATURES.json")
 
 	set, err := scales.LoadDefinitions(path)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	keySignatures, err := key_signatures.LoadKeySignatures(keyPath)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -46,6 +39,7 @@ func main() {
 	case *random:
 		selection, err := set.RandomScaleSelector(&scales.RandomScaleSelectorOptions{
 			MaxAccidentals: *maxAccidentals,
+			KeySignatures:  &keySignatures,
 			Rand:           rand.New(rand.NewSource(time.Now().UnixNano())),
 		})
 		if err != nil {
@@ -77,6 +71,19 @@ func main() {
 		scale := set.Scales[rng.Intn(len(set.Scales))]
 		printScale(scale)
 	}
+}
+
+func resolvePath(override string, primary string, fallback string) string {
+	if strings.TrimSpace(override) != "" {
+		return override
+	}
+	candidates := []string{primary, fallback}
+	for _, candidate := range candidates {
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate
+		}
+	}
+	return primary
 }
 
 func printScale(scale scales.Definition) {

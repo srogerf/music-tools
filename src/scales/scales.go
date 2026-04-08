@@ -17,6 +17,7 @@ const (
 )
 
 type Definition struct {
+	ID         int       `json:"id"`
 	Name       string    `json:"name"`
 	CommonName string    `json:"common_name"`
 	Type       ScaleType `json:"type"`
@@ -43,7 +44,16 @@ func LoadDefinitions(path string) (DefinitionSet, error) {
 
 func (set DefinitionSet) ByName(name string) (Definition, bool) {
 	for _, scale := range set.Scales {
-		if scale.Name == name || scale.CommonName == name {
+		if strings.EqualFold(scale.Name, name) || strings.EqualFold(scale.CommonName, name) {
+			return scale, true
+		}
+	}
+	return Definition{}, false
+}
+
+func (set DefinitionSet) ByID(id int) (Definition, bool) {
+	for _, scale := range set.Scales {
+		if scale.ID == id {
 			return scale, true
 		}
 	}

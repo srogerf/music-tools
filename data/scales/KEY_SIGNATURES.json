@@ -1,0 +1,36 @@
+{
+  "major": [
+    { "key": "C", "accidentals": 0 },
+    { "key": "G", "accidentals": 1 },
+    { "key": "D", "accidentals": 2 },
+    { "key": "A", "accidentals": 3 },
+    { "key": "E", "accidentals": 4 },
+    { "key": "B", "accidentals": 5 },
+    { "key": "F#", "accidentals": 6 },
+    { "key": "C#", "accidentals": 7 },
+    { "key": "F", "accidentals": -1 },
+    { "key": "Bb", "accidentals": -2 },
+    { "key": "Eb", "accidentals": -3 },
+    { "key": "Ab", "accidentals": -4 },
+    { "key": "Db", "accidentals": -5 },
+    { "key": "Gb", "accidentals": -6 },
+    { "key": "Cb", "accidentals": -7 }
+  ],
+  "minor": [
+    { "key": "A", "accidentals": 0 },
+    { "key": "E", "accidentals": 1 },
+    { "key": "B", "accidentals": 2 },
+    { "key": "F#", "accidentals": 3 },
+    { "key": "C#", "accidentals": 4 },
+    { "key": "G#", "accidentals": 5 },
+    { "key": "D#", "accidentals": 6 },
+    { "key": "A#", "accidentals": 7 },
+    { "key": "D", "accidentals": -1 },
+    { "key": "G", "accidentals": -2 },
+    { "key": "C", "accidentals": -3 },
+    { "key": "F", "accidentals": -4 },
+    { "key": "Bb", "accidentals": -5 },
+    { "key": "Eb", "accidentals": -6 },
+    { "key": "Ab", "accidentals": -7 }
+  ]
+}

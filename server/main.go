@@ -8,20 +8,26 @@ import (
 	"time"
 
 	"music-tools/api"
+	"music-tools/src/key_signatures"
 	"music-tools/src/scales"
 )
 
 func main() {
 	addr := flag.String("addr", ":8080", "server listen address")
 	definitionsPath := flag.String("definitions", "data/scales/DEFINITIONS.json", "path to scale definitions JSON")
+	keySignaturesPath := flag.String("key-signatures", "data/scales/KEY_SIGNATURES.json", "path to key signatures JSON")
 	flag.Parse()
 
 	defs, err := scales.LoadDefinitions(*definitionsPath)
 	if err != nil {
 		log.Fatalf("load definitions: %v", err)
 	}
+	keySignatures, err := key_signatures.LoadKeySignatures(*keySignaturesPath)
+	if err != nil {
+		log.Fatalf("load key signatures: %v", err)
+	}
 
-	scaleService := api.NewScaleService(defs)
+	scaleService := api.NewScaleService(defs, keySignatures)
 	handler := api.NewRouter(scaleService)
 
 	server := &http.Server{

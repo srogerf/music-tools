@@ -12,7 +12,8 @@
         7,
         9,
         11
-      ]
+      ],
+      "id": 1
     },
     {
       "name": "Dorian",
@@ -26,7 +27,8 @@
         7,
         9,
         10
-      ]
+      ],
+      "id": 2
     },
     {
       "name": "Phrygian",
@@ -40,7 +42,8 @@
         7,
         8,
         10
-      ]
+      ],
+      "id": 3
     },
     {
       "name": "Lydian",
@@ -54,7 +57,8 @@
         7,
         9,
         11
-      ]
+      ],
+      "id": 4
     },
     {
       "name": "Mixolydian",
@@ -68,7 +72,8 @@
         7,
         9,
         10
-      ]
+      ],
+      "id": 5
     },
     {
       "name": "Natural Minor",
@@ -82,7 +87,8 @@
         7,
         8,
         10
-      ]
+      ],
+      "id": 6
     },
     {
       "name": "Locrian",
@@ -96,7 +102,8 @@
         6,
         8,
         10
-      ]
+      ],
+      "id": 7
     },
     {
       "name": "Harmonic Minor",
@@ -110,7 +117,8 @@
         7,
         8,
         11
-      ]
+      ],
+      "id": 8
     },
     {
       "name": "Melodic Minor",
@@ -124,7 +132,8 @@
         7,
         9,
         11
-      ]
+      ],
+      "id": 9
     },
     {
       "name": "Major Pentatonic",
@@ -136,7 +145,8 @@
         4,
         7,
         9
-      ]
+      ],
+      "id": 10
     },
     {
       "name": "Minor Pentatonic",
@@ -148,7 +158,8 @@
         5,
         7,
         10
-      ]
+      ],
+      "id": 11
     },
     {
       "name": "Major Seventh",
@@ -159,7 +170,8 @@
         4,
         7,
         11
-      ]
+      ],
+      "id": 12
     },
     {
       "name": "Dominant Seventh",
@@ -170,7 +182,8 @@
         4,
         7,
         10
-      ]
+      ],
+      "id": 13
     },
     {
       "name": "Minor Seventh",
@@ -181,7 +194,8 @@
         3,
         7,
         10
-      ]
+      ],
+      "id": 14
     },
     {
       "name": "Half-Diminished Seventh",
@@ -192,7 +206,8 @@
         3,
         6,
         10
-      ]
+      ],
+      "id": 15
     },
     {
       "name": "Diminished Seventh",
@@ -203,7 +218,8 @@
         3,
         6,
         9
-      ]
+      ],
+      "id": 16
     },
     {
       "name": "Minor Major Seventh",
@@ -214,7 +230,8 @@
         3,
         7,
         11
-      ]
+      ],
+      "id": 17
     },
     {
       "name": "Augmented Seventh",
@@ -225,7 +242,8 @@
         4,
         8,
         11
-      ]
+      ],
+      "id": 18
     }
   ]
 }

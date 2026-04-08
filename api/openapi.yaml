@@ -3,6 +3,47 @@ info:
   title: Music Tools API
   version: 0.1.0
 paths:
+  /api/v1/scales:
+    get:
+      summary: List all scales
+      description: Returns the list of available scale definitions.
+      parameters:
+        - name: name
+          in: query
+          description: Filter by scale name or common name (case-insensitive).
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Scale definitions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScaleListResponse"
+  /api/v1/scales/{id}:
+    get:
+      summary: Get a scale by id
+      description: Returns a single scale definition by id.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Scale definition
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScaleDefinition"
+        "404":
+          description: Scale not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /api/v1/scales/random:
     get:
       summary: Get a random scale
@@ -42,6 +83,41 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
+    ScaleDefinition:
+      type: object
+      required:
+        - id
+        - name
+        - common_name
+        - type
+        - intervals
+      properties:
+        id:
+          type: integer
+          description: Stable scale identifier.
+        name:
+          type: string
+          description: Scale name.
+        common_name:
+          type: string
+          description: Common scale name.
+        type:
+          type: string
+          description: Scale category.
+        intervals:
+          type: array
+          items:
+            type: integer
+          description: Semitone intervals from the root.
+    ScaleListResponse:
+      type: object
+      required:
+        - scales
+      properties:
+        scales:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScaleDefinition"
     RandomScaleResponse:
       type: object
       required:

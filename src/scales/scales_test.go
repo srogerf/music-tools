@@ -3,6 +3,8 @@ package scales
 import (
 	"math/rand"
 	"testing"
+
+	"music-tools/src/key_signatures"
 )
 
 func TestLoadDefinitions(t *testing.T) {
@@ -60,10 +62,15 @@ func TestRandomScaleSelectorDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load definitions: %v", err)
 	}
+	keySignatures, err := key_signatures.LoadKeySignatures("../../data/scales/KEY_SIGNATURES.json")
+	if err != nil {
+		t.Fatalf("load key signatures: %v", err)
+	}
 
 	rng := rand.New(rand.NewSource(42))
 	selection, err := set.RandomScaleSelector(&RandomScaleSelectorOptions{
-		Rand: rng,
+		Rand:          rng,
+		KeySignatures: &keySignatures,
 	})
 	if err != nil {
 		t.Fatalf("random scale selector: %v", err)
