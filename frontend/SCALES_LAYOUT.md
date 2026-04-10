@@ -12,7 +12,7 @@ This document records the fretboard layout rules used by the React UI.
 
 ## Data Sources
 
-The layout data lives in `frontend/app/scales_layout.js`:
+The available shape names for the frontend selector live in `frontend/app/scales_layout.js`:
 
 - `CAGED_SHAPES`: The list of available shapes.
 - `CAGED_BASE_STARTS`: Base start frets for the key of C.
@@ -20,9 +20,9 @@ The layout data lives in `frontend/app/scales_layout.js`:
 - `CAGED_ROOT_OFFSETS`: Required root offsets within the window.
 - `CAGED_SPLIT_RANGES`: Per-string windows for split shapes.
 
-Instance layouts (per tuning/scale/position) live in:
+The actual layout data (per tuning/scale/position) lives in:
 
-- `data/scales/LAYOUT_INSTANCES.json`
+- `data/scales/SCALE_LAYOUTS.json`
 
 Each position can additionally include `per_string_frets` to explicitly list the
 frets that should be shown per string. This is used to guarantee that each pitch
@@ -51,7 +51,7 @@ If the shape is not split:
 
 For each layout position, every pitch within the displayed window must appear
 exactly once. The validator will fail if a pitch is missing or repeated. Use
-`per_string_frets` in `LAYOUT_INSTANCES.json` to enforce this when ranges
+`per_string_frets` in `SCALE_LAYOUTS.json` to enforce this when ranges
 alone would cause duplicates.
 
 ## Shape Notes
@@ -66,4 +66,4 @@ Key of C reference ranges as agreed:
   - strings 6–3: frets 8–12
   - strings 2–1: frets 10–13
 
-To adjust shapes, edit `frontend/app/scales_layout.js` and update this doc if the rules change.
+To adjust shapes, edit `data/scales/SCALE_LAYOUTS.json` and update this doc if the rules change.

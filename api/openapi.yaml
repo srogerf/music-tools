@@ -81,55 +81,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-  /api/v1/scales/layouts:
+  /api/v1/scales/scale_layouts:
     get:
-      summary: List scale layouts
-      description: Returns all scale layouts grouped by scale type.
+      summary: List scale layouts by tuning
+      description: Returns scale layouts grouped by tuning and scale.
       responses:
         "200":
-          description: Scale layouts
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ScaleLayoutListResponse"
-  /api/v1/scales/layouts/{type}:
-    get:
-      summary: Get scale layout by type
-      description: Returns the scale layout for a specific scale type.
-      parameters:
-        - name: type
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Scale layout
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ScaleLayoutDefinition"
-        "404":
-          description: Layout not found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-  /api/v1/scales/layouts/instances:
-    get:
-      summary: List scale layout instances
-      description: Returns layout instances grouped by tuning and scale.
-      responses:
-        "200":
-          description: Layout instances
+          description: Scale layouts by tuning
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/LayoutInstanceListResponse"
-  /api/v1/scales/layouts/instances/{tuningId}:
+  /api/v1/scales/scale_layouts/{tuningId}:
     get:
-      summary: Get layout instances by tuning id
-      description: Returns layout instances for a specific tuning id.
+      summary: Get scale layouts by tuning id
+      description: Returns scale layouts for a specific tuning id.
       parameters:
         - name: tuningId
           in: path
@@ -138,7 +104,7 @@ paths:
             type: integer
       responses:
         "200":
-          description: Layout instances
+          description: Scale layouts for tuning
           content:
             application/json:
               schema:
@@ -252,66 +218,6 @@ components:
       properties:
         error:
           type: string
-    ScaleLayoutDefinition:
-      type: object
-      required:
-        - type
-        - caged
-      properties:
-        type:
-          type: string
-          description: Scale type name.
-        caged:
-          $ref: "#/components/schemas/CAGEDLayout"
-    ScaleLayoutListResponse:
-      type: object
-      required:
-        - layouts
-      properties:
-        layouts:
-          type: array
-          items:
-            $ref: "#/components/schemas/ScaleLayoutDefinition"
-    CAGEDLayout:
-      type: object
-      required:
-        - shapes
-        - base_starts
-        - min_spans
-        - root_offsets
-        - split_ranges
-      properties:
-        shapes:
-          type: array
-          items:
-            type: string
-        base_starts:
-          type: object
-          additionalProperties:
-            type: integer
-        min_spans:
-          type: object
-          additionalProperties:
-            type: integer
-        root_offsets:
-          type: object
-          additionalProperties:
-            type: array
-            items:
-              type: integer
-        split_ranges:
-          type: object
-          additionalProperties:
-            $ref: "#/components/schemas/CAGEDSplitRange"
-    CAGEDSplitRange:
-      type: object
-      required:
-        - per_string
-      properties:
-        per_string:
-          type: object
-          additionalProperties:
-            $ref: "#/components/schemas/FretRange"
     FretRange:
       type: object
       required:

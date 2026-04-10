@@ -9,6 +9,13 @@ const FLAT_SCALE = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", 
 const SHARP_INDEX = Object.fromEntries(SHARP_SCALE.map((note, i) => [note, i]));
 const FLAT_INDEX = Object.fromEntries(FLAT_SCALE.map((note, i) => [note, i]));
 
+function scaleOptionLabel(scale) {
+  if (!scale.common_name || scale.common_name === scale.name) {
+    return scale.name;
+  }
+  return `${scale.name} (${scale.common_name})`;
+}
+
 function shouldUseFlats(key) {
   if (key.includes("b")) return true;
   if (key.includes("#")) return false;
@@ -137,7 +144,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/v1/scales/layouts/instances")
+    fetch("/api/v1/scales/scale_layouts")
       .then((res) => res.json())
       .then((data) => {
         setLayoutInstances(data.tunings || []);
@@ -336,7 +343,7 @@ function App() {
               React.createElement(
                 "option",
                 { key: scale.id, value: scale.id },
-                `${scale.name} (${scale.common_name})`
+                scaleOptionLabel(scale)
               )
             )
           )

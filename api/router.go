@@ -13,10 +13,8 @@ func NewRouter(scaleService *ScaleService, layoutService *ScaleLayoutService, tu
 
 func newV1Router(scaleService *ScaleService, layoutService *ScaleLayoutService, tuningService *TuningService) http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/scales/layouts", layoutService.ListLayoutsHandler)
-	mux.HandleFunc("/scales/layouts/", layoutService.GetLayoutHandler)
-	mux.HandleFunc("/scales/layouts/instances", layoutService.ListLayoutInstancesHandler)
-	mux.HandleFunc("/scales/layouts/instances/", layoutService.GetLayoutInstanceHandler)
+	mux.HandleFunc("/scales/scale_layouts", layoutService.ListScaleLayoutsHandler)
+	mux.HandleFunc("/scales/scale_layouts/", layoutService.GetScaleLayoutHandler)
 	mux.HandleFunc("/scales", scaleService.ListScalesHandler)
 	mux.HandleFunc("/scales/", scaleService.GetScaleHandler)
 	mux.HandleFunc("/scales/random", scaleService.RandomScaleHandler)

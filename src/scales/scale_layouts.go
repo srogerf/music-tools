@@ -8,26 +8,31 @@ import (
 	"strings"
 )
 
-type LayoutInstanceSet struct {
-	Tunings []LayoutTuningInstance `json:"tunings"`
+type ScaleLayoutSet struct {
+	Tunings []ScaleLayoutTuning `json:"tunings"`
 }
 
-type LayoutTuningInstance struct {
-	ID          int                   `json:"id"`
-	Name        string                `json:"name"`
-	StringCount int                   `json:"string_count"`
-	Strings     []string              `json:"strings"`
-	Scales      []LayoutScaleInstance `json:"scales"`
+type ScaleLayoutTuning struct {
+	ID          int                `json:"id"`
+	Name        string             `json:"name"`
+	StringCount int                `json:"string_count"`
+	Strings     []string           `json:"strings"`
+	Scales      []ScaleLayoutScale `json:"scales"`
 }
 
-type LayoutScaleInstance struct {
-	ID        int                       `json:"id"`
-	Name      string                    `json:"name"`
-	Type      ScaleType                 `json:"type"`
-	Positions map[string]LayoutPosition `json:"positions"`
+type ScaleLayoutScale struct {
+	ID        int                            `json:"id"`
+	Name      string                         `json:"name"`
+	Type      ScaleType                      `json:"type"`
+	Positions map[string]ScaleLayoutPosition `json:"positions"`
 }
 
-type LayoutPosition struct {
+type FretRange struct {
+	Start int `json:"start"`
+	Span  int `json:"span"`
+}
+
+type ScaleLayoutPosition struct {
 	Mode           string               `json:"mode"`
 	Start          int                  `json:"start"`
 	Span           int                  `json:"span"`
@@ -36,34 +41,34 @@ type LayoutPosition struct {
 	Validated      bool                 `json:"validated_manual"`
 }
 
-func LoadLayoutInstances(path string, definitions DefinitionSet) (LayoutInstanceSet, error) {
+func LoadScaleLayouts(path string, definitions DefinitionSet) (ScaleLayoutSet, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return LayoutInstanceSet{}, fmt.Errorf("read layout instances: %w", err)
+		return ScaleLayoutSet{}, fmt.Errorf("read scale layouts: %w", err)
 	}
 
-	var set LayoutInstanceSet
+	var set ScaleLayoutSet
 	if err := json.Unmarshal(data, &set); err != nil {
-		return LayoutInstanceSet{}, fmt.Errorf("parse layout instances: %w", err)
+		return ScaleLayoutSet{}, fmt.Errorf("parse scale layouts: %w", err)
 	}
 
-	if err := validateLayoutInstances(set, definitions); err != nil {
-		return LayoutInstanceSet{}, err
+	if err := validateScaleLayouts(set, definitions); err != nil {
+		return ScaleLayoutSet{}, err
 	}
 
 	return set, nil
 }
 
-func (set LayoutInstanceSet) ByTuningID(id int) (LayoutTuningInstance, bool) {
+func (set ScaleLayoutSet) ByTuningID(id int) (ScaleLayoutTuning, bool) {
 	for _, tuning := range set.Tunings {
 		if tuning.ID == id {
 			return tuning, true
 		}
 	}
-	return LayoutTuningInstance{}, false
+	return ScaleLayoutTuning{}, false
 }
 
-func validateLayoutInstances(set LayoutInstanceSet, definitions DefinitionSet) error {
+func validateScaleLayouts(set ScaleLayoutSet, definitions DefinitionSet) error {
 	scaleByID := map[int]Definition{}
 	for _, scale := range definitions.Scales {
 		scaleByID[scale.ID] = scale
@@ -106,7 +111,7 @@ func validateLayoutInstances(set LayoutInstanceSet, definitions DefinitionSet) e
 			}
 
 			for positionName, position := range scale.Positions {
-				positionIssues := validateLayoutPosition(tuning, octaves, definition, scale.Name, positionName, position)
+				positionIssues := validateScaleLayoutPosition(tuning, octaves, definition, scale.Name, positionName, position)
 				if len(positionIssues) > 0 {
 					issues = append(issues, positionIssues...)
 				}
@@ -121,13 +126,13 @@ func validateLayoutInstances(set LayoutInstanceSet, definitions DefinitionSet) e
 	return nil
 }
 
-func validateLayoutPosition(
-	tuning LayoutTuningInstance,
+func validateScaleLayoutPosition(
+	tuning ScaleLayoutTuning,
 	octaves []int,
 	scale Definition,
 	scaleName string,
 	positionName string,
-	position LayoutPosition,
+	position ScaleLayoutPosition,
 ) []string {
 	var issues []string
 	if position.Mode != "range" && position.Mode != "split" {
@@ -221,7 +226,7 @@ func validateLayoutPosition(
 	return issues
 }
 
-func positionRangeForString(position LayoutPosition, stringIndex int) (int, int) {
+func positionRangeForString(position ScaleLayoutPosition, stringIndex int) (int, int) {
 	if position.Mode == "split" {
 		if entry, ok := position.PerString[fmt.Sprintf("%d", stringIndex)]; ok {
 			return entry.Start, entry.Start + entry.Span - 1
@@ -230,7 +235,7 @@ func positionRangeForString(position LayoutPosition, stringIndex int) (int, int)
 	return position.Start, position.Start + position.Span - 1
 }
 
-func positionFretsForString(position LayoutPosition, stringIndex int) []int {
+func positionFretsForString(position ScaleLayoutPosition, stringIndex int) []int {
 	if len(position.PerStringFrets) > 0 {
 		if frets, ok := position.PerStringFrets[fmt.Sprintf("%d", stringIndex)]; ok {
 			return frets
@@ -244,7 +249,7 @@ func positionFretsForString(position LayoutPosition, stringIndex int) []int {
 	return frets
 }
 
-func standardOctavesForTuning(tuning LayoutTuningInstance) ([]int, error) {
+func standardOctavesForTuning(tuning ScaleLayoutTuning) ([]int, error) {
 	if tuning.Name != "Standard" || tuning.StringCount != 6 {
 		return nil, fmt.Errorf("layout tuning %s requires octave data", tuning.Name)
 	}

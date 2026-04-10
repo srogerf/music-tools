@@ -9,84 +9,39 @@ import (
 )
 
 type ScaleLayoutService struct {
-	layouts   scales.LayoutSet
-	instances scales.LayoutInstanceSet
+	scaleLayouts scales.ScaleLayoutSet
 }
 
-func NewScaleLayoutService(layouts scales.LayoutSet, instances scales.LayoutInstanceSet) *ScaleLayoutService {
-	return &ScaleLayoutService{layouts: layouts, instances: instances}
+func NewScaleLayoutService(scaleLayouts scales.ScaleLayoutSet) *ScaleLayoutService {
+	return &ScaleLayoutService{scaleLayouts: scaleLayouts}
 }
 
-type listScaleLayoutsResponse struct {
-	Layouts []scales.LayoutDefinition `json:"layouts"`
+type listScaleLayoutsByTuningResponse struct {
+	Tunings []scales.ScaleLayoutTuning `json:"tunings"`
 }
 
-type listLayoutInstancesResponse struct {
-	Tunings []scales.LayoutTuningInstance `json:"tunings"`
-}
-
-func (s *ScaleLayoutService) ListLayoutsHandler(w http.ResponseWriter, r *http.Request) {
+func (s *ScaleLayoutService) ListScaleLayoutsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	if r.URL.Path != "/scales/layouts" && r.URL.Path != "/scales/layouts/" {
+	if r.URL.Path != "/scales/scale_layouts" && r.URL.Path != "/scales/scale_layouts/" {
 		http.NotFound(w, r)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, listScaleLayoutsResponse{Layouts: s.layouts.Layouts})
+	writeJSON(w, http.StatusOK, listScaleLayoutsByTuningResponse{Tunings: s.scaleLayouts.Tunings})
 }
 
-func (s *ScaleLayoutService) GetLayoutHandler(w http.ResponseWriter, r *http.Request) {
+func (s *ScaleLayoutService) GetScaleLayoutHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
-	path := strings.TrimPrefix(r.URL.Path, "/scales/layouts/")
+	path := strings.TrimPrefix(r.URL.Path, "/scales/scale_layouts/")
 	if path == "" || path == "/" {
-		s.ListLayoutsHandler(w, r)
-		return
-	}
-
-	layoutType := strings.Trim(path, "/")
-	if layoutType == "" || strings.Contains(layoutType, "/") {
-		http.NotFound(w, r)
-		return
-	}
-
-	layout, ok := s.layouts.ByType(scales.ScaleType(layoutType))
-	if !ok {
-		writeError(w, http.StatusNotFound, "scale layout not found")
-		return
-	}
-
-	writeJSON(w, http.StatusOK, layout)
-}
-
-func (s *ScaleLayoutService) ListLayoutInstancesHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-	if r.URL.Path != "/scales/layouts/instances" && r.URL.Path != "/scales/layouts/instances/" {
-		http.NotFound(w, r)
-		return
-	}
-
-	writeJSON(w, http.StatusOK, listLayoutInstancesResponse{Tunings: s.instances.Tunings})
-}
-
-func (s *ScaleLayoutService) GetLayoutInstanceHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	path := strings.TrimPrefix(r.URL.Path, "/scales/layouts/instances/")
-	if path == "" || path == "/" {
-		s.ListLayoutInstancesHandler(w, r)
+		s.ListScaleLayoutsHandler(w, r)
 		return
 	}
 
@@ -102,7 +57,7 @@ func (s *ScaleLayoutService) GetLayoutInstanceHandler(w http.ResponseWriter, r *
 		return
 	}
 
-	tuning, ok := s.instances.ByTuningID(id)
+	tuning, ok := s.scaleLayouts.ByTuningID(id)
 	if !ok {
 		writeError(w, http.StatusNotFound, "layout tuning not found")
 		return

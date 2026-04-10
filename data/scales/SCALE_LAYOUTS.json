@@ -22,6 +22,7 @@
               "mode": "range",
               "start": 0,
               "span": 4,
+              "validated_manual": true,
               "per_string_frets": {
                 "0": [
                   0,
@@ -58,6 +59,7 @@
               "mode": "range",
               "start": 2,
               "span": 5,
+              "validated_manual": true,
               "per_string_frets": {
                 "0": [
                   3,
@@ -93,6 +95,7 @@
               "mode": "range",
               "start": 4,
               "span": 5,
+              "validated_manual": true,
               "per_string_frets": {
                 "0": [
                   5,
@@ -129,6 +132,7 @@
               "mode": "range",
               "start": 7,
               "span": 4,
+              "validated_manual": true,
               "per_string_frets": {
                 "0": [
                   7,
@@ -163,6 +167,7 @@
             },
             "D": {
               "mode": "split",
+              "validated_manual": true,
               "per_string": {
                 "0": {
                   "start": 8,
