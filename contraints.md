@@ -6,12 +6,19 @@ reused in future sessions.
 ## Scale Layout Data
 
 - Scale layouts are defined in data, not derived live as the source of truth.
-- The current scale layout data file is `data/scales/SCALE_LAYOUTS.json`.
+- The current scale layout data lives in `data/scales/layouts/`.
 - Layouts are organized by tuning, scale, and position.
+- Each scale should have its own file named after the scale.
+- Layout files should reference tunings by name only.
+- String count and string notes should come from `data/tunings/DEFINITIONS.json`.
 - Layouts may use either:
   - a simple range: `start` + `span`
   - a split range: `per_string`
 - Layouts may also use `per_string_frets` to explicitly control shown notes.
+- Prefer the least data needed to draw the scale correctly.
+- Use plain `start` + `span` first when it is sufficient.
+- Use `per_string` only when a split range is actually needed.
+- Use `per_string_frets` only when simpler range definitions cannot represent the layout correctly.
 
 ## Validation Rules
 
@@ -60,6 +67,7 @@ Unless explicitly changed by the user, these major-shape references are locked:
 ## Tuning Rules
 
 - Tunings are defined by API/backend data, not hardcoded in the frontend.
+- Tunings are also the single source of truth for string definitions used by layouts.
 - The system supports 1-9 strings, defaulting conceptually to 6.
 - Standard tuning is the only tuning currently in active use.
 - The frontend should fetch tuning definitions from the API.
@@ -68,5 +76,5 @@ Unless explicitly changed by the user, these major-shape references are locked:
 ## API Naming
 
 - The layout API resource is `scale_layouts`.
-- The scale layout data file is `SCALE_LAYOUTS.json`.
+- The scale layout data is stored under `data/scales/layouts/`.
 - Go naming should use `ScaleLayout...` terminology consistently.

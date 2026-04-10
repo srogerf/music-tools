@@ -4,9 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
+
+	"music-tools/src/tuning"
 )
+
+var defaultScaleLayoutOrder = []string{"C", "A", "G", "E", "D"}
 
 type ScaleLayoutSet struct {
 	Tunings []ScaleLayoutTuning `json:"tunings"`
@@ -37,11 +42,109 @@ type ScaleLayoutPosition struct {
 	Start          int                  `json:"start"`
 	Span           int                  `json:"span"`
 	PerString      map[string]FretRange `json:"per_string"`
+	SplitRanges    []SplitRange         `json:"split_ranges"`
 	PerStringFrets map[string][]int     `json:"per_string_frets"`
 	Validated      bool                 `json:"validated_manual"`
 }
 
-func LoadScaleLayouts(path string, definitions DefinitionSet) (ScaleLayoutSet, error) {
+type SplitRange struct {
+	Strings []int `json:"strings"`
+	Start   int   `json:"start"`
+	Span    int   `json:"span"`
+}
+
+func LoadScaleLayouts(path string, definitions DefinitionSet, tunings tuning.DefinitionSet) (ScaleLayoutSet, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return ScaleLayoutSet{}, fmt.Errorf("stat scale layouts: %w", err)
+	}
+
+	var set ScaleLayoutSet
+	if info.IsDir() {
+		set, err = loadScaleLayoutDirectory(path, tunings)
+	} else {
+		set, err = loadLegacyScaleLayoutFile(path, tunings)
+	}
+	if err != nil {
+		return ScaleLayoutSet{}, err
+	}
+
+	seedMissingScaleLayouts(&set, definitions)
+	materializeGeneratedFrets(&set, definitions)
+
+	if err := validateScaleLayouts(set, definitions); err != nil {
+		return ScaleLayoutSet{}, err
+	}
+
+	return set, nil
+}
+
+type scaleLayoutFile struct {
+	ID      int                     `json:"id"`
+	Name    string                  `json:"name"`
+	Type    ScaleType               `json:"type"`
+	Layouts []scaleLayoutFileLayout `json:"layouts"`
+}
+
+type scaleLayoutFileLayout struct {
+	Tuning    string                         `json:"tuning"`
+	Positions map[string]ScaleLayoutPosition `json:"positions"`
+}
+
+func loadScaleLayoutDirectory(path string, tuningSet tuning.DefinitionSet) (ScaleLayoutSet, error) {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return ScaleLayoutSet{}, fmt.Errorf("read scale layout directory: %w", err)
+	}
+
+	set := newScaleLayoutSetFromTunings(tuningSet)
+	tuningsByID := map[int]*ScaleLayoutTuning{}
+	for i := range set.Tunings {
+		tuningsByID[set.Tunings[i].ID] = &set.Tunings[i]
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(strings.ToLower(entry.Name()), ".json") {
+			continue
+		}
+
+		fullPath := filepath.Join(path, entry.Name())
+		layoutFile, err := readScaleLayoutFile(fullPath)
+		if err != nil {
+			return ScaleLayoutSet{}, err
+		}
+
+		for _, layoutData := range layoutFile.Layouts {
+			tuningDef, ok := tuningSet.ByName(layoutData.Tuning)
+			if !ok {
+				return ScaleLayoutSet{}, fmt.Errorf("unknown tuning %q in %s", layoutData.Tuning, fullPath)
+			}
+
+			tuning, ok := tuningsByID[tuningDef.ID]
+			if !ok {
+				return ScaleLayoutSet{}, fmt.Errorf("missing tuning %q in resolved layout set", layoutData.Tuning)
+			}
+
+			tuning.Scales = append(tuning.Scales, ScaleLayoutScale{
+				ID:        layoutFile.ID,
+				Name:      layoutFile.Name,
+				Type:      layoutFile.Type,
+				Positions: layoutData.Positions,
+			})
+		}
+	}
+
+	for i := range set.Tunings {
+		tuning := &set.Tunings[i]
+		sort.Slice(tuning.Scales, func(i, j int) bool {
+			return tuning.Scales[i].ID < tuning.Scales[j].ID
+		})
+	}
+
+	return set, nil
+}
+
+func loadLegacyScaleLayoutFile(path string, _ tuning.DefinitionSet) (ScaleLayoutSet, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return ScaleLayoutSet{}, fmt.Errorf("read scale layouts: %w", err)
@@ -52,11 +155,37 @@ func LoadScaleLayouts(path string, definitions DefinitionSet) (ScaleLayoutSet, e
 		return ScaleLayoutSet{}, fmt.Errorf("parse scale layouts: %w", err)
 	}
 
-	if err := validateScaleLayouts(set, definitions); err != nil {
-		return ScaleLayoutSet{}, err
+	return set, nil
+}
+
+func readScaleLayoutFile(path string) (scaleLayoutFile, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return scaleLayoutFile{}, fmt.Errorf("read scale layout file %s: %w", path, err)
 	}
 
-	return set, nil
+	var file scaleLayoutFile
+	if err := json.Unmarshal(data, &file); err != nil {
+		return scaleLayoutFile{}, fmt.Errorf("parse scale layout file %s: %w", path, err)
+	}
+	return file, nil
+}
+
+func newScaleLayoutSetFromTunings(tuningSet tuning.DefinitionSet) ScaleLayoutSet {
+	set := ScaleLayoutSet{Tunings: make([]ScaleLayoutTuning, 0, len(tuningSet.Tunings))}
+	for _, tuningDef := range tuningSet.Tunings {
+		set.Tunings = append(set.Tunings, ScaleLayoutTuning{
+			ID:          tuningDef.ID,
+			Name:        tuningDef.Name,
+			StringCount: tuningDef.StringCount,
+			Strings:     append([]string(nil), tuningDef.Strings...),
+			Scales:      []ScaleLayoutScale{},
+		})
+	}
+	sort.Slice(set.Tunings, func(i, j int) bool {
+		return set.Tunings[i].ID < set.Tunings[j].ID
+	})
+	return set
 }
 
 func (set ScaleLayoutSet) ByTuningID(id int) (ScaleLayoutTuning, bool) {
@@ -66,6 +195,251 @@ func (set ScaleLayoutSet) ByTuningID(id int) (ScaleLayoutTuning, bool) {
 		}
 	}
 	return ScaleLayoutTuning{}, false
+}
+
+func seedMissingScaleLayouts(set *ScaleLayoutSet, definitions DefinitionSet) {
+	for tuningIndex := range set.Tunings {
+		tuning := &set.Tunings[tuningIndex]
+		templatePositions := templatePositionsForTuning(*tuning)
+		if len(templatePositions) == 0 {
+			continue
+		}
+
+		existingByID := make(map[int]*ScaleLayoutScale, len(tuning.Scales))
+		for scaleIndex := range tuning.Scales {
+			existingByID[tuning.Scales[scaleIndex].ID] = &tuning.Scales[scaleIndex]
+		}
+
+		for _, definition := range definitions.Scales {
+			if existing := existingByID[definition.ID]; existing != nil {
+				if existing.Positions == nil {
+					existing.Positions = map[string]ScaleLayoutPosition{}
+				}
+				for _, shape := range defaultScaleLayoutOrder {
+					if _, ok := existing.Positions[shape]; ok {
+						continue
+					}
+					template, ok := templatePositions[shape]
+					if !ok {
+						continue
+					}
+					existing.Positions[shape] = generateScaleLayoutPosition(*tuning, definition, template)
+				}
+				continue
+			}
+
+			positions := make(map[string]ScaleLayoutPosition, len(templatePositions))
+			for _, shape := range defaultScaleLayoutOrder {
+				template, ok := templatePositions[shape]
+				if !ok {
+					continue
+				}
+				positions[shape] = generateScaleLayoutPosition(*tuning, definition, template)
+			}
+
+			tuning.Scales = append(tuning.Scales, ScaleLayoutScale{
+				ID:        definition.ID,
+				Name:      definition.Name,
+				Type:      definition.Type,
+				Positions: positions,
+			})
+		}
+
+		sort.Slice(tuning.Scales, func(i, j int) bool {
+			return tuning.Scales[i].ID < tuning.Scales[j].ID
+		})
+	}
+}
+
+func materializeGeneratedFrets(set *ScaleLayoutSet, definitions DefinitionSet) {
+	scaleByID := map[int]Definition{}
+	for _, definition := range definitions.Scales {
+		scaleByID[definition.ID] = definition
+	}
+
+	for tuningIndex := range set.Tunings {
+		tuning := &set.Tunings[tuningIndex]
+		for scaleIndex := range tuning.Scales {
+			scale := &tuning.Scales[scaleIndex]
+			definition, ok := scaleByID[scale.ID]
+			if !ok {
+				continue
+			}
+			for positionName, position := range scale.Positions {
+				if position.Validated || len(position.PerStringFrets) > 0 {
+					continue
+				}
+				generated := generateScaleLayoutPosition(*tuning, definition, position)
+				if len(generated.PerStringFrets) == 0 {
+					continue
+				}
+				position.PerStringFrets = generated.PerStringFrets
+				scale.Positions[positionName] = position
+			}
+		}
+	}
+}
+
+func templatePositionsForTuning(tuning ScaleLayoutTuning) map[string]ScaleLayoutPosition {
+	for _, scale := range tuning.Scales {
+		if scale.Name == "Major" {
+			templates := make(map[string]ScaleLayoutPosition, len(scale.Positions))
+			for name, position := range scale.Positions {
+				templates[name] = ScaleLayoutPosition{
+					Mode:        position.Mode,
+					Start:       position.Start,
+					Span:        position.Span,
+					PerString:   clonePerStringRanges(position.PerString),
+					SplitRanges: cloneSplitRanges(position.SplitRanges),
+				}
+			}
+			return templates
+		}
+	}
+	return nil
+}
+
+func clonePerStringRanges(source map[string]FretRange) map[string]FretRange {
+	if len(source) == 0 {
+		return nil
+	}
+	cloned := make(map[string]FretRange, len(source))
+	for key, value := range source {
+		cloned[key] = value
+	}
+	return cloned
+}
+
+func cloneSplitRanges(source []SplitRange) []SplitRange {
+	if len(source) == 0 {
+		return nil
+	}
+	cloned := make([]SplitRange, len(source))
+	for i, value := range source {
+		cloned[i] = SplitRange{
+			Strings: append([]int(nil), value.Strings...),
+			Start:   value.Start,
+			Span:    value.Span,
+		}
+	}
+	return cloned
+}
+
+type pitchCandidate struct {
+	stringIndex int
+	fret        int
+}
+
+func generateScaleLayoutPosition(tuning ScaleLayoutTuning, definition Definition, template ScaleLayoutPosition) ScaleLayoutPosition {
+	position := ScaleLayoutPosition{
+		Mode:        template.Mode,
+		Start:       template.Start,
+		Span:        template.Span,
+		PerString:   clonePerStringRanges(template.PerString),
+		SplitRanges: cloneSplitRanges(template.SplitRanges),
+	}
+
+	octaves, err := standardOctavesForTuning(tuning)
+	if err != nil {
+		return position
+	}
+
+	noteIndex := noteIndexMap()
+	scalePitchClasses := map[int]struct{}{}
+	for _, interval := range definition.Intervals {
+		scalePitchClasses[(interval%12+12)%12] = struct{}{}
+	}
+
+	candidatesByPitch := map[int][]pitchCandidate{}
+	var availablePitches []int
+	seenPitches := map[int]struct{}{}
+
+	for stringIndex, openNote := range tuning.Strings {
+		baseIndex, ok := noteIndex[openNote]
+		if !ok {
+			continue
+		}
+		basePitch := octaves[stringIndex]*12 + baseIndex
+		start, end := positionRangeForString(position, stringIndex)
+		for fret := start; fret <= end; fret++ {
+			pitch := basePitch + fret
+			if _, ok := scalePitchClasses[pitch%12]; !ok {
+				continue
+			}
+			candidatesByPitch[pitch] = append(candidatesByPitch[pitch], pitchCandidate{
+				stringIndex: stringIndex,
+				fret:        fret,
+			})
+			if _, ok := seenPitches[pitch]; !ok {
+				seenPitches[pitch] = struct{}{}
+				availablePitches = append(availablePitches, pitch)
+			}
+		}
+	}
+
+	sort.Ints(availablePitches)
+	run := longestContinuousPitchRun(availablePitches, scalePitchClasses)
+	if len(run) == 0 {
+		return position
+	}
+
+	perStringFrets := map[string][]int{}
+	for _, pitch := range run {
+		candidates := candidatesByPitch[pitch]
+		if len(candidates) == 0 {
+			continue
+		}
+		chosen := candidates[0]
+		for _, candidate := range candidates[1:] {
+			if candidate.fret < chosen.fret || (candidate.fret == chosen.fret && candidate.stringIndex > chosen.stringIndex) {
+				chosen = candidate
+			}
+		}
+		key := fmt.Sprintf("%d", chosen.stringIndex)
+		perStringFrets[key] = append(perStringFrets[key], chosen.fret)
+	}
+
+	for key := range perStringFrets {
+		sort.Ints(perStringFrets[key])
+	}
+	position.PerStringFrets = perStringFrets
+	return position
+}
+
+func longestContinuousPitchRun(availablePitches []int, scalePitchClasses map[int]struct{}) []int {
+	if len(availablePitches) == 0 {
+		return nil
+	}
+
+	bestStart := 0
+	bestEnd := 0
+	currentStart := 0
+
+	for i := 1; i < len(availablePitches); i++ {
+		if hasMissingScalePitchBetween(availablePitches[i-1], availablePitches[i], scalePitchClasses) {
+			if i-currentStart > bestEnd-bestStart {
+				bestStart = currentStart
+				bestEnd = i
+			}
+			currentStart = i
+		}
+	}
+
+	if len(availablePitches)-currentStart > bestEnd-bestStart {
+		bestStart = currentStart
+		bestEnd = len(availablePitches)
+	}
+
+	return availablePitches[bestStart:bestEnd]
+}
+
+func hasMissingScalePitchBetween(a, b int, scalePitchClasses map[int]struct{}) bool {
+	for pitch := a + 1; pitch < b; pitch++ {
+		if _, ok := scalePitchClasses[pitch%12]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 func validateScaleLayouts(set ScaleLayoutSet, definitions DefinitionSet) error {
@@ -228,6 +602,13 @@ func validateScaleLayoutPosition(
 
 func positionRangeForString(position ScaleLayoutPosition, stringIndex int) (int, int) {
 	if position.Mode == "split" {
+		for _, splitRange := range position.SplitRanges {
+			for _, idx := range splitRange.Strings {
+				if idx == stringIndex {
+					return splitRange.Start, splitRange.Start + splitRange.Span - 1
+				}
+			}
+		}
 		if entry, ok := position.PerString[fmt.Sprintf("%d", stringIndex)]; ok {
 			return entry.Start, entry.Start + entry.Span - 1
 		}
@@ -240,6 +621,7 @@ func positionFretsForString(position ScaleLayoutPosition, stringIndex int) []int
 		if frets, ok := position.PerStringFrets[fmt.Sprintf("%d", stringIndex)]; ok {
 			return frets
 		}
+		return nil
 	}
 	start, end := positionRangeForString(position, stringIndex)
 	frets := make([]int, 0, end-start+1)

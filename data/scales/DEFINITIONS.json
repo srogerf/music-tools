@@ -138,7 +138,7 @@
     {
       "name": "Major Pentatonic",
       "common_name": "Major Pentatonic",
-      "type": "pentation",
+      "type": "pentatonic",
       "intervals": [
         0,
         2,
@@ -151,7 +151,7 @@
     {
       "name": "Minor Pentatonic",
       "common_name": "Minor Pentatonic",
-      "type": "pentation",
+      "type": "pentatonic",
       "intervals": [
         0,
         3,

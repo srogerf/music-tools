@@ -17,7 +17,7 @@ func main() {
 	addr := flag.String("addr", ":8080", "server listen address")
 	definitionsPath := flag.String("definitions", "data/scales/DEFINITIONS.json", "path to scale definitions JSON")
 	keySignaturesPath := flag.String("key-signatures", "data/scales/KEY_SIGNATURES.json", "path to key signatures JSON")
-	scaleLayoutsPath := flag.String("scale-layouts", "data/scales/SCALE_LAYOUTS.json", "path to scale layouts JSON")
+	scaleLayoutsPath := flag.String("scale-layouts", "data/scales/layouts", "path to scale layouts data")
 	tuningsPath := flag.String("tunings", "data/tunings/DEFINITIONS.json", "path to tuning definitions JSON")
 	flag.Parse()
 
@@ -29,13 +29,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("load key signatures: %v", err)
 	}
-	scaleLayouts, err := scales.LoadScaleLayouts(*scaleLayoutsPath, defs)
-	if err != nil {
-		log.Fatalf("load scale layouts: %v", err)
-	}
 	tunings, err := tuning.LoadDefinitions(*tuningsPath)
 	if err != nil {
 		log.Fatalf("load tunings: %v", err)
+	}
+	scaleLayouts, err := scales.LoadScaleLayouts(*scaleLayoutsPath, defs, tunings)
+	if err != nil {
+		log.Fatalf("load scale layouts: %v", err)
 	}
 
 	scaleService := api.NewScaleService(defs, keySignatures)

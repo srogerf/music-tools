@@ -16,6 +16,10 @@ function scaleOptionLabel(scale) {
   return `${scale.name} (${scale.common_name})`;
 }
 
+function fetchJSON(url) {
+  return fetch(url, { cache: "no-store" }).then((res) => res.json());
+}
+
 function shouldUseFlats(key) {
   if (key.includes("b")) return true;
   if (key.includes("#")) return false;
@@ -66,7 +70,10 @@ function buildLayout({
   for (let stringIndex = 0; stringIndex < tuningStrings.length; stringIndex += 1) {
     const notes = [];
     const openIndex = openIndexes[stringIndex];
-    const allowedFrets = perStringFrets?.[stringIndex] ? new Set(perStringFrets[stringIndex]) : null;
+    const hasPerStringFrets = !!perStringFrets;
+    const hasExplicitFrets =
+      perStringFrets && Object.prototype.hasOwnProperty.call(perStringFrets, stringIndex);
+    const allowedFrets = hasExplicitFrets ? new Set(perStringFrets[stringIndex]) : null;
     for (let i = 0; i < fretCount; i += 1) {
       const actualFret = startFret + i;
       if (perStringRanges && perStringRanges[stringIndex]) {
@@ -76,6 +83,10 @@ function buildLayout({
           notes.push({ Present: false });
           continue;
         }
+      }
+      if (hasPerStringFrets && !hasExplicitFrets) {
+        notes.push({ Present: false });
+        continue;
       }
       if (allowedFrets && !allowedFrets.has(actualFret)) {
         notes.push({ Present: false });
@@ -113,8 +124,7 @@ function App() {
   const fretboardRef = useRef(null);
 
   useEffect(() => {
-    fetch("/api/v1/scales")
-      .then((res) => res.json())
+    fetchJSON("/api/v1/scales")
       .then((data) => {
         const list = data.scales || [];
         setScales(list);
@@ -128,8 +138,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/v1/tunings")
-      .then((res) => res.json())
+    fetchJSON("/api/v1/tunings")
       .then((data) => {
         const list = data.tunings || [];
         setTunings(list);
@@ -144,8 +153,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/v1/scales/scale_layouts")
-      .then((res) => res.json())
+    fetchJSON("/api/v1/scales/scale_layouts")
       .then((data) => {
         setLayoutInstances(data.tunings || []);
       })
@@ -224,6 +232,8 @@ function App() {
 
     const positionLayout = selectedPositionLayout;
     if (!positionLayout) {
+      fretboardRef.current.clear();
+      fretboardRef.current.drawBlank();
       return;
     }
 
@@ -235,14 +245,27 @@ function App() {
       const ranges = {};
       let minStart = Number.POSITIVE_INFINITY;
       let maxEnd = Number.NEGATIVE_INFINITY;
-      Object.entries(positionLayout.per_string || {}).forEach(([stringIndex, range]) => {
-        const start = range.start + layoutRootIndex;
-        const span = range.span;
-        const end = start + span - 1;
-        ranges[Number(stringIndex)] = { start, span };
-        if (start < minStart) minStart = start;
-        if (end > maxEnd) maxEnd = end;
-      });
+      if (positionLayout.split_ranges?.length) {
+        positionLayout.split_ranges.forEach((splitRange) => {
+          const start = splitRange.start + layoutRootIndex;
+          const span = splitRange.span;
+          const end = start + span - 1;
+          (splitRange.strings || []).forEach((stringIndex) => {
+            ranges[Number(stringIndex)] = { start, span };
+          });
+          if (start < minStart) minStart = start;
+          if (end > maxEnd) maxEnd = end;
+        });
+      } else {
+        Object.entries(positionLayout.per_string || {}).forEach(([stringIndex, range]) => {
+          const start = range.start + layoutRootIndex;
+          const span = range.span;
+          const end = start + span - 1;
+          ranges[Number(stringIndex)] = { start, span };
+          if (start < minStart) minStart = start;
+          if (end > maxEnd) maxEnd = end;
+        });
+      }
       perStringRanges = ranges;
       startFret = minStart;
       fretCount = maxEnd - minStart + 1;

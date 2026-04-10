@@ -12,7 +12,7 @@ This document defines the organization rules for code under `src/`.
 
 ## Domain Areas
 - `src/scales/`: defines and manages scales, including intervals, scale name, and common name.
-  - Include a type describing the scale grouping (e.g., triad, quadad, pentation, diatonic).
+  - Include a type describing the scale grouping (e.g., triad, quadad, pentatonic, diatonic).
   - Data is stored in definition files under `data/` (eventually migrates to a database).
   - Language: Go (imported as `music-tools/src/scales` within this repo).
 - `src/chords/`: defines chords as a series of notes played simultaneously.

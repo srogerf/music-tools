@@ -1,0 +1,228 @@
+{
+  "layouts": [
+    {
+      "positions": {
+        "A": {
+          "per_string_frets": {
+            "1": [
+              2, 
+              3, 
+              5, 
+              6
+            ], 
+            "0": [
+              3, 
+              4
+            ], 
+            "3": [
+              4, 
+              5
+            ], 
+            "2": [
+              3, 
+              5, 
+              6
+            ], 
+            "5": [
+              3, 
+              4
+            ], 
+            "4": [
+              3, 
+              4, 
+              6
+            ]
+          }, 
+          "span": 5, 
+          "start": 2, 
+          "per_string": null, 
+          "mode": "range", 
+          "validated_manual": false
+        }, 
+        "C": {
+          "per_string_frets": {
+            "1": [
+              2, 
+              3
+            ], 
+            "0": [
+              1, 
+              3, 
+              4
+            ], 
+            "3": [
+              0, 
+              1, 
+              4
+            ], 
+            "2": [
+              0, 
+              1, 
+              3
+            ], 
+            "5": [
+              1, 
+              3, 
+              4
+            ], 
+            "4": [
+              1, 
+              3, 
+              4
+            ]
+          }, 
+          "span": 5, 
+          "start": 0, 
+          "per_string": null, 
+          "mode": "range", 
+          "validated_manual": false
+        }, 
+        "E": {
+          "per_string_frets": {
+            "1": [
+              8, 
+              10, 
+              11
+            ], 
+            "0": [
+              7, 
+              8, 
+              10, 
+              11
+            ], 
+            "3": [
+              7, 
+              8, 
+              10
+            ], 
+            "2": [
+              9, 
+              10
+            ], 
+            "5": [
+              7, 
+              8, 
+              10, 
+              11
+            ], 
+            "4": [
+              8, 
+              9
+            ]
+          }, 
+          "span": 5, 
+          "start": 7, 
+          "per_string": null, 
+          "mode": "range", 
+          "validated_manual": false
+        }, 
+        "D": {
+          "per_string_frets": {
+            "1": [
+              8, 
+              10, 
+              11
+            ], 
+            "0": [
+              8, 
+              10, 
+              11
+            ], 
+            "3": [
+              8, 
+              10, 
+              12
+            ], 
+            "2": [
+              9, 
+              10, 
+              12
+            ], 
+            "5": [
+              10, 
+              11, 
+              13
+            ], 
+            "4": [
+              9, 
+              12, 
+              13
+            ]
+          }, 
+          "span": 0, 
+          "start": 0, 
+          "per_string": {
+            "1": {
+              "start": 8, 
+              "span": 5
+            }, 
+            "0": {
+              "start": 8, 
+              "span": 5
+            }, 
+            "3": {
+              "start": 8, 
+              "span": 5
+            }, 
+            "2": {
+              "start": 8, 
+              "span": 5
+            }, 
+            "5": {
+              "start": 9, 
+              "span": 5
+            }, 
+            "4": {
+              "start": 9, 
+              "span": 5
+            }
+          }, 
+          "mode": "split", 
+          "validated_manual": false
+        }, 
+        "G": {
+          "per_string_frets": {
+            "1": [
+              5, 
+              6, 
+              8
+            ], 
+            "0": [
+              4, 
+              7, 
+              8
+            ], 
+            "3": [
+              4, 
+              5, 
+              7, 
+              8
+            ], 
+            "2": [
+              5, 
+              6
+            ], 
+            "5": [
+              4, 
+              7, 
+              8
+            ], 
+            "4": [
+              6, 
+              8
+            ]
+          }, 
+          "span": 5, 
+          "start": 4, 
+          "per_string": null, 
+          "mode": "range", 
+          "validated_manual": false
+        }
+      }, 
+      "tuning": "Standard"
+    }
+  ], 
+  "type": "diatonic", 
+  "id": 8, 
+  "name": "Harmonic Minor"
+}

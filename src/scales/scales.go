@@ -10,10 +10,10 @@ import (
 type ScaleType string
 
 const (
-	ScaleTypeTriad     ScaleType = "triad"
-	ScaleTypeQuadad    ScaleType = "quadad"
-	ScaleTypePentation ScaleType = "pentation"
-	ScaleTypeDiatonic  ScaleType = "diatonic"
+	ScaleTypeTriad      ScaleType = "triad"
+	ScaleTypeQuadad     ScaleType = "quadad"
+	ScaleTypePentatonic ScaleType = "pentatonic"
+	ScaleTypeDiatonic   ScaleType = "diatonic"
 )
 
 type Definition struct {

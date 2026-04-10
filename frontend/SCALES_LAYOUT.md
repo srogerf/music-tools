@@ -22,11 +22,13 @@ The available shape names for the frontend selector live in `frontend/app/scales
 
 The actual layout data (per tuning/scale/position) lives in:
 
-- `data/scales/SCALE_LAYOUTS.json`
+- `data/scales/layouts/`
 
-Each position can additionally include `per_string_frets` to explicitly list the
-frets that should be shown per string. This is used to guarantee that each pitch
-appears exactly once.
+Each scale has its own file. Prefer the smallest layout representation that works:
+
+- use `start` + `span` for simple ranges
+- use `per_string` only for true split layouts
+- use `per_string_frets` only when simpler definitions are not enough
 
 ## Algorithm
 
@@ -51,7 +53,7 @@ If the shape is not split:
 
 For each layout position, every pitch within the displayed window must appear
 exactly once. The validator will fail if a pitch is missing or repeated. Use
-`per_string_frets` in `SCALE_LAYOUTS.json` to enforce this when ranges
+`per_string_frets` in `data/scales/layouts/` to enforce this when ranges
 alone would cause duplicates.
 
 ## Shape Notes
@@ -66,4 +68,4 @@ Key of C reference ranges as agreed:
   - strings 6–3: frets 8–12
   - strings 2–1: frets 10–13
 
-To adjust shapes, edit `data/scales/SCALE_LAYOUTS.json` and update this doc if the rules change.
+To adjust shapes, edit the relevant file in `data/scales/layouts/` and update this doc if the rules change.

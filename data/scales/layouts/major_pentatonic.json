@@ -1,0 +1,42 @@
+{
+  "layouts": [
+    {
+      "positions": {
+        "A": {
+          "start": 2, 
+          "span": 4, 
+          "mode": "range", 
+          "validated_manual": true
+        }, 
+        "C": {
+          "start": 0, 
+          "span": 4, 
+          "mode": "range", 
+          "validated_manual": true
+        }, 
+        "E": {
+          "start": 7, 
+          "span": 4, 
+          "mode": "range", 
+          "validated_manual": true
+        }, 
+        "D": {
+          "start": 9, 
+          "span": 5, 
+          "mode": "range", 
+          "validated_manual": true
+        }, 
+        "G": {
+          "start": 4, 
+          "span": 5, 
+          "mode": "range", 
+          "validated_manual": true
+        }
+      }, 
+      "tuning": "Standard"
+    }
+  ], 
+  "type": "pentatonic", 
+  "id": 10, 
+  "name": "Major Pentatonic"
+}

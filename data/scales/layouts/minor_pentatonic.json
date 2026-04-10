@@ -1,0 +1,44 @@
+{
+  "layouts": [
+    {
+      "positions": {
+        "A": {
+          "start": 3, 
+          "span": 4, 
+          "mode": "range", 
+          "validated_manual": true
+        }, 
+        "C": {
+          "start": 0, 
+          "span": 5, 
+          "mode": "range", 
+          "validated_manual": true
+        }, 
+        "E": {
+          "per_string_frets": null, 
+          "span": 5, 
+          "start": 7, 
+          "per_string": null, 
+          "mode": "range", 
+          "validated_manual": true
+        }, 
+        "D": {
+          "start": 10, 
+          "span": 4, 
+          "mode": "range", 
+          "validated_manual": true
+        }, 
+        "G": {
+          "start": 5, 
+          "span": 4, 
+          "mode": "range", 
+          "validated_manual": true
+        }
+      }, 
+      "tuning": "Standard"
+    }
+  ], 
+  "type": "pentatonic", 
+  "id": 11, 
+  "name": "Minor Pentatonic"
+}
