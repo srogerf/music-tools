@@ -1,20 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "https://esm.sh/react@18";
 import { createRoot } from "https://esm.sh/react-dom@18/client";
 import { createFretboard } from "/fretboard/index.js";
-import {
-  CAGED_BASE_STARTS,
-  CAGED_MIN_SPANS,
-  CAGED_ROOT_OFFSETS,
-  CAGED_SHAPES,
-  CAGED_SPLIT_RANGES,
-} from "/scales_layout.js";
+import { CAGED_SHAPES } from "/scales_layout.js";
+import { DEFAULT_KEYS, DEFAULT_TUNING_NAME } from "/defaults.js";
 
-const KEYS = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
 const SHARP_SCALE = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const FLAT_SCALE = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
 const SHARP_INDEX = Object.fromEntries(SHARP_SCALE.map((note, i) => [note, i]));
 const FLAT_INDEX = Object.fromEntries(FLAT_SCALE.map((note, i) => [note, i]));
-const STANDARD_TUNING = ["E", "A", "D", "G", "B", "E"]; // low to high
 
 function shouldUseFlats(key) {
   if (key.includes("b")) return true;
@@ -57,13 +50,16 @@ function buildLayout({
   noteNames,
   indexMap,
   perStringRanges,
+  perStringFrets,
+  tuningStrings,
 }) {
   const layout = {};
-  const openIndexes = STANDARD_TUNING.map((note) => indexMap[note]);
+  const openIndexes = tuningStrings.map((note) => indexMap[note]);
 
-  for (let stringIndex = 0; stringIndex < STANDARD_TUNING.length; stringIndex += 1) {
+  for (let stringIndex = 0; stringIndex < tuningStrings.length; stringIndex += 1) {
     const notes = [];
     const openIndex = openIndexes[stringIndex];
+    const allowedFrets = perStringFrets?.[stringIndex] ? new Set(perStringFrets[stringIndex]) : null;
     for (let i = 0; i < fretCount; i += 1) {
       const actualFret = startFret + i;
       if (perStringRanges && perStringRanges[stringIndex]) {
@@ -73,6 +69,10 @@ function buildLayout({
           notes.push({ Present: false });
           continue;
         }
+      }
+      if (allowedFrets && !allowedFrets.has(actualFret)) {
+        notes.push({ Present: false });
+        continue;
       }
 
       const pitchClass = (openIndex + actualFret) % 12;
@@ -92,48 +92,14 @@ function buildLayout({
   return layout;
 }
 
-function buildLayoutNotes({ startFret, fretCount, noteSet, noteNames, indexMap }) {
-  const openIndexes = STANDARD_TUNING.map((note) => indexMap[note]);
-  const notesInWindow = new Set();
-
-  for (let stringIndex = 0; stringIndex < STANDARD_TUNING.length; stringIndex += 1) {
-    const openIndex = openIndexes[stringIndex];
-    for (let i = 0; i < fretCount; i += 1) {
-      const pitchClass = (openIndex + startFret + i) % 12;
-      const name = noteNames[pitchClass];
-      if (noteSet.has(name)) {
-        notesInWindow.add(name);
-      }
-    }
-  }
-
-  return notesInWindow;
-}
-
-function chooseFretCountForWindow(startFret, noteSet, noteNames, indexMap, minSpan, rootOffsets) {
-  const maxFretSpan = 12;
-  const requiredSpan = rootOffsets && rootOffsets.length > 0 ? Math.max(...rootOffsets) + 1 : 4;
-  const startSpan = Math.max(4, minSpan || 4, requiredSpan);
-  for (let span = startSpan; span <= maxFretSpan; span += 1) {
-    const covered = buildLayoutNotes({
-      startFret,
-      fretCount: span,
-      noteSet,
-      noteNames,
-      indexMap,
-    });
-    if (covered.size === noteSet.size) {
-      return span;
-    }
-  }
-  return startSpan;
-}
-
 function App() {
   const [scales, setScales] = useState([]);
   const [selectedScaleId, setSelectedScaleId] = useState(1);
   const [selectedKey, setSelectedKey] = useState("C");
   const [selectedPosition, setSelectedPosition] = useState("E");
+  const [tunings, setTunings] = useState([]);
+  const [selectedTuningId, setSelectedTuningId] = useState(1);
+  const [layoutInstances, setLayoutInstances] = useState([]);
   const [error, setError] = useState("");
 
   const canvasRef = useRef(null);
@@ -155,23 +121,78 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!canvasRef.current) return;
-    if (!fretboardRef.current) {
+    fetch("/api/v1/tunings")
+      .then((res) => res.json())
+      .then((data) => {
+        const list = data.tunings || [];
+        setTunings(list);
+        if (list.length > 0) {
+          const standard = list.find((tuning) => tuning.name === DEFAULT_TUNING_NAME);
+          setSelectedTuningId((standard ?? list[0]).id);
+        }
+      })
+      .catch((err) => {
+        setError(`Failed to load tunings: ${err.message}`);
+      });
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/v1/scales/layouts/instances")
+      .then((res) => res.json())
+      .then((data) => {
+        setLayoutInstances(data.tunings || []);
+      })
+      .catch((err) => {
+        setError(`Failed to load layout instances: ${err.message}`);
+      });
+  }, []);
+
+  const selectedTuning = useMemo(
+    () => tunings.find((tuning) => tuning.id === Number(selectedTuningId)),
+    [tunings, selectedTuningId]
+  );
+  const tuningStrings = selectedTuning?.strings?.length ? selectedTuning.strings : [];
+  const tuningLabels = [...tuningStrings].reverse();
+
+  useEffect(() => {
+    if (!canvasRef.current || tuningStrings.length === 0) return;
+    const nextStringCount = tuningStrings.length;
+    const nextLabels = tuningLabels;
+    if (
+      !fretboardRef.current ||
+      fretboardRef.current.options.stringCount !== nextStringCount
+    ) {
       fretboardRef.current = createFretboard(canvasRef.current, {
         fretCount: 4,
         displayAtFret: 1,
         boardHeight: 240,
         fontFamily: "Alegreya Sans",
         showStringNumbers: true,
-        tuningLabels: ["E", "B", "G", "D", "A", "E"],
+        stringCount: nextStringCount,
+        tuningLabels: nextLabels,
       });
+      return;
     }
-  }, []);
+    fretboardRef.current.options.tuningLabels = nextLabels;
+  }, [tuningStrings, tuningLabels]);
 
   const selectedScale = useMemo(
     () => scales.find((scale) => scale.id === Number(selectedScaleId)),
     [scales, selectedScaleId]
   );
+  const selectedLayoutInstance = useMemo(
+    () => layoutInstances.find((entry) => entry.id === Number(selectedTuningId)),
+    [layoutInstances, selectedTuningId]
+  );
+  const selectedPositionLayout = useMemo(() => {
+    if (!selectedLayoutInstance || !selectedScale) {
+      return null;
+    }
+    const scaleLayout = selectedLayoutInstance.scales?.find(
+      (scale) => scale.id === selectedScale.id
+    );
+    return scaleLayout?.positions?.[selectedPosition] || null;
+  }, [selectedLayoutInstance, selectedScale, selectedPosition]);
 
   const scaleNotes = useMemo(() => {
     if (!selectedScale) return [];
@@ -179,24 +200,36 @@ function App() {
   }, [selectedScale, selectedKey]);
 
   useEffect(() => {
-    if (!fretboardRef.current || !selectedScale) return;
+    if (
+      !fretboardRef.current ||
+      !selectedScale ||
+      tuningStrings.length === 0 ||
+      !selectedLayoutInstance
+    ) {
+      return;
+    }
 
     const { rootIndex, noteSet, intervalMap, noteNames, indexMap } = buildScaleNotes(
       selectedKey,
       selectedScale.intervals
     );
+    const layoutRootIndex = rootIndex;
 
-    const split = CAGED_SPLIT_RANGES[selectedPosition];
+    const positionLayout = selectedPositionLayout;
+    if (!positionLayout) {
+      return;
+    }
+
     let startFret = 0;
     let fretCount = 4;
     let perStringRanges = null;
 
-    if (split) {
+    if (positionLayout.mode === "split") {
       const ranges = {};
       let minStart = Number.POSITIVE_INFINITY;
       let maxEnd = Number.NEGATIVE_INFINITY;
-      Object.entries(split.perString).forEach(([stringIndex, range]) => {
-        const start = range.start + rootIndex;
+      Object.entries(positionLayout.per_string || {}).forEach(([stringIndex, range]) => {
+        const start = range.start + layoutRootIndex;
         const span = range.span;
         const end = start + span - 1;
         ranges[Number(stringIndex)] = { start, span };
@@ -207,25 +240,36 @@ function App() {
       startFret = minStart;
       fretCount = maxEnd - minStart + 1;
     } else {
-      const baseStart = CAGED_BASE_STARTS[selectedPosition] ?? CAGED_BASE_STARTS.E;
-      startFret = baseStart + rootIndex;
-      const minSpan = CAGED_MIN_SPANS[selectedPosition] ?? 4;
-      const rootOffsets = CAGED_ROOT_OFFSETS[selectedPosition] ?? [];
-      fretCount = chooseFretCountForWindow(
-        startFret,
-        noteSet,
-        noteNames,
-        indexMap,
-        minSpan,
-        rootOffsets
-      );
+      startFret = (positionLayout.start || 0) + layoutRootIndex;
+      fretCount = positionLayout.span || 4;
+    }
+
+    let perStringFrets = null;
+    if (positionLayout.per_string_frets) {
+      perStringFrets = {};
+      let minFret = Number.POSITIVE_INFINITY;
+      let maxFret = Number.NEGATIVE_INFINITY;
+      Object.entries(positionLayout.per_string_frets).forEach(([stringIndex, frets]) => {
+        const shifted = frets.map((fret) => fret + layoutRootIndex);
+        perStringFrets[Number(stringIndex)] = shifted;
+        for (const fret of shifted) {
+          if (fret < minFret) minFret = fret;
+          if (fret > maxFret) maxFret = fret;
+        }
+      });
+      if (minFret < Number.POSITIVE_INFINITY && maxFret > Number.NEGATIVE_INFINITY) {
+        startFret = minFret;
+        fretCount = maxFret - minFret + 1;
+      }
     }
     const positionStart = startFret;
 
     if (fretboardRef.current.options.fretCount !== fretCount) {
       fretboardRef.current = createFretboard(canvasRef.current, {
         ...fretboardRef.current.options,
+        stringCount: tuningStrings.length,
         fretCount,
+        tuningLabels,
       });
     }
 
@@ -237,12 +281,22 @@ function App() {
       noteNames,
       indexMap,
       perStringRanges,
+      perStringFrets,
+      tuningStrings,
     });
 
     fretboardRef.current.clear();
     fretboardRef.current.drawBlank();
     fretboardRef.current.drawLayout({ Layout: layout, PositionStart: positionStart });
-  }, [selectedScale, selectedKey, selectedPosition]);
+  }, [
+    selectedScale,
+    selectedKey,
+    selectedPosition,
+    tuningStrings,
+    tuningLabels,
+    selectedLayoutInstance,
+    selectedPositionLayout,
+  ]);
 
   return React.createElement(
     "main",
@@ -298,7 +352,7 @@ function App() {
               value: selectedKey,
               onChange: (event) => setSelectedKey(event.target.value),
             },
-            KEYS.map((key) => React.createElement("option", { key, value: key }, key))
+            DEFAULT_KEYS.map((key) => React.createElement("option", { key, value: key }, key))
           )
         ),
         React.createElement(
@@ -325,9 +379,56 @@ function App() {
         React.createElement("canvas", { ref: canvasRef, width: 900, height: 320 })
       ),
       React.createElement(
-        "div",
-        { className: "note-list" },
-        scaleNotes.map((note) => React.createElement("span", { className: "note-pill", key: note }, note))
+        "section",
+        { className: "info-bar" },
+        React.createElement(
+          "table",
+          { className: "info-table" },
+          React.createElement(
+            "thead",
+            null,
+              React.createElement(
+              "tr",
+              null,
+              React.createElement("th", { className: "info-label" }, "Scale Notes"),
+              React.createElement("th", { className: "info-label" }, "Tuning"),
+              React.createElement("th", { className: "info-label validated-label" }, "Validated")
+            )
+          ),
+          React.createElement(
+            "tbody",
+            null,
+            React.createElement(
+              "tr",
+              null,
+              React.createElement(
+                "td",
+                { className: "info-value" },
+                React.createElement(
+                  "div",
+                  { className: "note-list" },
+                  scaleNotes.map((note) =>
+                    React.createElement("span", { className: "note-pill", key: note }, note)
+                  )
+                )
+              ),
+              React.createElement(
+                "td",
+                { className: "info-value" },
+                selectedTuning?.name || DEFAULT_TUNING_NAME
+              ),
+              React.createElement(
+                "td",
+                {
+                  className: `info-value validated-cell ${
+                    selectedPositionLayout?.validated_manual ? "status-valid" : "status-invalid"
+                  }`,
+                },
+                `${selectedPositionLayout?.validated_manual ? "✓" : "✕"}`
+              )
+            )
+          )
+        )
       )
     )
   );

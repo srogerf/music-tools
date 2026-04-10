@@ -3,18 +3,24 @@ package api
 import "net/http"
 
 // NewRouter wires the API routes for the server.
-func NewRouter(scaleService *ScaleService) http.Handler {
+func NewRouter(scaleService *ScaleService, layoutService *ScaleLayoutService, tuningService *TuningService) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/fretboard/", http.StripPrefix("/fretboard/", http.FileServer(http.Dir("frontend/fretboard"))))
 	mux.Handle("/", http.FileServer(http.Dir("frontend/app")))
-	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", newV1Router(scaleService)))
+	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", newV1Router(scaleService, layoutService, tuningService)))
 	return mux
 }
 
-func newV1Router(scaleService *ScaleService) http.Handler {
+func newV1Router(scaleService *ScaleService, layoutService *ScaleLayoutService, tuningService *TuningService) http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("/scales/layouts", layoutService.ListLayoutsHandler)
+	mux.HandleFunc("/scales/layouts/", layoutService.GetLayoutHandler)
+	mux.HandleFunc("/scales/layouts/instances", layoutService.ListLayoutInstancesHandler)
+	mux.HandleFunc("/scales/layouts/instances/", layoutService.GetLayoutInstanceHandler)
 	mux.HandleFunc("/scales", scaleService.ListScalesHandler)
 	mux.HandleFunc("/scales/", scaleService.GetScaleHandler)
 	mux.HandleFunc("/scales/random", scaleService.RandomScaleHandler)
+	mux.HandleFunc("/tunings", tuningService.ListTuningsHandler)
+	mux.HandleFunc("/tunings/", tuningService.GetTuningHandler)
 	return mux
 }

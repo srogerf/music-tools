@@ -12,9 +12,9 @@ export const CAGED_BASE_STARTS = {
 
 export const CAGED_MIN_SPANS = {
   C: 4,
-  A: 4,
+  A: 5,
   G: 5,
-  E: 4,
+  E: 5,
   D: 6,
 };
 

@@ -1,0 +1,10 @@
+{
+  "tunings": [
+    {
+      "id": 1,
+      "name": "Standard",
+      "string_count": 6,
+      "strings": ["E", "A", "D", "G", "B", "E"]
+    }
+  ]
+}

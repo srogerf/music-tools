@@ -81,6 +81,115 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/scales/layouts:
+    get:
+      summary: List scale layouts
+      description: Returns all scale layouts grouped by scale type.
+      responses:
+        "200":
+          description: Scale layouts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScaleLayoutListResponse"
+  /api/v1/scales/layouts/{type}:
+    get:
+      summary: Get scale layout by type
+      description: Returns the scale layout for a specific scale type.
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Scale layout
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScaleLayoutDefinition"
+        "404":
+          description: Layout not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/scales/layouts/instances:
+    get:
+      summary: List scale layout instances
+      description: Returns layout instances grouped by tuning and scale.
+      responses:
+        "200":
+          description: Layout instances
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LayoutInstanceListResponse"
+  /api/v1/scales/layouts/instances/{tuningId}:
+    get:
+      summary: Get layout instances by tuning id
+      description: Returns layout instances for a specific tuning id.
+      parameters:
+        - name: tuningId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Layout instances
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LayoutTuningInstance"
+        "404":
+          description: Layout tuning not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/tunings:
+    get:
+      summary: List tunings
+      description: Returns all tuning definitions.
+      parameters:
+        - name: name
+          in: query
+          description: Filter by tuning name (exact match).
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Tuning definitions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TuningListResponse"
+  /api/v1/tunings/{id}:
+    get:
+      summary: Get tuning by id
+      description: Returns a tuning definition by id.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Tuning definition
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TuningDefinition"
+        "404":
+          description: Tuning not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     ScaleDefinition:
@@ -143,3 +252,173 @@ components:
       properties:
         error:
           type: string
+    ScaleLayoutDefinition:
+      type: object
+      required:
+        - type
+        - caged
+      properties:
+        type:
+          type: string
+          description: Scale type name.
+        caged:
+          $ref: "#/components/schemas/CAGEDLayout"
+    ScaleLayoutListResponse:
+      type: object
+      required:
+        - layouts
+      properties:
+        layouts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScaleLayoutDefinition"
+    CAGEDLayout:
+      type: object
+      required:
+        - shapes
+        - base_starts
+        - min_spans
+        - root_offsets
+        - split_ranges
+      properties:
+        shapes:
+          type: array
+          items:
+            type: string
+        base_starts:
+          type: object
+          additionalProperties:
+            type: integer
+        min_spans:
+          type: object
+          additionalProperties:
+            type: integer
+        root_offsets:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: integer
+        split_ranges:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/CAGEDSplitRange"
+    CAGEDSplitRange:
+      type: object
+      required:
+        - per_string
+      properties:
+        per_string:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/FretRange"
+    FretRange:
+      type: object
+      required:
+        - start
+        - span
+      properties:
+        start:
+          type: integer
+        span:
+          type: integer
+    TuningDefinition:
+      type: object
+      required:
+        - id
+        - name
+        - string_count
+        - strings
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        string_count:
+          type: integer
+        strings:
+          type: array
+          items:
+            type: string
+    TuningListResponse:
+      type: object
+      required:
+        - tunings
+      properties:
+        tunings:
+          type: array
+          items:
+            $ref: "#/components/schemas/TuningDefinition"
+    LayoutInstanceListResponse:
+      type: object
+      required:
+        - tunings
+      properties:
+        tunings:
+          type: array
+          items:
+            $ref: "#/components/schemas/LayoutTuningInstance"
+    LayoutTuningInstance:
+      type: object
+      required:
+        - id
+        - name
+        - string_count
+        - strings
+        - scales
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        string_count:
+          type: integer
+        strings:
+          type: array
+          items:
+            type: string
+        scales:
+          type: array
+          items:
+            $ref: "#/components/schemas/LayoutScaleInstance"
+    LayoutScaleInstance:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - positions
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        type:
+          type: string
+        positions:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/LayoutPositionInstance"
+    LayoutPositionInstance:
+      type: object
+      required:
+        - mode
+      properties:
+        mode:
+          type: string
+        start:
+          type: integer
+        span:
+          type: integer
+        per_string:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/FretRange"
+        per_string_frets:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: integer
+        validated_manual:
+          type: boolean

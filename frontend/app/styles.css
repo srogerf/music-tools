@@ -84,7 +84,6 @@ canvas {
 }
 
 .note-list {
-  margin-top: 16px;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -97,6 +96,76 @@ canvas {
   border: 1px solid #e5c8aa;
   font-weight: 600;
 }
+
+.info-bar {
+  margin-top: 18px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fffdf8 0%, #f1e5d5 100%);
+  overflow-x: auto;
+}
+
+.info-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 760px;
+}
+
+.info-label {
+  padding: 8px 12px 10px;
+  color: #4c4339;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.info-value {
+  padding: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  vertical-align: top;
+}
+
+.validated-cell {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.validated-label {
+  text-align: center;
+}
+
+.status-valid {
+  color: #2d6a2e;
+}
+
+.status-invalid {
+  color: #8b2e1b;
+}
+
+.note-list {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  white-space: nowrap;
+  overflow-x: auto;
+}
+
+.note-list::-webkit-scrollbar,
+.info-bar::-webkit-scrollbar {
+  height: 8px;
+}
+
+.note-list::-webkit-scrollbar-thumb,
+.info-bar::-webkit-scrollbar-thumb {
+  background: #d9c4aa;
+  border-radius: 999px;
+}
+
 
 @media (max-width: 700px) {
   main {

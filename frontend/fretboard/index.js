@@ -19,15 +19,15 @@ const DEFAULT_INTERVAL_COLORS = [
 
 const DEFAULT_INTERVAL_NAMES = [
   "root",
-  "b2",
-  "2",
-  "b3",
-  "3",
+  "m2",
+  "M2",
+  "m3",
+  "M3",
   "p4",
   "tri",
   "p5",
-  "b6",
-  "6",
+  "m6",
+  "M6",
   "b7",
   "7"
 ];
@@ -171,11 +171,11 @@ export function createFretboard(canvas, optionsOverride) {
       ctx.stroke();
     }
 
-    if (note.Note) {
-      drawText(note.Note, x + 11, y + 15);
-    }
-    if (options.intervalNames[interval]) {
-      drawText(options.intervalNames[interval], x + 11, y - 10);
+    const intervalLabel = options.intervalNames[interval];
+    const noteLabel = note.Note;
+    if (intervalLabel || noteLabel) {
+      const label = intervalLabel && noteLabel ? `${intervalLabel} (${noteLabel})` : (intervalLabel || noteLabel);
+      drawText(label, x + 11, y + 15);
     }
   }
 
