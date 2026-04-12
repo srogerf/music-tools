@@ -1,6 +1,9 @@
 package api
 
-import "net/http"
+import (
+	"log"
+	"net/http"
+)
 
 // NewRouter wires the API routes for the server.
 func NewRouter(scaleService *ScaleService, layoutService *ScaleLayoutService, tuningService *TuningService) http.Handler {
@@ -8,7 +11,7 @@ func NewRouter(scaleService *ScaleService, layoutService *ScaleLayoutService, tu
 	mux.Handle("/fretboard/", http.StripPrefix("/fretboard/", http.FileServer(http.Dir("frontend/fretboard"))))
 	mux.Handle("/", http.FileServer(http.Dir("frontend/app")))
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", newV1Router(scaleService, layoutService, tuningService)))
-	return mux
+	return requestLogger(mux)
 }
 
 func newV1Router(scaleService *ScaleService, layoutService *ScaleLayoutService, tuningService *TuningService) http.Handler {
@@ -21,4 +24,11 @@ func newV1Router(scaleService *ScaleService, layoutService *ScaleLayoutService, 
 	mux.HandleFunc("/tunings", tuningService.ListTuningsHandler)
 	mux.HandleFunc("/tunings/", tuningService.GetTuningHandler)
 	return mux
+}
+
+func requestLogger(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("http request method=%s path=%s", r.Method, r.URL.Path)
+		next.ServeHTTP(w, r)
+	})
 }

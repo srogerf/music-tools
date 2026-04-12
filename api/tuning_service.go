@@ -5,15 +5,16 @@ import (
 	"strconv"
 	"strings"
 
+	"music-tools/src/postgresdb"
 	"music-tools/src/tuning"
 )
 
 type TuningService struct {
-	definitions tuning.DefinitionSet
+	store *postgresdb.Store
 }
 
-func NewTuningService(definitions tuning.DefinitionSet) *TuningService {
-	return &TuningService{definitions: definitions}
+func NewTuningService(store *postgresdb.Store) *TuningService {
+	return &TuningService{store: store}
 }
 
 type listTuningsResponse struct {
@@ -31,8 +32,13 @@ func (s *TuningService) ListTuningsHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	nameQuery := strings.TrimSpace(r.URL.Query().Get("name"))
+	definitions, err := s.store.LoadTunings(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to load tunings")
+		return
+	}
 	if nameQuery != "" {
-		if tuningDef, ok := s.definitions.ByName(nameQuery); ok {
+		if tuningDef, ok := definitions.ByName(nameQuery); ok {
 			writeJSON(w, http.StatusOK, listTuningsResponse{Tunings: []tuning.Definition{tuningDef}})
 			return
 		}
@@ -40,7 +46,7 @@ func (s *TuningService) ListTuningsHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	writeJSON(w, http.StatusOK, listTuningsResponse{Tunings: s.definitions.Tunings})
+	writeJSON(w, http.StatusOK, listTuningsResponse{Tunings: definitions.Tunings})
 }
 
 func (s *TuningService) GetTuningHandler(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +73,12 @@ func (s *TuningService) GetTuningHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	item, ok := s.definitions.ByID(id)
+	definitions, err := s.store.LoadTunings(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to load tunings")
+		return
+	}
+	item, ok := definitions.ByID(id)
 	if !ok {
 		writeError(w, http.StatusNotFound, "tuning not found")
 		return

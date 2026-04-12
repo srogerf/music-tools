@@ -69,7 +69,7 @@ export function createFretboard(canvas, optionsOverride) {
   const ctx = canvas.getContext("2d");
 
   function clear() {
-    ctx.clearRect(options.origin.x, options.origin.y - 40, size.w * 2, size.h * 1.8);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
 
   function drawText(text, x, y) {
@@ -91,6 +91,11 @@ export function createFretboard(canvas, optionsOverride) {
     const rawPath = `M${options.origin.x} ${options.origin.y}h${size.w} v${size.h} H${options.origin.x} Z`;
     const svgPath = new Path2D(rawPath);
     ctx.stroke(svgPath);
+  }
+
+  function drawNut() {
+    ctx.fillStyle = "#5f4a32";
+    ctx.fillRect(options.origin.x - 4, options.origin.y, 8, size.h);
   }
 
   function drawFret(x, y, width, length) {
@@ -142,32 +147,54 @@ export function createFretboard(canvas, optionsOverride) {
     drawText(String(label), x, y);
   }
 
-  function labelFrets(startLabel) {
+  function labelFrets(startLabel, fretLabels) {
+    if (Array.isArray(fretLabels) && fretLabels.length > 0) {
+      fretLabels.forEach((label, index) => {
+        if (label === 0) {
+          drawText("0", options.origin.x - 8, options.origin.y - 8);
+          return;
+        }
+        labelFret(label, index + 1);
+      });
+      return;
+    }
+
+    const base = parseInt(startLabel, 10);
+    if (base === 0) {
+      drawText("0", options.origin.x - 8, options.origin.y - 8);
+      for (let f = 1; f < options.fretCount; f++) {
+        labelFret(f, f);
+      }
+      return;
+    }
+
     for (let f = 0; f < options.fretCount; f++) {
-      labelFret(f + parseInt(startLabel, 10), f + 1);
+      labelFret(f + base, f + 1);
     }
   }
 
-  function drawBlank() {
+  function drawBlank(showNut = false) {
     drawGuitar();
+    if (showNut) {
+      drawNut();
+    }
     drawFrets();
     drawStrings();
   }
 
-  function drawNote(stringNumber, fretNumber, note) {
+  function drawNoteAt(stringNumber, x, note) {
     const y = getStringVertical(stringNumber);
-    const x = options.origin.x + (fretNumber - 1) * options.fretGap + options.fretGap / 2;
 
     const interval = note.Interval;
     ctx.fillStyle = options.intervalColors[interval] || "#000000";
     ctx.beginPath();
-    ctx.arc(x - 5, y, 10, 0, 2 * Math.PI);
+    ctx.arc(x, y, 10, 0, 2 * Math.PI);
     ctx.fill();
 
     if (interval === 0) {
       ctx.strokeStyle = options.intervalColors[interval] || "#000000";
       ctx.beginPath();
-      ctx.arc(x - 5, y, 15, 0, 2 * Math.PI);
+      ctx.arc(x, y, 15, 0, 2 * Math.PI);
       ctx.stroke();
     }
 
@@ -179,6 +206,15 @@ export function createFretboard(canvas, optionsOverride) {
     }
   }
 
+  function drawNote(stringNumber, fretNumber, note) {
+    const x = options.origin.x + (fretNumber - 1) * options.fretGap + options.fretGap / 2;
+    drawNoteAt(stringNumber, x, note);
+  }
+
+  function drawOpenNote(stringNumber, note) {
+    drawNoteAt(stringNumber, options.origin.x, note);
+  }
+
   // Accepts backend layout format: { Layout: { "0": [StringNote], ... }, PositionStart: int }
   // or a direct layout map/array with provided positionStart.
   function drawLayout(layoutInput, positionStartOverride) {
@@ -188,15 +224,21 @@ export function createFretboard(canvas, optionsOverride) {
 
     let layout = layoutInput;
     let positionStart = positionStartOverride;
+    let fretLabels = null;
 
     if (layoutInput.Layout) {
       layout = layoutInput.Layout;
       positionStart = layoutInput.PositionStart;
+      fretLabels = layoutInput.FretLabels || null;
     }
 
     if (typeof positionStart === "number") {
-      labelFrets(positionStart);
+      labelFrets(positionStart, fretLabels);
     }
+
+    const firstVisibleFret = Array.isArray(fretLabels) && fretLabels.length > 0
+      ? fretLabels[0]
+      : positionStart;
 
     for (const stringIndex in layout) {
       const stringNotes = layout[stringIndex];
@@ -204,7 +246,15 @@ export function createFretboard(canvas, optionsOverride) {
         const note = stringNotes[i];
         if (note && note.Present) {
           const stringNumber = options.stringCount - parseInt(stringIndex, 10);
-          drawNote(stringNumber, i + options.displayAtFret, note);
+          const actualFret = Array.isArray(fretLabels) && fretLabels[i] !== undefined
+            ? fretLabels[i]
+            : positionStart + i;
+          if (actualFret === 0) {
+            drawOpenNote(stringNumber, note);
+            continue;
+          }
+          const displayFret = actualFret - firstVisibleFret + 1;
+          drawNote(stringNumber, displayFret, note);
         }
       }
     }

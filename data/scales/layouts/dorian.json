@@ -45,9 +45,9 @@
           "validated_manual": false
         },
         "G": {
-          "start": 4,
-          "span": 5,
           "mode": "range",
+          "start": 5,
+          "span": 4,
           "validated_manual": false
         }
       },

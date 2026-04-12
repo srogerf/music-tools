@@ -5,15 +5,16 @@ import (
 	"strconv"
 	"strings"
 
+	"music-tools/src/postgresdb"
 	"music-tools/src/scales"
 )
 
 type ScaleLayoutService struct {
-	scaleLayouts scales.ScaleLayoutSet
+	store *postgresdb.Store
 }
 
-func NewScaleLayoutService(scaleLayouts scales.ScaleLayoutSet) *ScaleLayoutService {
-	return &ScaleLayoutService{scaleLayouts: scaleLayouts}
+func NewScaleLayoutService(store *postgresdb.Store) *ScaleLayoutService {
+	return &ScaleLayoutService{store: store}
 }
 
 type listScaleLayoutsByTuningResponse struct {
@@ -30,7 +31,13 @@ func (s *ScaleLayoutService) ListScaleLayoutsHandler(w http.ResponseWriter, r *h
 		return
 	}
 
-	writeJSON(w, http.StatusOK, listScaleLayoutsByTuningResponse{Tunings: s.scaleLayouts.Tunings})
+	scaleLayouts, err := s.store.LoadScaleLayouts(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to load scale layouts")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, listScaleLayoutsByTuningResponse{Tunings: scaleLayouts.Tunings})
 }
 
 func (s *ScaleLayoutService) GetScaleLayoutHandler(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +64,12 @@ func (s *ScaleLayoutService) GetScaleLayoutHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	tuning, ok := s.scaleLayouts.ByTuningID(id)
+	scaleLayouts, err := s.store.LoadScaleLayouts(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to load scale layouts")
+		return
+	}
+	tuning, ok := scaleLayouts.ByTuningID(id)
 	if !ok {
 		writeError(w, http.StatusNotFound, "layout tuning not found")
 		return

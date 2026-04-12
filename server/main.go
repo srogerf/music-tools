@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -8,39 +9,28 @@ import (
 	"time"
 
 	"music-tools/api"
-	"music-tools/src/key_signatures"
-	"music-tools/src/scales"
-	"music-tools/src/tuning"
+	"music-tools/src/postgresdb"
 )
 
 func main() {
 	addr := flag.String("addr", ":8080", "server listen address")
-	definitionsPath := flag.String("definitions", "data/scales/DEFINITIONS.json", "path to scale definitions JSON")
-	keySignaturesPath := flag.String("key-signatures", "data/scales/KEY_SIGNATURES.json", "path to key signatures JSON")
-	scaleLayoutsPath := flag.String("scale-layouts", "data/scales/layouts", "path to scale layouts data")
-	tuningsPath := flag.String("tunings", "data/tunings/DEFINITIONS.json", "path to tuning definitions JSON")
+	postgresConfigPath := flag.String("postgres-config", "conf/postgres.env", "path to postgres env config")
 	flag.Parse()
 
-	defs, err := scales.LoadDefinitions(*definitionsPath)
+	ctx := context.Background()
+	databaseURL, err := postgresdb.ConnectionStringFromEnvFile(*postgresConfigPath)
 	if err != nil {
-		log.Fatalf("load definitions: %v", err)
+		log.Fatalf("load postgres config: %v", err)
 	}
-	keySignatures, err := key_signatures.LoadKeySignatures(*keySignaturesPath)
+	store, err := postgresdb.Open(ctx, databaseURL)
 	if err != nil {
-		log.Fatalf("load key signatures: %v", err)
+		log.Fatalf("connect postgres: %v", err)
 	}
-	tunings, err := tuning.LoadDefinitions(*tuningsPath)
-	if err != nil {
-		log.Fatalf("load tunings: %v", err)
-	}
-	scaleLayouts, err := scales.LoadScaleLayouts(*scaleLayoutsPath, defs, tunings)
-	if err != nil {
-		log.Fatalf("load scale layouts: %v", err)
-	}
+	defer store.Close()
 
-	scaleService := api.NewScaleService(defs, keySignatures)
-	layoutService := api.NewScaleLayoutService(scaleLayouts)
-	tuningService := api.NewTuningService(tunings)
+	scaleService := api.NewScaleService(store)
+	layoutService := api.NewScaleLayoutService(store)
+	tuningService := api.NewTuningService(store)
 	handler := api.NewRouter(scaleService, layoutService, tuningService)
 
 	server := &http.Server{

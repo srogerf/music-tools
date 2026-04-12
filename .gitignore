@@ -33,3 +33,8 @@ Thumbs.db
 
 # vs code workspace
 music-tools.code-workspace
+
+# Local config
+conf/*.env
+!conf/*.env.example
+bin/local_*.sh

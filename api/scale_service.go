@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -8,16 +9,16 @@ import (
 	"strings"
 
 	"music-tools/src/key_signatures"
+	"music-tools/src/postgresdb"
 	"music-tools/src/scales"
 )
 
 type ScaleService struct {
-	definitions   scales.DefinitionSet
-	keySignatures key_signatures.KeySignatureSet
+	store *postgresdb.Store
 }
 
-func NewScaleService(definitions scales.DefinitionSet, keySignatures key_signatures.KeySignatureSet) *ScaleService {
-	return &ScaleService{definitions: definitions, keySignatures: keySignatures}
+func NewScaleService(store *postgresdb.Store) *ScaleService {
+	return &ScaleService{store: store}
 }
 
 type randomScaleResponse struct {
@@ -41,9 +42,14 @@ func (s *ScaleService) ListScalesHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	nameQuery := strings.TrimSpace(r.URL.Query().Get("name"))
+	definitions, err := s.store.LoadScaleDefinitions(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to load scales")
+		return
+	}
 	if nameQuery != "" {
 		matches := make([]scales.Definition, 0, 1)
-		for _, scale := range s.definitions.Scales {
+		for _, scale := range definitions.Scales {
 			if strings.EqualFold(scale.Name, nameQuery) || strings.EqualFold(scale.CommonName, nameQuery) {
 				matches = append(matches, scale)
 			}
@@ -54,7 +60,7 @@ func (s *ScaleService) ListScalesHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	payload := listScalesResponse{
-		Scales: s.definitions.Scales,
+		Scales: definitions.Scales,
 	}
 
 	writeJSON(w, http.StatusOK, payload)
@@ -84,7 +90,12 @@ func (s *ScaleService) GetScaleHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	scale, ok := s.definitions.ByID(idValue)
+	definitions, err := s.store.LoadScaleDefinitions(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to load scales")
+		return
+	}
+	scale, ok := definitions.ByID(idValue)
 	if !ok {
 		writeError(w, http.StatusNotFound, "scale not found")
 		return
@@ -108,10 +119,15 @@ func (s *ScaleService) RandomScaleHandler(w http.ResponseWriter, r *http.Request
 	options := &scales.RandomScaleSelectorOptions{
 		MaxAccidentals: maxAccidentals,
 		ScaleNames:     r.URL.Query()["scale"],
-		KeySignatures:  &s.keySignatures,
 	}
+	keySignatures, definitions, err := s.loadRandomScaleSets(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to load scale data")
+		return
+	}
+	options.KeySignatures = &keySignatures
 
-	selection, err := s.definitions.RandomScaleWithNotes(options)
+	selection, err := definitions.RandomScaleWithNotes(options)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -124,6 +140,18 @@ func (s *ScaleService) RandomScaleHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	writeJSON(w, http.StatusOK, payload)
+}
+
+func (s *ScaleService) loadRandomScaleSets(ctx context.Context) (key_signatures.KeySignatureSet, scales.DefinitionSet, error) {
+	keySignatures, err := s.store.LoadKeySignatures(ctx)
+	if err != nil {
+		return key_signatures.KeySignatureSet{}, scales.DefinitionSet{}, err
+	}
+	definitions, err := s.store.LoadScaleDefinitions(ctx)
+	if err != nil {
+		return key_signatures.KeySignatureSet{}, scales.DefinitionSet{}, err
+	}
+	return keySignatures, definitions, nil
 }
 
 func parseMaxAccidentals(r *http.Request) (int, error) {
