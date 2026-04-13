@@ -505,5 +505,12 @@ func (s *Store) LoadScaleLayouts(ctx context.Context) (scales.ScaleLayoutSet, er
 		}
 		result.Tunings = append(result.Tunings, tuningItem.tuning)
 	}
+
+	definitions, err := s.LoadScaleDefinitions(ctx)
+	if err != nil {
+		return scales.ScaleLayoutSet{}, fmt.Errorf("load definitions for layout materialization: %w", err)
+	}
+	scales.MaterializeScaleLayoutFrets(&result, definitions)
+
 	return result, nil
 }

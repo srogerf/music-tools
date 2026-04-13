@@ -280,6 +280,35 @@ func materializeGeneratedFrets(set *ScaleLayoutSet, definitions DefinitionSet) {
 	}
 }
 
+func MaterializeScaleLayoutFrets(set *ScaleLayoutSet, definitions DefinitionSet) {
+	scaleByID := map[int]Definition{}
+	for _, definition := range definitions.Scales {
+		scaleByID[definition.ID] = definition
+	}
+
+	for tuningIndex := range set.Tunings {
+		tuning := &set.Tunings[tuningIndex]
+		for scaleIndex := range tuning.Scales {
+			scale := &tuning.Scales[scaleIndex]
+			definition, ok := scaleByID[scale.ID]
+			if !ok {
+				continue
+			}
+			for positionName, position := range scale.Positions {
+				if len(position.PerStringFrets) > 0 {
+					continue
+				}
+				generated := generateScaleLayoutPosition(*tuning, definition, position)
+				if len(generated.PerStringFrets) == 0 {
+					continue
+				}
+				position.PerStringFrets = generated.PerStringFrets
+				scale.Positions[positionName] = position
+			}
+		}
+	}
+}
+
 func templatePositionsForTuning(tuning ScaleLayoutTuning) map[string]ScaleLayoutPosition {
 	for _, scale := range tuning.Scales {
 		if scale.Name == "Major" {
@@ -440,6 +469,152 @@ func hasMissingScalePitchBetween(a, b int, scalePitchClasses map[int]struct{}) b
 		}
 	}
 	return false
+}
+
+func RangeCompletenessReport(set ScaleLayoutSet, definitions DefinitionSet) []string {
+	scaleByID := map[int]Definition{}
+	for _, scale := range definitions.Scales {
+		scaleByID[scale.ID] = scale
+	}
+
+	var issues []string
+	for _, tuning := range set.Tunings {
+		octaves, err := standardOctavesForTuning(tuning)
+		if err != nil {
+			continue
+		}
+
+		for _, scale := range tuning.Scales {
+			definition, ok := scaleByID[scale.ID]
+			if !ok {
+				continue
+			}
+			for positionName, position := range scale.Positions {
+				if issue := rangeCompletenessIssue(tuning, octaves, definition, scale.Name, positionName, position); issue != "" {
+					issues = append(issues, issue)
+				}
+			}
+		}
+	}
+
+	sort.Strings(issues)
+	return issues
+}
+
+func rangeCompletenessIssue(
+	tuning ScaleLayoutTuning,
+	octaves []int,
+	scale Definition,
+	scaleName string,
+	positionName string,
+	position ScaleLayoutPosition,
+) string {
+	currentCount := generatedPitchCount(tuning, scale, position)
+	bestPosition, bestCount, ok := bestNearbyPosition(tuning, octaves, scale, position)
+	if !ok || bestCount <= currentCount {
+		return ""
+	}
+
+	lockedSuffix := ""
+	if position.Validated {
+		lockedSuffix = " [validated_manual]"
+	}
+
+	return fmt.Sprintf(
+		"layout %s/%s/%s may be range-incomplete: current captures %d pitches, nearby %s captures %d%s",
+		tuning.Name,
+		scaleName,
+		positionName,
+		currentCount,
+		positionSummary(bestPosition),
+		bestCount,
+		lockedSuffix,
+	)
+}
+
+func generatedPitchCount(tuning ScaleLayoutTuning, definition Definition, position ScaleLayoutPosition) int {
+	generated := generateScaleLayoutPosition(tuning, definition, position)
+	noteIndex := noteIndexMap()
+	octaves, err := standardOctavesForTuning(tuning)
+	if err != nil {
+		return 0
+	}
+
+	pitchCounts := map[int]struct{}{}
+	for stringIndex, openNote := range tuning.Strings {
+		baseIndex, ok := noteIndex[openNote]
+		if !ok {
+			continue
+		}
+		basePitch := (octaves[stringIndex] * 12) + baseIndex
+		for _, fret := range positionFretsForString(generated, stringIndex) {
+			pitchCounts[basePitch+fret] = struct{}{}
+		}
+	}
+	return len(pitchCounts)
+}
+
+func bestNearbyPosition(tuning ScaleLayoutTuning, octaves []int, definition Definition, position ScaleLayoutPosition) (ScaleLayoutPosition, int, bool) {
+	_ = octaves
+	currentCount := generatedPitchCount(tuning, definition, position)
+	bestPosition := position
+	bestCount := currentCount
+	found := false
+
+	if position.Mode == "range" {
+		for start := 0; start <= 15; start++ {
+			candidate := position
+			candidate.Start = start
+			candidate.PerStringFrets = nil
+			count := generatedPitchCount(tuning, definition, candidate)
+			if count > bestCount || (!found && count == bestCount && start == position.Start) {
+				bestPosition = candidate
+				bestCount = count
+				found = true
+			}
+		}
+		return bestPosition, bestCount, found
+	}
+
+	if position.Mode == "split" && len(position.SplitRanges) > 0 {
+		minStart := position.SplitRanges[0].Start
+		for _, splitRange := range position.SplitRanges[1:] {
+			if splitRange.Start < minStart {
+				minStart = splitRange.Start
+			}
+		}
+		for shiftedMin := 0; shiftedMin <= 15; shiftedMin++ {
+			delta := shiftedMin - minStart
+			candidate := position
+			candidate.PerStringFrets = nil
+			candidate.SplitRanges = cloneSplitRanges(position.SplitRanges)
+			for i := range candidate.SplitRanges {
+				candidate.SplitRanges[i].Start += delta
+			}
+			count := generatedPitchCount(tuning, definition, candidate)
+			if count > bestCount || (!found && count == bestCount && delta == 0) {
+				bestPosition = candidate
+				bestCount = count
+				found = true
+			}
+		}
+	}
+
+	return bestPosition, bestCount, found
+}
+
+func positionSummary(position ScaleLayoutPosition) string {
+	if position.Mode == "range" {
+		return fmt.Sprintf("range %d-%d", position.Start, position.Start+position.Span-1)
+	}
+	if position.Mode == "split" {
+		parts := make([]string, 0, len(position.SplitRanges))
+		for _, splitRange := range position.SplitRanges {
+			parts = append(parts, fmt.Sprintf("strings %v %d-%d", splitRange.Strings, splitRange.Start, splitRange.Start+splitRange.Span-1))
+		}
+		return "split " + strings.Join(parts, "; ")
+	}
+	return position.Mode
 }
 
 func validateScaleLayouts(set ScaleLayoutSet, definitions DefinitionSet) error {

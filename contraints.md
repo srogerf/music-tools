@@ -20,6 +20,12 @@ reused in future sessions.
 - Use `per_string` only when a split range is actually needed.
 - Use `per_string_frets` only when simpler range definitions cannot represent the layout correctly.
 
+## Note Spelling Rules
+
+- For diatonic scales, each letter name A-G should appear once and only once in the spelled scale.
+- Diatonic note spelling should follow the scale context, so `C Dorian` is `C D Eb F G A Bb`, not `C D D# F G A A#`.
+- We should separate pitch-class matching from displayed note naming so the right enharmonic spellings can be shown without changing pitch logic.
+
 ## Validation Rules
 
 - Every note in the displayed pitch run must appear once and only once.
@@ -28,6 +34,8 @@ reused in future sessions.
 - If a layout does not satisfy the rule, validation must fail.
 - Validation must run in tests so data or algorithm changes cannot silently break layouts.
 - Validation currently assumes standard tuning octave placement only.
+- Range completeness now also has a report-only test pass that highlights layouts where a nearby range or shifted split would capture more notes than the current definition.
+- Report-only range findings are for review and tuning; they do not fail the test suite yet.
 
 ## Manual Validation
 

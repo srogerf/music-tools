@@ -9,8 +9,8 @@
           "validated_manual": false
         },
         "C": {
-          "start": 0,
-          "span": 4,
+          "start": 11,
+          "span": 5,
           "mode": "range",
           "validated_manual": false
         },

@@ -16,7 +16,7 @@
         },
         "E": {
           "start": 7,
-          "span": 4,
+          "span": 5,
           "mode": "range",
           "validated_manual": false
         },

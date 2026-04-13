@@ -6,49 +6,31 @@
           "start": 2,
           "span": 5,
           "mode": "range",
-          "validated_manual": false
+          "validated_manual": true
         },
         "C": {
           "start": 0,
-          "span": 4,
+          "span": 5,
           "mode": "range",
-          "validated_manual": false
+          "validated_manual": true
         },
         "E": {
           "start": 7,
-          "span": 4,
+          "span": 5,
           "mode": "range",
-          "validated_manual": false
+          "validated_manual": true
         },
         "D": {
-          "split_ranges": [
-            {
-              "start": 8,
-              "span": 5,
-              "strings": [
-                0,
-                1,
-                2,
-                3
-              ]
-            },
-            {
-              "start": 10,
-              "span": 4,
-              "strings": [
-                4,
-                5
-              ]
-            }
-          ],
-          "mode": "split",
-          "validated_manual": false
+          "start": 10,
+          "span": 4,
+          "mode": "range",
+          "validated_manual": true
         },
         "G": {
           "mode": "range",
           "start": 5,
           "span": 4,
-          "validated_manual": false
+          "validated_manual": true
         }
       },
       "tuning": "Standard"

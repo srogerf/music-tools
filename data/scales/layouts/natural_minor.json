@@ -10,42 +10,24 @@
         },
         "C": {
           "start": 0,
-          "span": 4,
+          "span": 5,
           "mode": "range",
           "validated_manual": false
         },
         "E": {
           "start": 7,
-          "span": 4,
+          "span": 5,
           "mode": "range",
           "validated_manual": false
         },
         "D": {
-          "split_ranges": [
-            {
-              "start": 8,
-              "span": 5,
-              "strings": [
-                0,
-                1,
-                2,
-                3
-              ]
-            },
-            {
-              "start": 10,
-              "span": 4,
-              "strings": [
-                4,
-                5
-              ]
-            }
-          ],
-          "mode": "split",
+          "start": 10,
+          "span": 4,
+          "mode": "range",
           "validated_manual": false
         },
         "G": {
-          "start": 4,
+          "start": 5,
           "span": 5,
           "mode": "range",
           "validated_manual": false

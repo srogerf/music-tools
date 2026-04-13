@@ -38,6 +38,7 @@ const DEFAULT_OPTIONS = {
   stringInset: 30,
   stringCount: 6,
   fretCount: 6,
+  hasZeroFret: false,
   boardHeight: 300,
   displayAtFret: 2,
   intervalColors: DEFAULT_INTERVAL_COLORS,
@@ -54,8 +55,19 @@ function mergeOptions(overrides) {
 
 function getBoardSize(options) {
   return {
-    w: (options.fretCount + 1) * options.fretGap,
+    w: (options.fretCount * options.fretGap) + (options.fretGap / 2),
     h: options.boardHeight,
+  };
+}
+
+function getCanvasSize(options, size) {
+  const leftPadding = Math.max(options.origin.x + 8, 56);
+  const rightPadding = 20;
+  const topPadding = options.origin.y + 16;
+  const bottomPadding = 24;
+  return {
+    width: leftPadding + size.w + rightPadding,
+    height: topPadding + size.h + bottomPadding,
   };
 }
 
@@ -66,6 +78,9 @@ export function createFretboard(canvas, optionsOverride) {
 
   const options = mergeOptions(optionsOverride);
   const size = getBoardSize(options);
+  const canvasSize = getCanvasSize(options, size);
+  canvas.width = canvasSize.width;
+  canvas.height = canvasSize.height;
   const ctx = canvas.getContext("2d");
 
   function clear() {
@@ -73,10 +88,23 @@ export function createFretboard(canvas, optionsOverride) {
   }
 
   function drawText(text, x, y) {
+    ctx.save();
     ctx.strokeStyle = "#000000";
     ctx.lineWidth = 1;
     ctx.font = `${options.fontSize} ${options.fontFamily}`;
+    ctx.textAlign = "left";
     ctx.strokeText(text, x, y);
+    ctx.restore();
+  }
+
+  function drawCenteredText(text, x, y) {
+    ctx.save();
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 1;
+    ctx.font = `${options.fontSize} ${options.fontFamily}`;
+    ctx.textAlign = "center";
+    ctx.strokeText(text, x, y);
+    ctx.restore();
   }
 
   function getStringVertical(stringNumber) {
@@ -112,8 +140,10 @@ export function createFretboard(canvas, optionsOverride) {
   }
 
   function drawFrets() {
-    for (let f = 1; f <= options.fretCount; f++) {
-      drawFret(f * options.fretGap + options.origin.x, options.origin.y, 10, size.h + options.origin.y);
+    const startWire = options.hasZeroFret ? 1 : 0;
+    const endWire = options.hasZeroFret ? options.fretCount - 1 : options.fretCount;
+    for (let f = startWire; f <= endWire; f++) {
+      drawFret((f * options.fretGap) + options.origin.x, options.origin.y, 10, size.h + options.origin.y);
     }
   }
 
@@ -141,35 +171,36 @@ export function createFretboard(canvas, optionsOverride) {
     }
   }
 
-  function labelFret(label, fretNumber) {
-    const x = options.origin.x + (options.fretGap * (fretNumber - 0.5));
+  function getColumnCenter(columnIndex, hasZeroFret) {
+    if (hasZeroFret) {
+      return columnIndex === 0
+        ? options.origin.x
+        : options.origin.x + (options.fretGap * columnIndex) - (options.fretGap / 2);
+    }
+    return options.origin.x + (columnIndex * options.fretGap) + (options.fretGap / 2);
+  }
+
+  function labelFret(label, columnIndex, hasZeroFret) {
+    const x = getColumnCenter(columnIndex, hasZeroFret);
     const y = options.origin.y - 8;
-    drawText(String(label), x, y);
+    drawCenteredText(String(label), x, y);
   }
 
   function labelFrets(startLabel, fretLabels) {
+    const hasZeroFret = Array.isArray(fretLabels) && fretLabels.length > 0
+      ? fretLabels[0] === 0
+      : parseInt(startLabel, 10) === 0;
+
     if (Array.isArray(fretLabels) && fretLabels.length > 0) {
       fretLabels.forEach((label, index) => {
-        if (label === 0) {
-          drawText("0", options.origin.x - 8, options.origin.y - 8);
-          return;
-        }
-        labelFret(label, index + 1);
+        labelFret(label, index, hasZeroFret);
       });
       return;
     }
 
     const base = parseInt(startLabel, 10);
-    if (base === 0) {
-      drawText("0", options.origin.x - 8, options.origin.y - 8);
-      for (let f = 1; f < options.fretCount; f++) {
-        labelFret(f, f);
-      }
-      return;
-    }
-
     for (let f = 0; f < options.fretCount; f++) {
-      labelFret(f + base, f + 1);
+      labelFret(f + base, f, hasZeroFret);
     }
   }
 
@@ -198,7 +229,7 @@ export function createFretboard(canvas, optionsOverride) {
       ctx.stroke();
     }
 
-    const intervalLabel = options.intervalNames[interval];
+    const intervalLabel = note.IntervalLabel || options.intervalNames[interval];
     const noteLabel = note.Note;
     if (intervalLabel || noteLabel) {
       const label = intervalLabel && noteLabel ? `${intervalLabel} (${noteLabel})` : (intervalLabel || noteLabel);
@@ -206,13 +237,9 @@ export function createFretboard(canvas, optionsOverride) {
     }
   }
 
-  function drawNote(stringNumber, fretNumber, note) {
-    const x = options.origin.x + (fretNumber - 1) * options.fretGap + options.fretGap / 2;
+  function drawNote(stringNumber, columnIndex, note, hasZeroFret) {
+    const x = getColumnCenter(columnIndex, hasZeroFret);
     drawNoteAt(stringNumber, x, note);
-  }
-
-  function drawOpenNote(stringNumber, note) {
-    drawNoteAt(stringNumber, options.origin.x, note);
   }
 
   // Accepts backend layout format: { Layout: { "0": [StringNote], ... }, PositionStart: int }
@@ -236,9 +263,9 @@ export function createFretboard(canvas, optionsOverride) {
       labelFrets(positionStart, fretLabels);
     }
 
-    const firstVisibleFret = Array.isArray(fretLabels) && fretLabels.length > 0
-      ? fretLabels[0]
-      : positionStart;
+    const hasZeroFret = Array.isArray(fretLabels) && fretLabels.length > 0
+      ? fretLabels[0] === 0
+      : positionStart === 0;
 
     for (const stringIndex in layout) {
       const stringNotes = layout[stringIndex];
@@ -246,15 +273,7 @@ export function createFretboard(canvas, optionsOverride) {
         const note = stringNotes[i];
         if (note && note.Present) {
           const stringNumber = options.stringCount - parseInt(stringIndex, 10);
-          const actualFret = Array.isArray(fretLabels) && fretLabels[i] !== undefined
-            ? fretLabels[i]
-            : positionStart + i;
-          if (actualFret === 0) {
-            drawOpenNote(stringNumber, note);
-            continue;
-          }
-          const displayFret = actualFret - firstVisibleFret + 1;
-          drawNote(stringNumber, displayFret, note);
+          drawNote(stringNumber, i, note, hasZeroFret);
         }
       }
     }

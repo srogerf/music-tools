@@ -74,13 +74,49 @@ select {
 
 .canvas-wrap {
   overflow-x: auto;
-  padding: 12px;
+  padding: 10px;
   border-radius: 12px;
   background: linear-gradient(180deg, #fffdf8 0%, #f1e5d5 100%);
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 canvas {
   display: block;
+}
+
+.diagram-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.filter-panel {
+  min-width: 120px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fffdf8 0%, #f1e5d5 100%);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 10px;
+  row-gap: 12px;
+}
+
+.filter-row {
+  display: contents;
+}
+
+.filter-panel input[type="checkbox"] {
+  margin: 0;
+  width: 18px;
+  height: 18px;
+  align-self: center;
+}
+
+.filter-label {
+  font-weight: 700;
+  white-space: nowrap;
+  align-self: center;
 }
 
 .note-list {
@@ -170,5 +206,13 @@ canvas {
 @media (max-width: 700px) {
   main {
     padding: 24px 16px 40px;
+  }
+
+  .diagram-row {
+    flex-direction: column;
+  }
+
+  .filter-panel {
+    width: 100%;
   }
 }

@@ -1,13 +1,20 @@
 import React, { useEffect, useMemo, useRef, useState } from "https://esm.sh/react@18";
 import { createRoot } from "https://esm.sh/react-dom@18/client";
 import { createFretboard } from "/fretboard/index.js";
-import { CAGED_SHAPES } from "/scales_layout.js";
-import { DEFAULT_KEYS, DEFAULT_TUNING_NAME } from "/defaults.js";
+import {
+  buildScaleNotes,
+  computeFretboardLayout,
+  drawScaleLayout,
+  filterLayoutByIntervalGroups,
+} from "/fretboard_layout.js?v=47";
+import { CAGED_SHAPES } from "/scales_layout.js?v=47";
+import { DEFAULT_KEYS, DEFAULT_TUNING_NAME } from "/defaults.js?v=47";
 
-const SHARP_SCALE = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-const FLAT_SCALE = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
-const SHARP_INDEX = Object.fromEntries(SHARP_SCALE.map((note, i) => [note, i]));
-const FLAT_INDEX = Object.fromEntries(FLAT_SCALE.map((note, i) => [note, i]));
+const NOTE_GROUPS = [
+  { key: "oneFive", label: "1/5", degreeClasses: [1, 5] },
+  { key: "threeSeven", label: "3/7", degreeClasses: [3, 7] },
+  { key: "twoFourSix", label: "2/4/6", degreeClasses: [2, 4, 6] },
+];
 
 function scaleOptionLabel(scale) {
   if (!scale.common_name || scale.common_name === scale.name) {
@@ -46,188 +53,6 @@ async function fetchJSON(url, resourceName) {
   return data;
 }
 
-function shouldUseFlats(key) {
-  if (key.includes("b")) return true;
-  if (key.includes("#")) return false;
-  return ["F", "Bb", "Eb", "Ab", "Db", "Gb", "Cb"].includes(key);
-}
-
-function normalizeKey(key) {
-  if (!key) return "";
-  const trimmed = key.trim();
-  if (!trimmed) return "";
-  return trimmed[0].toUpperCase() + trimmed.slice(1);
-}
-
-function buildScaleNotes(key, intervals) {
-  const normalized = normalizeKey(key);
-  const useFlats = shouldUseFlats(normalized);
-  const noteNames = useFlats ? FLAT_SCALE : SHARP_SCALE;
-  const indexMap = useFlats ? FLAT_INDEX : SHARP_INDEX;
-  const rootIndex = indexMap[normalized];
-  if (rootIndex === undefined) {
-    return { rootIndex: 0, notes: [], noteSet: new Set(), intervalMap: new Map() };
-  }
-
-  const notes = intervals.map((interval) => noteNames[(rootIndex + interval) % 12]);
-  const noteSet = new Set(notes);
-  const intervalMap = new Map();
-  intervals.forEach((interval) => {
-    intervalMap.set((rootIndex + interval) % 12, interval);
-  });
-
-  return { rootIndex, notes, noteSet, intervalMap, noteNames, indexMap };
-}
-
-function derivePerStringFrets({
-  startFret,
-  fretCount,
-  noteSet,
-  noteNames,
-  indexMap,
-  perStringRanges,
-  tuningStrings,
-}) {
-  if (!perStringRanges) {
-    return null;
-  }
-
-  const openIndexes = tuningStrings.map((note) => indexMap[note]);
-  const derived = {};
-
-  for (let stringIndex = 0; stringIndex < tuningStrings.length; stringIndex += 1) {
-    const range = perStringRanges[stringIndex];
-    if (!range) {
-      continue;
-    }
-    const rangeEnd = range.start + range.span - 1;
-    for (let i = 0; i < fretCount; i += 1) {
-      const actualFret = startFret + i;
-      if (actualFret < range.start || actualFret > rangeEnd) {
-        continue;
-      }
-      const pitchClass = (openIndexes[stringIndex] + actualFret) % 12;
-      if (!noteSet.has(noteNames[pitchClass])) {
-        continue;
-      }
-      const key = String(stringIndex);
-      if (!derived[key]) {
-        derived[key] = [];
-      }
-      derived[key].push(actualFret);
-    }
-  }
-
-  return Object.keys(derived).length > 0 ? derived : null;
-}
-
-function buildLayout({
-  startFret,
-  fretCount,
-  noteSet,
-  intervalMap,
-  noteNames,
-  indexMap,
-  perStringRanges,
-  perStringFrets,
-  tuningStrings,
-}) {
-  const layout = {};
-  const openIndexes = tuningStrings.map((note) => indexMap[note]);
-
-  for (let stringIndex = 0; stringIndex < tuningStrings.length; stringIndex += 1) {
-    const notes = [];
-    const openIndex = openIndexes[stringIndex];
-    const hasPerStringFrets = !!perStringFrets;
-    const hasExplicitFrets =
-      perStringFrets && Object.prototype.hasOwnProperty.call(perStringFrets, stringIndex);
-    const allowedFrets = hasExplicitFrets ? new Set(perStringFrets[stringIndex]) : null;
-    for (let i = 0; i < fretCount; i += 1) {
-      const actualFret = startFret + i;
-      if (perStringRanges) {
-        const range = perStringRanges[stringIndex];
-        if (!range) {
-          notes.push({ Present: false });
-          continue;
-        }
-        const rangeEnd = range.start + range.span - 1;
-        if (actualFret < range.start || actualFret > rangeEnd) {
-          notes.push({ Present: false });
-          continue;
-        }
-      }
-      if (hasPerStringFrets && !hasExplicitFrets) {
-        notes.push({ Present: false });
-        continue;
-      }
-      if (allowedFrets && !allowedFrets.has(actualFret)) {
-        notes.push({ Present: false });
-        continue;
-      }
-
-      const pitchClass = (openIndex + actualFret) % 12;
-      if (noteSet.has(noteNames[pitchClass])) {
-        notes.push({
-          Present: true,
-          Note: noteNames[pitchClass],
-          Interval: intervalMap.get(pitchClass) ?? 0,
-        });
-      } else {
-        notes.push({ Present: false });
-      }
-    }
-    layout[String(stringIndex)] = notes;
-  }
-
-  return layout;
-}
-
-function trimLayout(layout, positionStart, fretCount) {
-  let firstPopulatedIndex = -1;
-  let lastPopulatedIndex = -1;
-
-  for (let fretIndex = 0; fretIndex < fretCount; fretIndex += 1) {
-    const populated = Object.values(layout).some(
-      (stringNotes) => stringNotes[fretIndex] && stringNotes[fretIndex].Present
-    );
-    if (populated) {
-      if (firstPopulatedIndex === -1) {
-        firstPopulatedIndex = fretIndex;
-      }
-      lastPopulatedIndex = fretIndex;
-    }
-  }
-
-  if (firstPopulatedIndex === -1) {
-    return { layout, positionStart, fretCount, fretLabels: null };
-  }
-
-  if (firstPopulatedIndex === 0 && lastPopulatedIndex === fretCount - 1) {
-    return {
-      layout,
-      positionStart,
-      fretCount,
-      fretLabels: Array.from({ length: fretCount }, (_, index) => positionStart + index),
-    };
-  }
-
-  const trimmedLayout = {};
-  Object.entries(layout).forEach(([stringIndex, stringNotes]) => {
-    trimmedLayout[stringIndex] = stringNotes.slice(firstPopulatedIndex, lastPopulatedIndex + 1);
-  });
-
-  const trimmedFretCount = lastPopulatedIndex - firstPopulatedIndex + 1;
-  return {
-    layout: trimmedLayout,
-    positionStart: positionStart + firstPopulatedIndex,
-    fretCount: trimmedFretCount,
-    fretLabels: Array.from(
-      { length: trimmedFretCount },
-      (_, index) => positionStart + firstPopulatedIndex + index
-    ),
-  };
-}
-
 function App() {
   const [scales, setScales] = useState([]);
   const [selectedScaleId, setSelectedScaleId] = useState(1);
@@ -237,6 +62,11 @@ function App() {
   const [selectedTuningId, setSelectedTuningId] = useState(1);
   const [layoutInstances, setLayoutInstances] = useState([]);
   const [error, setError] = useState("");
+  const [visibleGroups, setVisibleGroups] = useState({
+    oneFive: true,
+    threeSeven: true,
+    twoFourSix: true,
+  });
 
   const canvasRef = useRef(null);
   const fretboardRef = useRef(null);
@@ -297,6 +127,7 @@ function App() {
     ) {
       fretboardRef.current = createFretboard(canvasRef.current, {
         fretCount: 4,
+        hasZeroFret: false,
         displayAtFret: 1,
         boardHeight: 240,
         fontFamily: "Alegreya Sans",
@@ -329,8 +160,18 @@ function App() {
 
   const scaleNotes = useMemo(() => {
     if (!selectedScale) return [];
-    return buildScaleNotes(selectedKey, selectedScale.intervals).notes;
+    return buildScaleNotes(selectedKey, selectedScale).notes;
   }, [selectedScale, selectedKey]);
+
+  const visibleDegreeClasses = useMemo(() => {
+    const values = new Set();
+    NOTE_GROUPS.forEach((group) => {
+      if (visibleGroups[group.key]) {
+        group.degreeClasses.forEach((degreeClass) => values.add(degreeClass));
+      }
+    });
+    return values;
+  }, [visibleGroups]);
 
   useEffect(() => {
     if (
@@ -342,12 +183,6 @@ function App() {
       return;
     }
 
-    const { rootIndex, noteSet, intervalMap, noteNames, indexMap } = buildScaleNotes(
-      selectedKey,
-      selectedScale.intervals
-    );
-    const layoutRootIndex = rootIndex;
-
     const positionLayout = selectedPositionLayout;
     if (!positionLayout) {
       fretboardRef.current.clear();
@@ -355,111 +190,27 @@ function App() {
       return;
     }
 
-    let startFret = 0;
-    let fretCount = 4;
-    let perStringRanges = null;
-
-    if (positionLayout.mode === "split") {
-      const ranges = {};
-      let minStart = Number.POSITIVE_INFINITY;
-      let maxEnd = Number.NEGATIVE_INFINITY;
-      if (positionLayout.split_ranges?.length) {
-        positionLayout.split_ranges.forEach((splitRange) => {
-          const start = splitRange.start + layoutRootIndex;
-          const span = splitRange.span;
-          const end = start + span - 1;
-          (splitRange.strings || []).forEach((stringIndex) => {
-            ranges[Number(stringIndex)] = { start, span };
-          });
-          if (start < minStart) minStart = start;
-          if (end > maxEnd) maxEnd = end;
-        });
-      } else {
-        Object.entries(positionLayout.per_string || {}).forEach(([stringIndex, range]) => {
-          const start = range.start + layoutRootIndex;
-          const span = range.span;
-          const end = start + span - 1;
-          ranges[Number(stringIndex)] = { start, span };
-          if (start < minStart) minStart = start;
-          if (end > maxEnd) maxEnd = end;
-        });
-      }
-      perStringRanges = ranges;
-      startFret = minStart;
-      fretCount = maxEnd - minStart + 1;
-    } else {
-      startFret = (positionLayout.start || 0) + layoutRootIndex;
-      fretCount = positionLayout.span || 4;
-    }
-
-    let perStringFrets = null;
-    const hasSplitRanges =
-      positionLayout.mode === "split" &&
-      Array.isArray(positionLayout.split_ranges) &&
-      positionLayout.split_ranges.length > 0;
-    if (hasSplitRanges) {
-      perStringFrets = derivePerStringFrets({
-        startFret,
-        fretCount,
-        noteSet,
-        noteNames,
-        indexMap,
-        perStringRanges,
-        tuningStrings,
-      });
-    } else if (positionLayout.per_string_frets) {
-      perStringFrets = {};
-      let minFret = Number.POSITIVE_INFINITY;
-      let maxFret = Number.NEGATIVE_INFINITY;
-      Object.entries(positionLayout.per_string_frets).forEach(([stringIndex, frets]) => {
-        const shifted = frets.map((fret) => fret + layoutRootIndex);
-        perStringFrets[Number(stringIndex)] = shifted;
-        for (const fret of shifted) {
-          if (fret < minFret) minFret = fret;
-          if (fret > maxFret) maxFret = fret;
-        }
-      });
-      if (minFret < Number.POSITIVE_INFINITY && maxFret > Number.NEGATIVE_INFINITY) {
-        startFret = minFret;
-        fretCount = maxFret - minFret + 1;
-      }
-    }
-    const positionStart = startFret;
-
-    const layout = buildLayout({
-      startFret,
-      fretCount,
-      noteSet,
-      intervalMap,
-      noteNames,
-      indexMap,
-      perStringRanges,
-      perStringFrets,
+    const trimmed = computeFretboardLayout({
+      scale: selectedScale,
+      key: selectedKey,
       tuningStrings,
+      positionLayout,
     });
-
-    const trimmed = trimLayout(layout, positionStart, fretCount);
-
-    if (fretboardRef.current.options.fretCount !== trimmed.fretCount) {
-      fretboardRef.current = createFretboard(canvasRef.current, {
-        ...fretboardRef.current.options,
-        stringCount: tuningStrings.length,
-        fretCount: trimmed.fretCount,
-        tuningLabels,
-      });
+    if (!trimmed) {
+      fretboardRef.current.clear();
+      fretboardRef.current.drawBlank();
+      return;
     }
 
-    const showOpenFret = Array.isArray(trimmed.fretLabels)
-      ? trimmed.fretLabels.includes(0)
-      : trimmed.positionStart === 0;
+    const filtered = filterLayoutByIntervalGroups(trimmed, visibleDegreeClasses);
 
-    fretboardRef.current.clear();
-    fretboardRef.current.drawBlank(showOpenFret);
-    fretboardRef.current.drawLayout({
-      Layout: trimmed.layout,
-      PositionStart: trimmed.positionStart,
-      FretLabels: trimmed.fretLabels,
-    });
+    fretboardRef.current = drawScaleLayout(
+      fretboardRef.current,
+      canvasRef.current,
+      tuningStrings,
+      tuningLabels,
+      filtered
+    );
   }, [
     selectedScale,
     selectedKey,
@@ -468,6 +219,7 @@ function App() {
     tuningLabels,
     selectedLayoutInstance,
     selectedPositionLayout,
+    visibleDegreeClasses,
   ]);
 
   return React.createElement(
@@ -547,8 +299,32 @@ function App() {
       error && React.createElement("p", { className: "subhead" }, error),
       React.createElement(
         "div",
-        { className: "canvas-wrap" },
-        React.createElement("canvas", { ref: canvasRef, width: 900, height: 320 })
+        { className: "diagram-row" },
+        React.createElement(
+          "div",
+          { className: "canvas-wrap" },
+          React.createElement("canvas", { ref: canvasRef, width: 900, height: 320 })
+        ),
+        React.createElement(
+          "div",
+          { className: "filter-panel" },
+          NOTE_GROUPS.map((group) =>
+            React.createElement(
+              "label",
+              { className: "filter-row", key: group.key },
+              React.createElement("input", {
+                type: "checkbox",
+                checked: visibleGroups[group.key],
+                onChange: (event) =>
+                  setVisibleGroups((current) => ({
+                    ...current,
+                    [group.key]: event.target.checked,
+                  })),
+              }),
+              React.createElement("span", { className: "filter-label" }, group.label)
+            )
+          )
+        )
       ),
       React.createElement(
         "section",
