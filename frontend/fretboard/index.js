@@ -280,6 +280,7 @@ export function createFretboard(canvas, optionsOverride) {
   }
 
   return {
+    canvas,
     clear,
     drawBlank,
     drawLayout,

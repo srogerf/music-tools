@@ -36,6 +36,8 @@ reused in future sessions.
 - Validation currently assumes standard tuning octave placement only.
 - Range completeness now also has a report-only test pass that highlights layouts where a nearby range or shifted split would capture more notes than the current definition.
 - Report-only range findings are for review and tuning; they do not fail the test suite yet.
+- Shape correctness now also has a report-only test pass that highlights likely root-placement issues and drift from the locked major reference shapes.
+- Report-only shape findings are for review and tuning; they do not fail the test suite yet.
 
 ## Manual Validation
 

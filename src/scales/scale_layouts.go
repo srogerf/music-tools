@@ -501,6 +501,145 @@ func RangeCompletenessReport(set ScaleLayoutSet, definitions DefinitionSet) []st
 	return issues
 }
 
+func ShapeCorrectnessReport(set ScaleLayoutSet, definitions DefinitionSet) []string {
+	scaleByID := map[int]Definition{}
+	for _, scale := range definitions.Scales {
+		scaleByID[scale.ID] = scale
+	}
+
+	var issues []string
+	for _, tuning := range set.Tunings {
+		octaves, err := standardOctavesForTuning(tuning)
+		if err != nil {
+			continue
+		}
+
+		for _, scale := range tuning.Scales {
+			definition, ok := scaleByID[scale.ID]
+			if !ok {
+				continue
+			}
+			for positionName, position := range scale.Positions {
+				issues = append(issues, shapeRootIssues(tuning, octaves, definition, scale.Name, positionName, position)...)
+				if scale.Name == "Major" {
+					if issue := lockedMajorShapeIssue(tuning, scale.Name, positionName, position); issue != "" {
+						issues = append(issues, issue)
+					}
+				}
+			}
+		}
+	}
+
+	sort.Strings(issues)
+	return issues
+}
+
+func shapeRootIssues(
+	tuning ScaleLayoutTuning,
+	octaves []int,
+	scale Definition,
+	scaleName string,
+	positionName string,
+	position ScaleLayoutPosition,
+) []string {
+	requiredStringsByPosition := map[string][]int{
+		"C": {1, 4},
+		"A": {2, 4},
+		"G": {0, 2, 5},
+		"E": {0, 2, 5},
+		"D": {1, 3},
+	}
+	requiredStrings, ok := requiredStringsByPosition[positionName]
+	if !ok {
+		return nil
+	}
+
+	noteIndex := noteIndexMap()
+	rootPitchClass := 0
+	if len(scale.Intervals) > 0 {
+		rootPitchClass = ((scale.Intervals[0] % 12) + 12) % 12
+	}
+
+	var issues []string
+	for _, stringIndex := range requiredStrings {
+		if stringIndex < 0 || stringIndex >= len(tuning.Strings) {
+			continue
+		}
+		openIndex, ok := noteIndex[tuning.Strings[stringIndex]]
+		if !ok {
+			continue
+		}
+		basePitch := (octaves[stringIndex] * 12) + openIndex
+		hasRoot := false
+		for _, fret := range positionFretsForString(position, stringIndex) {
+			if (basePitch+fret)%12 == rootPitchClass {
+				hasRoot = true
+				break
+			}
+		}
+		if !hasRoot {
+			issues = append(issues, fmt.Sprintf(
+				"layout %s/%s/%s may miss expected root on string %d",
+				tuning.Name,
+				scaleName,
+				positionName,
+				stringIndex+1,
+			))
+		}
+	}
+	return issues
+}
+
+func lockedMajorShapeIssue(tuning ScaleLayoutTuning, scaleName string, positionName string, position ScaleLayoutPosition) string {
+	expectedRanges := map[string]ScaleLayoutPosition{
+		"C": {Mode: "range", Start: 0, Span: 4},
+		"A": {Mode: "range", Start: 2, Span: 5},
+		"G": {Mode: "range", Start: 4, Span: 5},
+		"E": {Mode: "range", Start: 7, Span: 4},
+	}
+	if expected, ok := expectedRanges[positionName]; ok {
+		if position.Mode != expected.Mode || position.Start != expected.Start || position.Span != expected.Span {
+			return fmt.Sprintf(
+				"layout %s/%s/%s differs from locked major range: expected %d-%d",
+				tuning.Name,
+				scaleName,
+				positionName,
+				expected.Start,
+				expected.Start+expected.Span-1,
+			)
+		}
+		return ""
+	}
+
+	if positionName != "D" {
+		return ""
+	}
+	if position.Mode != "split" || len(position.SplitRanges) != 2 {
+		return fmt.Sprintf("layout %s/%s/%s differs from locked major split", tuning.Name, scaleName, positionName)
+	}
+	first := position.SplitRanges[0]
+	second := position.SplitRanges[1]
+	if first.Start != 8 || first.Span != 5 || !equalIntSlices(first.Strings, []int{0, 1, 2, 3}) {
+		return fmt.Sprintf("layout %s/%s/%s differs from locked major split", tuning.Name, scaleName, positionName)
+	}
+	if second.Start != 10 || second.Span != 4 || !equalIntSlices(second.Strings, []int{4, 5}) {
+		return fmt.Sprintf("layout %s/%s/%s differs from locked major split", tuning.Name, scaleName, positionName)
+	}
+	return ""
+}
+
+func equalIntSlices(a, b []int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func rangeCompletenessIssue(
 	tuning ScaleLayoutTuning,
 	octaves []int,

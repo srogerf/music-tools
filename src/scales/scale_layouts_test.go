@@ -43,3 +43,26 @@ func TestScaleLayoutsRangeCompletenessReport(t *testing.T) {
 
 	t.Logf("range completeness report (%d issues):\n- %s", len(issues), strings.Join(issues, "\n- "))
 }
+
+func TestScaleLayoutsShapeCorrectnessReport(t *testing.T) {
+	defs, err := LoadDefinitions("../../data/scales/DEFINITIONS.json")
+	if err != nil {
+		t.Fatalf("LoadDefinitions: %v", err)
+	}
+	tunings, err := tuning.LoadDefinitions("../../data/tunings/DEFINITIONS.json")
+	if err != nil {
+		t.Fatalf("LoadTuningDefinitions: %v", err)
+	}
+	layouts, err := LoadScaleLayouts("../../data/scales/layouts", defs, tunings)
+	if err != nil {
+		t.Fatalf("LoadScaleLayouts: %v", err)
+	}
+
+	issues := ShapeCorrectnessReport(layouts, defs)
+	if len(issues) == 0 {
+		t.Log("shape correctness report: no issues found")
+		return
+	}
+
+	t.Logf("shape correctness report (%d issues):\n- %s", len(issues), strings.Join(issues, "\n- "))
+}
