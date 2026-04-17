@@ -1,6 +1,6 @@
 ## Overview
 This repository hosts a collection of small, focused command-line tools under `tools/`.
-Each tool lives in its own subdirectory and is implemented in Go or Python.
+Each tool lives in its own subdirectory and is implemented in Go, with optional shell wrappers where helpful.
 
 ## Structure
 - `src/`: top-level directory for code.
@@ -14,14 +14,14 @@ Each tool lives in its own subdirectory and is implemented in Go or Python.
 
 Each tool should include:
 - `main.go` as the CLI entry point.
-- `go.mod` for the tool module.
+- participation in the repository's root `go.mod` unless there is a clear reason to split it into its own module.
 - `README.md` describing purpose, flags, and usage.
 
 ## src/ Structure
 The `src/` directory is reserved for core code that does not belong to tools, servers, or frontend apps.
 - Each subdirectory under `src/` should contain a `README.md` that defines its purpose and ownership.
 - Keep `src/` focused on reusable, internal code rather than entry points or executables.
-See `src/STRUCTURE.md` for details.
+See `../src/STRUCTURE.md` for details.
 
 ## CLI Design
 - Keep interfaces simple and discoverable.

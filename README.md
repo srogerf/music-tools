@@ -9,7 +9,8 @@
 - Go packages for scales, chords, tuning, and related music logic
 - A frontend for interactive fretboard-based exploration
 - Static data and layout definitions used by the app
-- Deployment planning and infrastructure notes under `deploy/`
+- Project documentation and planning notes under `docs/`
+- Deployment assets and infrastructure notes under `deploy/`
 
 ## Development
 
@@ -21,6 +22,7 @@ go test ./...
 
 ## Documentation
 
-- [Architecture](ARCHITECTURE.md)
-- [Deployment](DEPLOYMENT.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Deployment](docs/DEPLOYMENT.md)
 - [Deploy Directory](deploy/README.md)
+- [Constraints](docs/CONSTRAINTS.md)

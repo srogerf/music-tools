@@ -9,6 +9,7 @@ This document records the current deployment direction for `music-tools`.
   - `bin/local_init_postgres.sh`
   - `bash db/postgres/reset_and_seed.sh`
 - The frontend is served by the Go server.
+- GitHub Actions CI already runs `go test ./...` on pushes and pull requests.
 
 ## Recommended CI/CD Direction
 
@@ -64,7 +65,7 @@ Production should use:
 When deployment work resumes, likely next steps are:
 
 1. Add a `Dockerfile`
-2. Add a GitHub Actions CI workflow
+2. Expand CI to include Postgres bootstrap and API smoke checks
 3. Add a GitHub Actions deploy workflow
 4. Add a proper migration flow separate from reset/seed
 5. Add a health endpoint

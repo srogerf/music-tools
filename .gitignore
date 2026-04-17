@@ -38,3 +38,4 @@ music-tools.code-workspace
 conf/*.env
 !conf/*.env.example
 bin/local_*.sh
+docs/FEATURES.local.md
