@@ -44,7 +44,7 @@ function App() {
             },
             item
           )
-        
+        )
       )
     ),
     sectionContent

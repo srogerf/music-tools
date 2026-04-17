@@ -1,5 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "https://esm.sh/react@18";
-import { createFretboard } from "fretboard";
+import React, { useEffect, useMemo, useState } from "https://esm.sh/react@18";
 import {
   buildScaleNotes,
   computeFretboardLayout,
@@ -7,6 +6,7 @@ import {
   filterLayoutByIntervalGroups,
 } from "fretboard-layout";
 import { CAGED_SHAPES } from "scales-layout";
+import { SharedFretboard } from "shared-fretboard";
 import { DEFAULT_KEYS, DEFAULT_TUNING_NAME } from "defaults";
 
 const NOTE_GROUPS = [
@@ -67,9 +67,6 @@ export function ScalesPage({ active }) {
     twoFourSix: true,
   });
 
-  const canvasRef = useRef(null);
-  const fretboardRef = useRef(null);
-
   useEffect(() => {
     fetchJSON("/api/v1/scales", "scales")
       .then((data) => {
@@ -116,30 +113,6 @@ export function ScalesPage({ active }) {
   const tuningStrings = selectedTuning?.strings?.length ? selectedTuning.strings : [];
   const tuningLabels = [...tuningStrings].reverse();
 
-  useEffect(() => {
-    if (!active || !canvasRef.current || tuningStrings.length === 0) return;
-    const nextStringCount = tuningStrings.length;
-    const nextLabels = tuningLabels;
-    if (
-      !fretboardRef.current ||
-      fretboardRef.current.canvas !== canvasRef.current ||
-      fretboardRef.current.options.stringCount !== nextStringCount
-    ) {
-      fretboardRef.current = createFretboard(canvasRef.current, {
-        fretCount: 4,
-        hasZeroFret: false,
-        displayAtFret: 1,
-        boardHeight: 240,
-        fontFamily: "Alegreya Sans",
-        showStringNumbers: true,
-        stringCount: nextStringCount,
-        tuningLabels: nextLabels,
-      });
-      return;
-    }
-    fretboardRef.current.options.tuningLabels = nextLabels;
-  }, [active, tuningStrings, tuningLabels]);
-
   const selectedScale = useMemo(
     () => scales.find((scale) => scale.id === Number(selectedScaleId)),
     [scales, selectedScaleId]
@@ -173,24 +146,32 @@ export function ScalesPage({ active }) {
     return values;
   }, [visibleGroups]);
 
-  useEffect(() => {
-    if (!active) {
-      return;
-    }
-    if (
-      !fretboardRef.current ||
-      !selectedScale ||
-      tuningStrings.length === 0 ||
-      !selectedLayoutInstance
-    ) {
-      return;
+  const fretboardOptions = useMemo(
+    () => ({
+      fretCount: 4,
+      hasZeroFret: false,
+      displayAtFret: 1,
+      boardHeight: 240,
+      fontFamily: "Alegreya Sans",
+      showStringNumbers: true,
+      stringCount: tuningStrings.length || 6,
+      tuningLabels: tuningStrings.length > 0 ? tuningLabels : null,
+    }),
+    [tuningStrings, tuningLabels]
+  );
+
+  const drawScaleFretboard = useMemo(() => (fretboard, canvas) => {
+    if (!selectedScale || tuningStrings.length === 0 || !selectedLayoutInstance) {
+      fretboard.clear();
+      fretboard.drawBlank(fretboard.options.hasZeroFret);
+      return fretboard;
     }
 
     const positionLayout = selectedPositionLayout;
     if (!positionLayout) {
-      fretboardRef.current.clear();
-      fretboardRef.current.drawBlank();
-      return;
+      fretboard.clear();
+      fretboard.drawBlank(fretboard.options.hasZeroFret);
+      return fretboard;
     }
 
     const trimmed = computeFretboardLayout({
@@ -200,25 +181,17 @@ export function ScalesPage({ active }) {
       positionLayout,
     });
     if (!trimmed) {
-      fretboardRef.current.clear();
-      fretboardRef.current.drawBlank();
-      return;
+      fretboard.clear();
+      fretboard.drawBlank(fretboard.options.hasZeroFret);
+      return fretboard;
     }
 
     const filtered = filterLayoutByIntervalGroups(trimmed, visibleDegreeClasses);
-
-    fretboardRef.current = drawScaleLayout(
-      fretboardRef.current,
-      canvasRef.current,
-      tuningStrings,
-      tuningLabels,
-      filtered
-    );
+    return drawScaleLayout(fretboard, canvas, tuningStrings, tuningLabels, filtered);
   }, [
     selectedScale,
     selectedKey,
     selectedPosition,
-    active,
     tuningStrings,
     tuningLabels,
     selectedLayoutInstance,
@@ -297,11 +270,11 @@ export function ScalesPage({ active }) {
     React.createElement(
       "div",
       { className: "diagram-row" },
-      React.createElement(
-        "div",
-        { className: "canvas-wrap" },
-        React.createElement("canvas", { ref: canvasRef })
-      ),
+      React.createElement(SharedFretboard, {
+        active,
+        options: fretboardOptions,
+        draw: drawScaleFretboard,
+      }),
       React.createElement(
         "div",
         { className: "filter-panel" },

@@ -2,6 +2,9 @@
 
 Generic, framework-agnostic fretboard renderer for an HTML canvas.
 
+If you are working inside the React application, prefer the shared wrapper documented in
+`frontend/app/widgets/README.md`. Use this module directly when you need low-level canvas access.
+
 ## Usage
 
 ```js
