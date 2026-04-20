@@ -293,7 +293,7 @@ components:
         - id
         - name
         - type
-        - positions
+        - layout_families
       properties:
         id:
           type: integer
@@ -301,6 +301,15 @@ components:
           type: string
         type:
           type: string
+        layout_families:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/LayoutFamilyInstance"
+    LayoutFamilyInstance:
+      type: object
+      required:
+        - positions
+      properties:
         positions:
           type: object
           additionalProperties:

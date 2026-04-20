@@ -23,6 +23,8 @@ go test ./...
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
+- [Deploy Database](docs/DEPLOY_DATABASE.md)
+- [Scale Layouts](docs/SCALE_LAYOUTS.md)
 - [Deployment](docs/DEPLOYMENT.md)
 - [Deploy Directory](deploy/README.md)
 - [Constraints](docs/CONSTRAINTS.md)

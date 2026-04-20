@@ -1,0 +1,4 @@
+{
+  "production_schema_versions": [],
+  "notes": "Append schema versions here only after they have been deployed to production."
+}

@@ -7,7 +7,14 @@ This document records the current deployment direction for `music-tools`.
 - The backend now reads its source-of-truth data from Postgres.
 - The local database can be initialized and seeded with:
   - `bin/local_init_postgres.sh`
+  - `bash db/postgres/rebuild_schema.sh`
   - `bash db/postgres/reset_and_seed.sh`
+- The canonical SQL files now live under `db/sql/`, while the runnable Postgres
+  helper scripts live under `db/postgres/`.
+- `rebuild_schema.sh` is destructive for the schema in the target database: it
+  drops the managed tables and recreates them.
+- `reset_and_seed.sh` is data-only: it clears the managed tables, verifies that
+  the seed data format supports the current schema version, and reseeds.
 - The frontend is served by the Go server.
 - GitHub Actions CI already runs `go test ./...` on pushes and pull requests.
 
@@ -47,9 +54,9 @@ Suggested smoke-check endpoints:
 
 ## Important Rule
 
-Do not use the local reset-and-seed flow in production.
+Do not use the local schema rebuild or reset-and-seed flows in production.
 
-`db/postgres/reset_and_seed.sh` is for:
+`db/postgres/rebuild_schema.sh` and `db/postgres/reset_and_seed.sh` are for:
 
 - local development
 - test environments

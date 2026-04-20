@@ -13,6 +13,8 @@ import (
 
 var defaultScaleLayoutOrder = []string{"C", "A", "G", "E", "D"}
 
+const DefaultScaleLayoutFamilyCode = "standard"
+
 type ScaleLayoutSet struct {
 	Tunings []ScaleLayoutTuning `json:"tunings"`
 }
@@ -26,9 +28,13 @@ type ScaleLayoutTuning struct {
 }
 
 type ScaleLayoutScale struct {
-	ID        int                            `json:"id"`
-	Name      string                         `json:"name"`
-	Type      ScaleType                      `json:"type"`
+	ID             int                          `json:"id"`
+	Name           string                       `json:"name"`
+	Type           ScaleType                    `json:"type"`
+	LayoutFamilies map[string]ScaleLayoutFamily `json:"layout_families"`
+}
+
+type ScaleLayoutFamily struct {
 	Positions map[string]ScaleLayoutPosition `json:"positions"`
 }
 
@@ -87,8 +93,9 @@ type scaleLayoutFile struct {
 }
 
 type scaleLayoutFileLayout struct {
-	Tuning    string                         `json:"tuning"`
-	Positions map[string]ScaleLayoutPosition `json:"positions"`
+	Tuning     string                         `json:"tuning"`
+	FamilyCode string                         `json:"family_code"`
+	Positions  map[string]ScaleLayoutPosition `json:"positions"`
 }
 
 func loadScaleLayoutDirectory(path string, tuningSet tuning.DefinitionSet) (ScaleLayoutSet, error) {
@@ -99,8 +106,10 @@ func loadScaleLayoutDirectory(path string, tuningSet tuning.DefinitionSet) (Scal
 
 	set := newScaleLayoutSetFromTunings(tuningSet)
 	tuningsByID := map[int]*ScaleLayoutTuning{}
+	scaleIndexesByTuningID := map[int]map[int]int{}
 	for i := range set.Tunings {
 		tuningsByID[set.Tunings[i].ID] = &set.Tunings[i]
+		scaleIndexesByTuningID[set.Tunings[i].ID] = map[int]int{}
 	}
 
 	for _, entry := range entries {
@@ -125,10 +134,20 @@ func loadScaleLayoutDirectory(path string, tuningSet tuning.DefinitionSet) (Scal
 				return ScaleLayoutSet{}, fmt.Errorf("missing tuning %q in resolved layout set", layoutData.Tuning)
 			}
 
-			tuning.Scales = append(tuning.Scales, ScaleLayoutScale{
-				ID:        layoutFile.ID,
-				Name:      layoutFile.Name,
-				Type:      layoutFile.Type,
+			scaleIndexes := scaleIndexesByTuningID[tuningDef.ID]
+			scaleIndex, exists := scaleIndexes[layoutFile.ID]
+			if !exists {
+				scaleIndex = len(tuning.Scales)
+				tuning.Scales = append(tuning.Scales, ScaleLayoutScale{
+					ID:             layoutFile.ID,
+					Name:           layoutFile.Name,
+					Type:           layoutFile.Type,
+					LayoutFamilies: map[string]ScaleLayoutFamily{},
+				})
+				scaleIndexes[layoutFile.ID] = scaleIndex
+			}
+			scale := &tuning.Scales[scaleIndex]
+			setScaleLayoutFamily(scale, layoutData.FamilyCode, ScaleLayoutFamily{
 				Positions: layoutData.Positions,
 			})
 		}
@@ -197,6 +216,75 @@ func (set ScaleLayoutSet) ByTuningID(id int) (ScaleLayoutTuning, bool) {
 	return ScaleLayoutTuning{}, false
 }
 
+func LayoutFamilyCodeOrDefault(code string) string {
+	if strings.TrimSpace(code) == "" {
+		return DefaultScaleLayoutFamilyCode
+	}
+	return code
+}
+
+func ensureScaleLayoutFamily(scale *ScaleLayoutScale, familyCode string) *ScaleLayoutFamily {
+	if scale.LayoutFamilies == nil {
+		scale.LayoutFamilies = map[string]ScaleLayoutFamily{}
+	}
+	familyCode = LayoutFamilyCodeOrDefault(familyCode)
+	family, ok := scale.LayoutFamilies[familyCode]
+	if !ok {
+		family = ScaleLayoutFamily{Positions: map[string]ScaleLayoutPosition{}}
+	}
+	if family.Positions == nil {
+		family.Positions = map[string]ScaleLayoutPosition{}
+	}
+	scale.LayoutFamilies[familyCode] = family
+	updated := scale.LayoutFamilies[familyCode]
+	return &updated
+}
+
+func setScaleLayoutFamily(scale *ScaleLayoutScale, familyCode string, family ScaleLayoutFamily) {
+	if scale.LayoutFamilies == nil {
+		scale.LayoutFamilies = map[string]ScaleLayoutFamily{}
+	}
+	if family.Positions == nil {
+		family.Positions = map[string]ScaleLayoutPosition{}
+	}
+	scale.LayoutFamilies[LayoutFamilyCodeOrDefault(familyCode)] = family
+}
+
+func standardScaleLayoutFamily(scale *ScaleLayoutScale) ScaleLayoutFamily {
+	if scale.LayoutFamilies == nil {
+		scale.LayoutFamilies = map[string]ScaleLayoutFamily{}
+	}
+	family, ok := scale.LayoutFamilies[DefaultScaleLayoutFamilyCode]
+	if !ok {
+		family = ScaleLayoutFamily{Positions: map[string]ScaleLayoutPosition{}}
+		scale.LayoutFamilies[DefaultScaleLayoutFamilyCode] = family
+	}
+	if family.Positions == nil {
+		family.Positions = map[string]ScaleLayoutPosition{}
+		scale.LayoutFamilies[DefaultScaleLayoutFamilyCode] = family
+	}
+	return family
+}
+
+func forEachScaleLayoutFamily(scale *ScaleLayoutScale, fn func(familyCode string, family *ScaleLayoutFamily)) {
+	if len(scale.LayoutFamilies) == 0 {
+		return
+	}
+	codes := make([]string, 0, len(scale.LayoutFamilies))
+	for code := range scale.LayoutFamilies {
+		codes = append(codes, code)
+	}
+	sort.Strings(codes)
+	for _, code := range codes {
+		family := scale.LayoutFamilies[code]
+		if family.Positions == nil {
+			family.Positions = map[string]ScaleLayoutPosition{}
+		}
+		fn(code, &family)
+		scale.LayoutFamilies[code] = family
+	}
+}
+
 func seedMissingScaleLayouts(set *ScaleLayoutSet, definitions DefinitionSet) {
 	for tuningIndex := range set.Tunings {
 		tuning := &set.Tunings[tuningIndex]
@@ -212,19 +300,18 @@ func seedMissingScaleLayouts(set *ScaleLayoutSet, definitions DefinitionSet) {
 
 		for _, definition := range definitions.Scales {
 			if existing := existingByID[definition.ID]; existing != nil {
-				if existing.Positions == nil {
-					existing.Positions = map[string]ScaleLayoutPosition{}
-				}
+				family := standardScaleLayoutFamily(existing)
 				for _, shape := range defaultScaleLayoutOrder {
-					if _, ok := existing.Positions[shape]; ok {
+					if _, ok := family.Positions[shape]; ok {
 						continue
 					}
 					template, ok := templatePositions[shape]
 					if !ok {
 						continue
 					}
-					existing.Positions[shape] = generateScaleLayoutPosition(*tuning, definition, template)
+					family.Positions[shape] = generateScaleLayoutPosition(*tuning, definition, template)
 				}
+				setScaleLayoutFamily(existing, DefaultScaleLayoutFamilyCode, family)
 				continue
 			}
 
@@ -238,10 +325,12 @@ func seedMissingScaleLayouts(set *ScaleLayoutSet, definitions DefinitionSet) {
 			}
 
 			tuning.Scales = append(tuning.Scales, ScaleLayoutScale{
-				ID:        definition.ID,
-				Name:      definition.Name,
-				Type:      definition.Type,
-				Positions: positions,
+				ID:   definition.ID,
+				Name: definition.Name,
+				Type: definition.Type,
+				LayoutFamilies: map[string]ScaleLayoutFamily{
+					DefaultScaleLayoutFamilyCode: {Positions: positions},
+				},
 			})
 		}
 
@@ -265,17 +354,19 @@ func materializeGeneratedFrets(set *ScaleLayoutSet, definitions DefinitionSet) {
 			if !ok {
 				continue
 			}
-			for positionName, position := range scale.Positions {
-				if position.Validated || len(position.PerStringFrets) > 0 {
-					continue
+			forEachScaleLayoutFamily(scale, func(_ string, family *ScaleLayoutFamily) {
+				for positionName, position := range family.Positions {
+					if position.Validated || len(position.PerStringFrets) > 0 {
+						continue
+					}
+					generated := generateScaleLayoutPosition(*tuning, definition, position)
+					if len(generated.PerStringFrets) == 0 {
+						continue
+					}
+					position.PerStringFrets = generated.PerStringFrets
+					family.Positions[positionName] = position
 				}
-				generated := generateScaleLayoutPosition(*tuning, definition, position)
-				if len(generated.PerStringFrets) == 0 {
-					continue
-				}
-				position.PerStringFrets = generated.PerStringFrets
-				scale.Positions[positionName] = position
-			}
+			})
 		}
 	}
 }
@@ -294,17 +385,19 @@ func MaterializeScaleLayoutFrets(set *ScaleLayoutSet, definitions DefinitionSet)
 			if !ok {
 				continue
 			}
-			for positionName, position := range scale.Positions {
-				if len(position.PerStringFrets) > 0 {
-					continue
+			forEachScaleLayoutFamily(scale, func(_ string, family *ScaleLayoutFamily) {
+				for positionName, position := range family.Positions {
+					if len(position.PerStringFrets) > 0 {
+						continue
+					}
+					generated := generateScaleLayoutPosition(*tuning, definition, position)
+					if len(generated.PerStringFrets) == 0 {
+						continue
+					}
+					position.PerStringFrets = generated.PerStringFrets
+					family.Positions[positionName] = position
 				}
-				generated := generateScaleLayoutPosition(*tuning, definition, position)
-				if len(generated.PerStringFrets) == 0 {
-					continue
-				}
-				position.PerStringFrets = generated.PerStringFrets
-				scale.Positions[positionName] = position
-			}
+			})
 		}
 	}
 }
@@ -312,8 +405,12 @@ func MaterializeScaleLayoutFrets(set *ScaleLayoutSet, definitions DefinitionSet)
 func templatePositionsForTuning(tuning ScaleLayoutTuning) map[string]ScaleLayoutPosition {
 	for _, scale := range tuning.Scales {
 		if scale.Name == "Major" {
-			templates := make(map[string]ScaleLayoutPosition, len(scale.Positions))
-			for name, position := range scale.Positions {
+			family, ok := scale.LayoutFamilies[DefaultScaleLayoutFamilyCode]
+			if !ok {
+				continue
+			}
+			templates := make(map[string]ScaleLayoutPosition, len(family.Positions))
+			for name, position := range family.Positions {
 				templates[name] = ScaleLayoutPosition{
 					Mode:        position.Mode,
 					Start:       position.Start,
@@ -489,11 +586,13 @@ func RangeCompletenessReport(set ScaleLayoutSet, definitions DefinitionSet) []st
 			if !ok {
 				continue
 			}
-			for positionName, position := range scale.Positions {
-				if issue := rangeCompletenessIssue(tuning, octaves, definition, scale.Name, positionName, position); issue != "" {
-					issues = append(issues, issue)
+			forEachScaleLayoutFamily(&scale, func(familyCode string, family *ScaleLayoutFamily) {
+				for positionName, position := range family.Positions {
+					if issue := rangeCompletenessIssue(tuning, octaves, definition, scale.Name, familyCode, positionName, position); issue != "" {
+						issues = append(issues, issue)
+					}
 				}
-			}
+			})
 		}
 	}
 
@@ -519,14 +618,16 @@ func ShapeCorrectnessReport(set ScaleLayoutSet, definitions DefinitionSet) []str
 			if !ok {
 				continue
 			}
-			for positionName, position := range scale.Positions {
-				issues = append(issues, shapeRootIssues(tuning, octaves, definition, scale.Name, positionName, position)...)
-				if scale.Name == "Major" {
-					if issue := lockedMajorShapeIssue(tuning, scale.Name, positionName, position); issue != "" {
-						issues = append(issues, issue)
+			forEachScaleLayoutFamily(&scale, func(familyCode string, family *ScaleLayoutFamily) {
+				for positionName, position := range family.Positions {
+					issues = append(issues, shapeRootIssues(tuning, octaves, definition, scale.Name, familyCode, positionName, position)...)
+					if scale.Name == "Major" && familyCode == DefaultScaleLayoutFamilyCode {
+						if issue := lockedMajorShapeIssue(tuning, scale.Name, familyCode, positionName, position); issue != "" {
+							issues = append(issues, issue)
+						}
 					}
 				}
-			}
+			})
 		}
 	}
 
@@ -539,6 +640,7 @@ func shapeRootIssues(
 	octaves []int,
 	scale Definition,
 	scaleName string,
+	familyCode string,
 	positionName string,
 	position ScaleLayoutPosition,
 ) []string {
@@ -579,9 +681,10 @@ func shapeRootIssues(
 		}
 		if !hasRoot {
 			issues = append(issues, fmt.Sprintf(
-				"layout %s/%s/%s may miss expected root on string %d",
+				"layout %s/%s/%s/%s may miss expected root on string %d",
 				tuning.Name,
 				scaleName,
+				familyCode,
 				positionName,
 				stringIndex+1,
 			))
@@ -590,7 +693,7 @@ func shapeRootIssues(
 	return issues
 }
 
-func lockedMajorShapeIssue(tuning ScaleLayoutTuning, scaleName string, positionName string, position ScaleLayoutPosition) string {
+func lockedMajorShapeIssue(tuning ScaleLayoutTuning, scaleName string, familyCode string, positionName string, position ScaleLayoutPosition) string {
 	expectedRanges := map[string]ScaleLayoutPosition{
 		"C": {Mode: "range", Start: 0, Span: 4},
 		"A": {Mode: "range", Start: 2, Span: 5},
@@ -600,9 +703,10 @@ func lockedMajorShapeIssue(tuning ScaleLayoutTuning, scaleName string, positionN
 	if expected, ok := expectedRanges[positionName]; ok {
 		if position.Mode != expected.Mode || position.Start != expected.Start || position.Span != expected.Span {
 			return fmt.Sprintf(
-				"layout %s/%s/%s differs from locked major range: expected %d-%d",
+				"layout %s/%s/%s/%s differs from locked major range: expected %d-%d",
 				tuning.Name,
 				scaleName,
+				familyCode,
 				positionName,
 				expected.Start,
 				expected.Start+expected.Span-1,
@@ -615,15 +719,15 @@ func lockedMajorShapeIssue(tuning ScaleLayoutTuning, scaleName string, positionN
 		return ""
 	}
 	if position.Mode != "split" || len(position.SplitRanges) != 2 {
-		return fmt.Sprintf("layout %s/%s/%s differs from locked major split", tuning.Name, scaleName, positionName)
+		return fmt.Sprintf("layout %s/%s/%s/%s differs from locked major split", tuning.Name, scaleName, familyCode, positionName)
 	}
 	first := position.SplitRanges[0]
 	second := position.SplitRanges[1]
 	if first.Start != 8 || first.Span != 5 || !equalIntSlices(first.Strings, []int{0, 1, 2, 3}) {
-		return fmt.Sprintf("layout %s/%s/%s differs from locked major split", tuning.Name, scaleName, positionName)
+		return fmt.Sprintf("layout %s/%s/%s/%s differs from locked major split", tuning.Name, scaleName, familyCode, positionName)
 	}
 	if second.Start != 10 || second.Span != 4 || !equalIntSlices(second.Strings, []int{4, 5}) {
-		return fmt.Sprintf("layout %s/%s/%s differs from locked major split", tuning.Name, scaleName, positionName)
+		return fmt.Sprintf("layout %s/%s/%s/%s differs from locked major split", tuning.Name, scaleName, familyCode, positionName)
 	}
 	return ""
 }
@@ -645,6 +749,7 @@ func rangeCompletenessIssue(
 	octaves []int,
 	scale Definition,
 	scaleName string,
+	familyCode string,
 	positionName string,
 	position ScaleLayoutPosition,
 ) string {
@@ -660,9 +765,10 @@ func rangeCompletenessIssue(
 	}
 
 	return fmt.Sprintf(
-		"layout %s/%s/%s may be range-incomplete: current captures %d pitches, nearby %s captures %d%s",
+		"layout %s/%s/%s/%s may be range-incomplete: current captures %d pitches, nearby %s captures %d%s",
 		tuning.Name,
 		scaleName,
+		familyCode,
 		positionName,
 		currentCount,
 		positionSummary(bestPosition),
@@ -798,12 +904,14 @@ func validateScaleLayouts(set ScaleLayoutSet, definitions DefinitionSet) error {
 				continue
 			}
 
-			for positionName, position := range scale.Positions {
-				positionIssues := validateScaleLayoutPosition(tuning, octaves, definition, scale.Name, positionName, position)
-				if len(positionIssues) > 0 {
-					issues = append(issues, positionIssues...)
+			forEachScaleLayoutFamily(&scale, func(familyCode string, family *ScaleLayoutFamily) {
+				for positionName, position := range family.Positions {
+					positionIssues := validateScaleLayoutPosition(tuning, octaves, definition, scale.Name, familyCode, positionName, position)
+					if len(positionIssues) > 0 {
+						issues = append(issues, positionIssues...)
+					}
 				}
-			}
+			})
 		}
 	}
 
@@ -819,12 +927,13 @@ func validateScaleLayoutPosition(
 	octaves []int,
 	scale Definition,
 	scaleName string,
+	familyCode string,
 	positionName string,
 	position ScaleLayoutPosition,
 ) []string {
 	var issues []string
 	if position.Mode != "range" && position.Mode != "split" {
-		return []string{fmt.Sprintf("layout %s/%s/%s mode must be range or split", tuning.Name, scaleName, positionName)}
+		return []string{fmt.Sprintf("layout %s/%s/%s/%s mode must be range or split", tuning.Name, scaleName, familyCode, positionName)}
 	}
 
 	noteIndex := noteIndexMap()
@@ -841,7 +950,7 @@ func validateScaleLayoutPosition(
 	for stringIndex, openNote := range tuning.Strings {
 		baseIndex, ok := noteIndex[openNote]
 		if !ok {
-			issues = append(issues, fmt.Sprintf("layout %s/%s/%s unknown tuning note %s", tuning.Name, scaleName, positionName, openNote))
+			issues = append(issues, fmt.Sprintf("layout %s/%s/%s/%s unknown tuning note %s", tuning.Name, scaleName, familyCode, positionName, openNote))
 			continue
 		}
 		basePitch := (octaves[stringIndex] * 12) + baseIndex
@@ -865,7 +974,7 @@ func validateScaleLayoutPosition(
 	}
 
 	if minPitch > maxPitch {
-		return []string{fmt.Sprintf("layout %s/%s/%s has no frets", tuning.Name, scaleName, positionName)}
+		return []string{fmt.Sprintf("layout %s/%s/%s/%s has no frets", tuning.Name, scaleName, familyCode, positionName)}
 	}
 
 	expected := map[int]struct{}{}
@@ -879,9 +988,10 @@ func validateScaleLayoutPosition(
 		if count > 1 {
 			first := pitchLocations[pitch]
 			issues = append(issues, fmt.Sprintf(
-				"layout %s/%s/%s repeats pitch %s (first at string %d fret %d)",
+				"layout %s/%s/%s/%s repeats pitch %s (first at string %d fret %d)",
 				tuning.Name,
 				scaleName,
+				familyCode,
 				positionName,
 				pitchName(pitch),
 				first[0]+1,
@@ -890,9 +1000,10 @@ func validateScaleLayoutPosition(
 		}
 		if _, ok := expected[pitch]; !ok {
 			issues = append(issues, fmt.Sprintf(
-				"layout %s/%s/%s includes unexpected pitch %s",
+				"layout %s/%s/%s/%s includes unexpected pitch %s",
 				tuning.Name,
 				scaleName,
+				familyCode,
 				positionName,
 				pitchName(pitch),
 			))
@@ -902,9 +1013,10 @@ func validateScaleLayoutPosition(
 	if len(pitchCounts) != len(expected) {
 		missing := missingPitchNames(expected, pitchCounts)
 		issues = append(issues, fmt.Sprintf(
-			"layout %s/%s/%s missing %d pitches (%s)",
+			"layout %s/%s/%s/%s missing %d pitches (%s)",
 			tuning.Name,
 			scaleName,
+			familyCode,
 			positionName,
 			len(expected)-len(pitchCounts),
 			strings.Join(missing, ", "),

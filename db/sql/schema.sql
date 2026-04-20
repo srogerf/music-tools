@@ -1,5 +1,14 @@
 BEGIN;
 
+CREATE TABLE schema_metadata (
+    singleton BOOLEAN PRIMARY KEY DEFAULT TRUE CHECK (singleton),
+    schema_version INTEGER NOT NULL,
+    seed_data_format_version INTEGER
+);
+
+INSERT INTO schema_metadata (singleton, schema_version, seed_data_format_version)
+VALUES (TRUE, 3, NULL);
+
 CREATE TABLE scale_types (
     id BIGSERIAL PRIMARY KEY,
     code TEXT NOT NULL UNIQUE
@@ -58,7 +67,9 @@ CREATE TABLE scale_layouts (
     id BIGSERIAL PRIMARY KEY,
     scale_id BIGINT NOT NULL REFERENCES scales(id) ON DELETE CASCADE,
     tuning_id BIGINT NOT NULL REFERENCES tunings(id) ON DELETE CASCADE,
-    UNIQUE (scale_id, tuning_id)
+    family_code TEXT NOT NULL,
+    UNIQUE (scale_id, tuning_id, family_code),
+    CHECK (family_code IN ('standard', '3nps'))
 );
 
 CREATE TABLE scale_layout_positions (

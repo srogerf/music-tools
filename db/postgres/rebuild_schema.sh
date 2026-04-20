@@ -12,14 +12,14 @@ OVERRIDE_PRODUCTION_FAILSAFE="false"
 
 usage() {
   cat >&2 <<'EOF'
-Usage: bash db/postgres/reset_and_seed.sh --env test
-   or: bash db/postgres/reset_and_seed.sh --override-production-failsafe
+Usage: bash db/postgres/rebuild_schema.sh --env test
+   or: bash db/postgres/rebuild_schema.sh --override-production-failsafe
 
 Rules:
-  --env test                     Required for non-production clear-and-reseed operations
-  --override-production-failsafe Required for first-time production bootstrap seed
+  --env test                     Required for destructive non-production rebuilds
+  --override-production-failsafe Required for first-time production bootstrap
 
-Production is assumed by default, and production clear-and-reseed is refused.
+Without --env test, production is assumed.
 EOF
 }
 
@@ -61,9 +61,9 @@ if [[ "$ENVIRONMENT" == "test" && "$OVERRIDE_PRODUCTION_FAILSAFE" == "true" ]]; 
   exit 1
 fi
 
-if [[ "$ENVIRONMENT" != "test" && "$OVERRIDE_PRODUCTION_FAILSAFE" != "true" ]]; then
-  echo "Refusing clear-and-reseed with production-default behavior." >&2
-  echo "Use --env test for non-production, or --override-production-failsafe only for first-time production bootstrap seed." >&2
+if [[ "$ENVIRONMENT" == "production" && "$OVERRIDE_PRODUCTION_FAILSAFE" != "true" ]]; then
+  echo "Refusing destructive schema rebuild with production-default behavior." >&2
+  echo "Use --env test for non-production, or --override-production-failsafe only for first-time production bootstrap." >&2
   exit 1
 fi
 
@@ -89,10 +89,5 @@ fi
 
 echo "Target database environment: $ENVIRONMENT"
 
-if [[ "$(psql "$DATABASE_URL" -tA -v ON_ERROR_STOP=1 -c "SELECT to_regclass('public.schema_metadata') IS NOT NULL")" != "t" ]]; then
-  echo "Schema metadata table not found. Run 'bash db/postgres/rebuild_schema.sh' before reset_and_seed.sh." >&2
-  exit 1
-fi
-
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$SQL_DIR/clear_data.sql"
-python3 "$SCRIPT_DIR/seed_data.py" | psql "$DATABASE_URL" -v ON_ERROR_STOP=1
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$SQL_DIR/drop_schema.sql"
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$SQL_DIR/schema.sql"

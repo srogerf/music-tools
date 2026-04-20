@@ -4,6 +4,14 @@ import {
   trimFretboardLayout,
 } from "shared-fretboard-layout";
 
+const ROOT_STRINGS_BY_POSITION = {
+  C: [1, 4],
+  A: [1, 3],
+  G: [0, 2, 5],
+  E: [0, 2, 5],
+  D: [2, 4],
+};
+
 function shouldUseFlats(key) {
   if (key.includes("b")) return true;
   if (key.includes("#")) return false;
@@ -371,7 +379,176 @@ function resolvePositionWindow(positionLayout, layoutRootIndex) {
   return { startFret, fretCount, perStringRanges };
 }
 
-export function computeFretboardLayout({ scale, key, tuningStrings, positionLayout }) {
+function collectScaleFretsForString(openIndex, pitchClassSet, maxFret) {
+  const frets = [];
+  for (let fret = 0; fret <= maxFret; fret += 1) {
+    const pitchClass = (openIndex + fret) % 12;
+    if (pitchClassSet.has(pitchClass)) {
+      frets.push(fret);
+    }
+  }
+  return frets;
+}
+
+function buildThreeNpsCandidates(frets) {
+  const candidates = [];
+  for (let i = 0; i <= frets.length - 3; i += 1) {
+    const group = frets.slice(i, i + 3);
+    const span = group[2] - group[0];
+    if (span <= 6) {
+      candidates.push(group);
+    }
+  }
+  return candidates;
+}
+
+function candidateContainsRoot(candidate, openIndex, rootIndex) {
+  return candidate.some((fret) => (openIndex + fret) % 12 === rootIndex);
+}
+
+function selectThreeNpsGroups({
+  anchorStarts,
+  anchorEnds,
+  openIndexes,
+  pitchClassSet,
+  rootIndex,
+  positionName,
+}) {
+  const perStringFrets = {};
+  const rootStrings = new Set(ROOT_STRINGS_BY_POSITION[positionName] || []);
+  let previousStart = null;
+  const maxAnchorEnd = Math.max(...anchorEnds);
+  const searchMaxFret = Math.max(18, maxAnchorEnd + 8);
+
+  for (let stringIndex = 0; stringIndex < openIndexes.length; stringIndex += 1) {
+    const openIndex = openIndexes[stringIndex];
+    const scaleFrets = collectScaleFretsForString(openIndex, pitchClassSet, searchMaxFret);
+    const candidates = buildThreeNpsCandidates(scaleFrets);
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    const anchorStart = anchorStarts[stringIndex];
+    const anchorEnd = anchorEnds[stringIndex];
+    let bestCandidate = null;
+    let bestScore = Number.POSITIVE_INFINITY;
+
+    for (const candidate of candidates) {
+      let score =
+        Math.abs(candidate[0] - anchorStart) * 2 +
+        Math.abs(candidate[2] - anchorEnd);
+
+      if (previousStart !== null) {
+        const delta = candidate[0] - previousStart;
+        if (delta < 0) {
+          score += 30 + Math.abs(delta) * 5;
+        } else {
+          score += delta;
+          if (delta > 5) {
+            score += (delta - 5) * 2;
+          }
+        }
+      }
+
+      if (rootStrings.has(stringIndex) && candidateContainsRoot(candidate, openIndex, rootIndex)) {
+        score -= 8;
+      }
+
+      if (score < bestScore) {
+        bestScore = score;
+        bestCandidate = candidate;
+      }
+    }
+
+    if (!bestCandidate) {
+      return null;
+    }
+
+    perStringFrets[stringIndex] = bestCandidate;
+    previousStart = bestCandidate[0];
+  }
+
+  return perStringFrets;
+}
+
+function computeThreeNpsLayout({
+  rootIndex,
+  pitchClassSet,
+  intervalMap,
+  displayNameMap,
+  degreeClassMap,
+  intervalLabelMap,
+  noteNames,
+  indexMap,
+  tuningStrings,
+  positionLayout,
+  positionName,
+}) {
+  const openIndexes = tuningStrings.map((note) => indexMap[note]);
+  const { startFret, fretCount, perStringRanges } = resolvePositionWindow(positionLayout, rootIndex);
+  const anchorStarts = [];
+  const anchorEnds = [];
+
+  for (let stringIndex = 0; stringIndex < tuningStrings.length; stringIndex += 1) {
+    const range = perStringRanges?.[stringIndex];
+    const anchorStart = range?.start ?? startFret;
+    const anchorSpan = range?.span ?? fretCount;
+    anchorStarts.push(anchorStart);
+    anchorEnds.push(anchorStart + anchorSpan - 1);
+  }
+
+  const perStringFrets = selectThreeNpsGroups({
+    anchorStarts,
+    anchorEnds,
+    openIndexes,
+    pitchClassSet,
+    rootIndex,
+    positionName,
+  });
+  if (!perStringFrets) {
+    return null;
+  }
+
+  let minFret = Number.POSITIVE_INFINITY;
+  let maxFret = Number.NEGATIVE_INFINITY;
+  Object.values(perStringFrets).forEach((frets) => {
+    frets.forEach((fret) => {
+      if (fret < minFret) minFret = fret;
+      if (fret > maxFret) maxFret = fret;
+    });
+  });
+  if (minFret === Number.POSITIVE_INFINITY || maxFret === Number.NEGATIVE_INFINITY) {
+    return null;
+  }
+
+  return trimFretboardLayout(
+    buildLayout({
+      startFret: minFret,
+      fretCount: maxFret - minFret + 1,
+      pitchClassSet,
+      intervalMap,
+      degreeClassMap,
+      intervalLabelMap,
+      noteNames,
+      indexMap,
+      displayNameMap,
+      perStringRanges: null,
+      perStringFrets,
+      tuningStrings,
+    }),
+    minFret,
+    maxFret - minFret + 1
+  );
+}
+
+export function computeFretboardLayout({
+  scale,
+  key,
+  tuningStrings,
+  positionLayout,
+  positionName,
+  useThreeNps = false,
+}) {
   if (!scale || tuningStrings.length === 0 || !positionLayout) {
     return null;
   }
@@ -390,6 +567,25 @@ export function computeFretboardLayout({ scale, key, tuningStrings, positionLayo
     scale
   );
   const layoutRootIndex = rootIndex;
+  if (useThreeNps) {
+    const generated = computeThreeNpsLayout({
+      rootIndex,
+      pitchClassSet,
+      intervalMap,
+      displayNameMap,
+      degreeClassMap,
+      intervalLabelMap,
+      noteNames,
+      indexMap,
+      tuningStrings,
+      positionLayout,
+      positionName,
+    });
+    if (generated) {
+      return generated;
+    }
+  }
+
   const { startFret, fretCount, perStringRanges } = resolvePositionWindow(
     positionLayout,
     layoutRootIndex

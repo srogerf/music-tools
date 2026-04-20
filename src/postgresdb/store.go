@@ -242,13 +242,16 @@ func (s *Store) LoadScaleLayouts(ctx context.Context) (scales.ScaleLayoutSet, er
 	}
 	type layoutAggregate struct {
 		id          int64
-		scale       scales.ScaleLayoutScale
+		tuningDBID  int64
+		scaleID     int
+		familyCode  string
 		positionIDs []int64
 	}
 	type tuningAggregate struct {
-		id        int64
-		tuning    scales.ScaleLayoutTuning
-		layoutIDs []int64
+		id             int64
+		tuning         scales.ScaleLayoutTuning
+		layoutIDs      []int64
+		scaleIndexByID map[int]int
 	}
 
 	tuningsByDBID := map[int64]*tuningAggregate{}
@@ -290,6 +293,7 @@ func (s *Store) LoadScaleLayouts(ctx context.Context) (scales.ScaleLayoutSet, er
 					Strings:     make([]string, 0, stringCount),
 					Scales:      []scales.ScaleLayoutScale{},
 				},
+				scaleIndexByID: map[int]int{},
 			}
 			tuningsByDBID[tuningDBID] = item
 			orderTunings = append(orderTunings, tuningDBID)
@@ -305,6 +309,7 @@ func (s *Store) LoadScaleLayouts(ctx context.Context) (scales.ScaleLayoutSet, er
 		SELECT
 			sl.id,
 			sl.tuning_id,
+			sl.family_code,
 			s.external_id,
 			s.name,
 			st.code
@@ -319,8 +324,8 @@ func (s *Store) LoadScaleLayouts(ctx context.Context) (scales.ScaleLayoutSet, er
 	for layoutRows.Next() {
 		var layoutID, tuningDBID int64
 		var scaleID int
-		var scaleName, scaleType string
-		if err := layoutRows.Scan(&layoutID, &tuningDBID, &scaleID, &scaleName, &scaleType); err != nil {
+		var familyCode, scaleName, scaleType string
+		if err := layoutRows.Scan(&layoutID, &tuningDBID, &familyCode, &scaleID, &scaleName, &scaleType); err != nil {
 			layoutRows.Close()
 			return scales.ScaleLayoutSet{}, fmt.Errorf("scan scale layouts: %w", err)
 		}
@@ -329,14 +334,22 @@ func (s *Store) LoadScaleLayouts(ctx context.Context) (scales.ScaleLayoutSet, er
 			layoutRows.Close()
 			return scales.ScaleLayoutSet{}, fmt.Errorf("missing tuning for layout %d", layoutID)
 		}
+		scaleIndex, ok := tuningItem.scaleIndexByID[scaleID]
+		if !ok {
+			scaleIndex = len(tuningItem.tuning.Scales)
+			tuningItem.tuning.Scales = append(tuningItem.tuning.Scales, scales.ScaleLayoutScale{
+				ID:             scaleID,
+				Name:           scaleName,
+				Type:           scales.ScaleType(scaleType),
+				LayoutFamilies: map[string]scales.ScaleLayoutFamily{},
+			})
+			tuningItem.scaleIndexByID[scaleID] = scaleIndex
+		}
 		layoutsByID[layoutID] = &layoutAggregate{
-			id: layoutID,
-			scale: scales.ScaleLayoutScale{
-				ID:        scaleID,
-				Name:      scaleName,
-				Type:      scales.ScaleType(scaleType),
-				Positions: map[string]scales.ScaleLayoutPosition{},
-			},
+			id:         layoutID,
+			tuningDBID: tuningDBID,
+			scaleID:    scaleID,
+			familyCode: familyCode,
 		}
 		tuningItem.layoutIDs = append(tuningItem.layoutIDs, layoutID)
 	}
@@ -497,11 +510,23 @@ func (s *Store) LoadScaleLayouts(ctx context.Context) (scales.ScaleLayoutSet, er
 		tuningItem := tuningsByDBID[tuningDBID]
 		for _, layoutID := range tuningItem.layoutIDs {
 			layoutItem := layoutsByID[layoutID]
+			scaleIndex, ok := tuningItem.scaleIndexByID[layoutItem.scaleID]
+			if !ok {
+				return scales.ScaleLayoutSet{}, fmt.Errorf("missing scale aggregate for layout %d", layoutID)
+			}
+			scaleItem := &tuningItem.tuning.Scales[scaleIndex]
+			family := scaleItem.LayoutFamilies[scales.DefaultScaleLayoutFamilyCode]
+			if layoutItem.familyCode != "" {
+				family = scaleItem.LayoutFamilies[layoutItem.familyCode]
+			}
+			if family.Positions == nil {
+				family.Positions = map[string]scales.ScaleLayoutPosition{}
+			}
 			for _, positionID := range layoutItem.positionIDs {
 				position := positionsByID[positionID]
-				layoutItem.scale.Positions[position.code] = position.position
+				family.Positions[position.code] = position.position
 			}
-			tuningItem.tuning.Scales = append(tuningItem.tuning.Scales, layoutItem.scale)
+			scaleItem.LayoutFamilies[scales.LayoutFamilyCodeOrDefault(layoutItem.familyCode)] = family
 		}
 		result.Tunings = append(result.Tunings, tuningItem.tuning)
 	}

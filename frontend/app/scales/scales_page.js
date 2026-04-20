@@ -52,11 +52,37 @@ async function fetchJSON(url, resourceName) {
   return data;
 }
 
-export function ScalesPage({ active }) {
+function normalizeText(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function findScaleByRouteValue(scales, routeValue) {
+  const normalized = normalizeText(routeValue);
+  if (!normalized) {
+    return null;
+  }
+  return (
+    scales.find((scale) => normalizeText(scale.name) === normalized) ||
+    scales.find((scale) => normalizeText(scale.common_name) === normalized) ||
+    null
+  );
+}
+
+function findTuningByRouteValue(tunings, routeValue) {
+  const normalized = normalizeText(routeValue);
+  if (!normalized) {
+    return null;
+  }
+  return tunings.find((tuning) => normalizeText(tuning.name) === normalized) || null;
+}
+
+export function ScalesPage({ active, routeState, onRouteChange }) {
   const [scales, setScales] = useState([]);
   const [selectedScaleId, setSelectedScaleId] = useState(1);
-  const [selectedKey, setSelectedKey] = useState("C");
-  const [selectedPosition, setSelectedPosition] = useState("E");
+  const [selectedKey, setSelectedKey] = useState(routeState?.key || "C");
+  const [selectedPosition, setSelectedPosition] = useState(
+    CAGED_SHAPES.includes(routeState?.position) ? routeState.position : "E"
+  );
   const [tunings, setTunings] = useState([]);
   const [selectedTuningId, setSelectedTuningId] = useState(1);
   const [layoutInstances, setLayoutInstances] = useState([]);
@@ -66,15 +92,20 @@ export function ScalesPage({ active }) {
     threeSeven: true,
     twoFourSix: true,
   });
+  const [useThreeNps, setUseThreeNps] = useState(Boolean(routeState?.threeNps));
 
   useEffect(() => {
     fetchJSON("/api/v1/scales", "scales")
       .then((data) => {
         const list = data.scales || [];
         setScales(list);
-        if (list.length > 0) {
-          setSelectedScaleId(list[0].id);
-        }
+        setSelectedScaleId((current) => {
+          if (list.some((scale) => scale.id === Number(current))) {
+            return current;
+          }
+          const routeScale = findScaleByRouteValue(list, routeState?.scale);
+          return (routeScale ?? list[0])?.id ?? current;
+        });
       })
       .catch((err) => {
         setError(err.message);
@@ -86,10 +117,14 @@ export function ScalesPage({ active }) {
       .then((data) => {
         const list = data.tunings || [];
         setTunings(list);
-        if (list.length > 0) {
+        setSelectedTuningId((current) => {
+          if (list.some((tuning) => tuning.id === Number(current))) {
+            return current;
+          }
+          const routeTuning = findTuningByRouteValue(list, routeState?.tuning);
           const standard = list.find((tuning) => tuning.name === DEFAULT_TUNING_NAME);
-          setSelectedTuningId((standard ?? list[0]).id);
-        }
+          return (routeTuning ?? standard ?? list[0])?.id ?? current;
+        });
       })
       .catch((err) => {
         setError(err.message);
@@ -105,6 +140,45 @@ export function ScalesPage({ active }) {
         setError(err.message);
       });
   }, []);
+
+  useEffect(() => {
+    if (scales.length === 0) {
+      return;
+    }
+    const routeScale = findScaleByRouteValue(scales, routeState?.scale);
+    if (routeScale && routeScale.id !== Number(selectedScaleId)) {
+      setSelectedScaleId(routeScale.id);
+    }
+  }, [routeState?.scale, scales, selectedScaleId]);
+
+  useEffect(() => {
+    if (tunings.length === 0) {
+      return;
+    }
+    const routeTuning = findTuningByRouteValue(tunings, routeState?.tuning);
+    if (routeTuning && routeTuning.id !== Number(selectedTuningId)) {
+      setSelectedTuningId(routeTuning.id);
+    }
+  }, [routeState?.tuning, tunings, selectedTuningId]);
+
+  useEffect(() => {
+    if (routeState?.key && DEFAULT_KEYS.includes(routeState.key)) {
+      setSelectedKey((current) => (current === routeState.key ? current : routeState.key));
+    }
+  }, [routeState?.key]);
+
+  useEffect(() => {
+    if (routeState?.position && CAGED_SHAPES.includes(routeState.position)) {
+      setSelectedPosition((current) =>
+        current === routeState.position ? current : routeState.position
+      );
+    }
+  }, [routeState?.position]);
+
+  useEffect(() => {
+    const nextThreeNps = Boolean(routeState?.threeNps);
+    setUseThreeNps((current) => (current === nextThreeNps ? current : nextThreeNps));
+  }, [routeState?.threeNps]);
 
   const selectedTuning = useMemo(
     () => tunings.find((tuning) => tuning.id === Number(selectedTuningId)),
@@ -128,8 +202,14 @@ export function ScalesPage({ active }) {
     const scaleLayout = selectedLayoutInstance.scales?.find(
       (scale) => scale.id === selectedScale.id
     );
-    return scaleLayout?.positions?.[selectedPosition] || null;
-  }, [selectedLayoutInstance, selectedScale, selectedPosition]);
+    const familyCode = useThreeNps ? "3nps" : "standard";
+    return (
+      scaleLayout?.layout_families?.[familyCode]?.positions?.[selectedPosition] ||
+      scaleLayout?.layout_families?.standard?.positions?.[selectedPosition] ||
+      scaleLayout?.positions?.[selectedPosition] ||
+      null
+    );
+  }, [selectedLayoutInstance, selectedScale, selectedPosition, useThreeNps]);
 
   const scaleNotes = useMemo(() => {
     if (!selectedScale) return [];
@@ -179,6 +259,8 @@ export function ScalesPage({ active }) {
       key: selectedKey,
       tuningStrings,
       positionLayout,
+      positionName: selectedPosition,
+      useThreeNps,
     });
     if (!trimmed) {
       fretboard.clear();
@@ -197,6 +279,27 @@ export function ScalesPage({ active }) {
     selectedLayoutInstance,
     selectedPositionLayout,
     visibleDegreeClasses,
+    useThreeNps,
+  ]);
+
+  useEffect(() => {
+    if (!onRouteChange || !selectedScale || !selectedTuning) {
+      return;
+    }
+    onRouteChange({
+      scale: selectedScale.name,
+      key: selectedKey,
+      position: selectedPosition,
+      tuning: selectedTuning.name,
+      threeNps: useThreeNps,
+    });
+  }, [
+    onRouteChange,
+    selectedKey,
+    selectedPosition,
+    selectedScale,
+    selectedTuning,
+    useThreeNps,
   ]);
 
   return React.createElement(
@@ -293,6 +396,17 @@ export function ScalesPage({ active }) {
             }),
             React.createElement("span", { className: "filter-label" }, group.label)
           )
+        ),
+        React.createElement("div", { className: "filter-divider", "aria-hidden": "true" }),
+        React.createElement(
+          "label",
+          { className: "filter-row", key: "threeNps" },
+          React.createElement("input", {
+            type: "checkbox",
+            checked: useThreeNps,
+            onChange: (event) => setUseThreeNps(event.target.checked),
+          }),
+          React.createElement("span", { className: "filter-label" }, "3NPS")
         )
       )
     ),
@@ -339,10 +453,14 @@ export function ScalesPage({ active }) {
               "td",
               {
                 className: `info-value validated-cell ${
-                  selectedPositionLayout?.validated_manual ? "status-valid" : "status-invalid"
+                  useThreeNps
+                    ? "status-generated"
+                    : selectedPositionLayout?.validated_manual
+                      ? "status-valid"
+                      : "status-invalid"
                 }`,
               },
-              `${selectedPositionLayout?.validated_manual ? "✓" : "✕"}`
+              useThreeNps ? "Generated" : `${selectedPositionLayout?.validated_manual ? "✓" : "✕"}`
             )
           )
         )

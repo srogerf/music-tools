@@ -15,6 +15,10 @@ def read_json(*parts: str) -> Any:
         return json.load(handle)
 
 
+def read_versions() -> dict[str, Any]:
+    return read_json("db", "postgres", "versions.json")
+
+
 def sql_literal(value: Any) -> str:
     if value is None:
         return "NULL"
@@ -40,12 +44,48 @@ def load_layout_files() -> list[dict[str, Any]]:
 
 
 def main() -> None:
+    versions = read_versions()
+    schema_version = int(versions["schema_version"])
+    data_format_version = int(versions["data_format_version"])
+    supported_schema_versions = [
+        int(version) for version in versions["seed_supported_schema_versions"]
+    ]
+
     scales = read_json("data", "scales", "DEFINITIONS.json")["scales"]
     key_signatures = read_json("data", "scales", "KEY_SIGNATURES.json")
     tunings = read_json("data", "tunings", "DEFINITIONS.json")["tunings"]
     layout_files = load_layout_files()
 
     print("BEGIN;")
+
+    supported_schema_versions_sql = ", ".join(str(version) for version in supported_schema_versions)
+    print(
+        f"""DO $seed$
+DECLARE
+    actual_schema_version INTEGER;
+BEGIN
+    SELECT schema_version
+    INTO actual_schema_version
+    FROM schema_metadata
+    WHERE singleton = TRUE;
+
+    IF actual_schema_version IS NULL THEN
+        RAISE EXCEPTION 'schema_metadata is missing schema_version';
+    END IF;
+
+    IF actual_schema_version NOT IN ({supported_schema_versions_sql}) THEN
+        RAISE EXCEPTION 'seed data format version % does not support schema version %',
+            {data_format_version}, actual_schema_version;
+    END IF;
+END
+$seed$;"""
+    )
+
+    print_insert(
+        "UPDATE schema_metadata "
+        f"SET seed_data_format_version = {data_format_version} "
+        "WHERE singleton = TRUE"
+    )
 
     scale_types = sorted({scale["type"] for scale in scales})
     for scale_type in scale_types:
@@ -97,15 +137,17 @@ def main() -> None:
         scale_id = layout_file["id"]
         for layout in layout_file["layouts"]:
             tuning_name = layout["tuning"]
+            family_code = layout.get("family_code") or "standard"
             if tuning_name not in tuning_ids_by_name:
                 raise SystemExit(f"Unknown tuning in layout file: {tuning_name}")
             tuning_id = tuning_ids_by_name[tuning_name]
 
             print_insert(
-                "INSERT INTO scale_layouts (scale_id, tuning_id) "
+                "INSERT INTO scale_layouts (scale_id, tuning_id, family_code) "
                 "VALUES ("
                 f"(SELECT id FROM scales WHERE external_id = {scale_id}), "
-                f"(SELECT id FROM tunings WHERE external_id = {tuning_id}))"
+                f"(SELECT id FROM tunings WHERE external_id = {tuning_id}), "
+                f"{sql_literal(family_code)})"
             )
 
             for position_code in sorted(layout["positions"].keys()):
@@ -121,7 +163,8 @@ def main() -> None:
                     "VALUES ("
                     "(SELECT id FROM scale_layouts WHERE "
                     f"scale_id = (SELECT id FROM scales WHERE external_id = {scale_id}) "
-                    f"AND tuning_id = (SELECT id FROM tunings WHERE external_id = {tuning_id})), "
+                    f"AND tuning_id = (SELECT id FROM tunings WHERE external_id = {tuning_id}) "
+                    f"AND family_code = {sql_literal(family_code)}), "
                     f"{sql_literal(position_code)}, "
                     f"{sql_literal(mode)}, "
                     f"{sql_literal(start_fret if mode != 'split' else None)}, "
@@ -137,7 +180,8 @@ def main() -> None:
                         "(SELECT id FROM scale_layout_positions "
                         "WHERE scale_layout_id = (SELECT id FROM scale_layouts WHERE "
                         f"scale_id = (SELECT id FROM scales WHERE external_id = {scale_id}) "
-                        f"AND tuning_id = (SELECT id FROM tunings WHERE external_id = {tuning_id})) "
+                        f"AND tuning_id = (SELECT id FROM tunings WHERE external_id = {tuning_id}) "
+                        f"AND family_code = {sql_literal(family_code)}) "
                         f"AND position_code = {sql_literal(position_code)}), "
                         f"{ordinal}, {split_range['start']}, {split_range['span']})"
                     )
@@ -151,7 +195,8 @@ def main() -> None:
                             "WHERE scale_layout_position_id = (SELECT id FROM scale_layout_positions "
                             "WHERE scale_layout_id = (SELECT id FROM scale_layouts WHERE "
                             f"scale_id = (SELECT id FROM scales WHERE external_id = {scale_id}) "
-                            f"AND tuning_id = (SELECT id FROM tunings WHERE external_id = {tuning_id})) "
+                            f"AND tuning_id = (SELECT id FROM tunings WHERE external_id = {tuning_id}) "
+                            f"AND family_code = {sql_literal(family_code)}) "
                             f"AND position_code = {sql_literal(position_code)}) "
                             f"AND ordinal = {ordinal}), "
                             f"{string_index})"
@@ -167,7 +212,8 @@ def main() -> None:
                             "(SELECT id FROM scale_layout_positions "
                             "WHERE scale_layout_id = (SELECT id FROM scale_layouts WHERE "
                             f"scale_id = (SELECT id FROM scales WHERE external_id = {scale_id}) "
-                            f"AND tuning_id = (SELECT id FROM tunings WHERE external_id = {tuning_id})) "
+                            f"AND tuning_id = (SELECT id FROM tunings WHERE external_id = {tuning_id}) "
+                            f"AND family_code = {sql_literal(family_code)}) "
                             f"AND position_code = {sql_literal(position_code)}), "
                             f"{int(string_index_text)}, {fret})"
                         )

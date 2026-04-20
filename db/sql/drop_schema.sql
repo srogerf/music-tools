@@ -1,5 +1,6 @@
 BEGIN;
 
+DROP TABLE IF EXISTS schema_metadata CASCADE;
 DROP TABLE IF EXISTS scale_layout_position_string_frets CASCADE;
 DROP TABLE IF EXISTS scale_layout_position_split_range_strings CASCADE;
 DROP TABLE IF EXISTS scale_layout_position_split_ranges CASCADE;

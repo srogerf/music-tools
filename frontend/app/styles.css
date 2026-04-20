@@ -171,6 +171,13 @@ canvas {
   align-self: center;
 }
 
+.filter-divider {
+  grid-column: 1 / -1;
+  height: 1px;
+  background: #d7c7b3;
+  margin: 2px 0;
+}
+
 .note-list {
   display: flex;
   flex-wrap: wrap;
@@ -233,6 +240,10 @@ canvas {
 
 .status-invalid {
   color: #8b2e1b;
+}
+
+.status-generated {
+  color: #7d5a19;
 }
 
 .note-list {
