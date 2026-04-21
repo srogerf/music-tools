@@ -2,6 +2,14 @@
 
 This directory contains deployment-related assets organized by responsibility.
 
+Additional deployment design notes can live at the top of `deploy/` when they
+apply across more than one subdirectory.
+
+Current top-level deployment notes:
+
+- [CONTAINER_DEPLOYMENT.md](/home/roger/vm1/development/company/riffexchange/music-tools/deploy/CONTAINER_DEPLOYMENT.md:1)
+- [infrastructure/oci/README.md](/home/roger/vm1/development/company/riffexchange/music-tools/deploy/infrastructure/oci/README.md:1)
+
 ## Structure
 
 - `infrastructure/`
@@ -18,3 +26,10 @@ This directory contains deployment-related assets organized by responsibility.
   - Example tools: `ansible/`, `chef/`
 
 Create a subdirectory under each section for the specific provider or tool being used.
+
+## Current Direction
+
+- Infrastructure currently lives under `deploy/infrastructure/oci/`.
+- Container rollout direction is documented in `deploy/CONTAINER_DEPLOYMENT.md`.
+- This directory should prefer one focused doc per concern rather than
+  repeating the same deployment guidance in multiple places.

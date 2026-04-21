@@ -1,0 +1,17 @@
+tenancy_ocid       = "ocid1.tenancy.oc1..exampleuniqueID"
+user_ocid          = "ocid1.user.oc1..exampleuniqueID"
+fingerprint        = "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99"
+private_key_path   = "~/.oci/oci_api_key.pem"
+region             = "us-phoenix-1"
+availability_domain = "Uocm:PHX-AD-1"
+
+apps_compartment_name    = "apps"
+project_compartment_name = "music-tools"
+
+ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... you@example"
+
+# Replace with a current image OCID for your region and architecture.
+instance_image_ocid = "ocid1.image.oc1.phx.exampleuniqueID"
+
+# Tighten this to your real client IP if possible.
+client_cidr_allowlist = ["203.0.113.10/32"]

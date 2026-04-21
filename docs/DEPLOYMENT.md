@@ -1,78 +1,61 @@
 # Deployment
 
-This document records the current deployment direction for `music-tools`.
+This document is the top-level deployment index for `music-tools`.
 
-## Current State
+## Current Direction
 
-- The backend now reads its source-of-truth data from Postgres.
-- The local database can be initialized and seeded with:
-  - `bin/local_init_postgres.sh`
-  - `bash db/postgres/rebuild_schema.sh`
-  - `bash db/postgres/reset_and_seed.sh`
-- The canonical SQL files now live under `db/sql/`, while the runnable Postgres
-  helper scripts live under `db/postgres/`.
-- `rebuild_schema.sh` is destructive for the schema in the target database: it
-  drops the managed tables and recreates them.
-- `reset_and_seed.sh` is data-only: it clears the managed tables, verifies that
-  the seed data format supports the current schema version, and reseeds.
+The project currently has three separate deployment concerns:
+
+- database lifecycle and safety rules
+- infrastructure provisioning
+- application build and rollout
+
+Each concern now has its own more focused document.
+
+## Canonical Deployment Docs
+
+- Database deployment:
+  `docs/DEPLOY_DATABASE.md`
+- Container build and rollout direction:
+  `deploy/CONTAINER_DEPLOYMENT.md`
+- Deploy directory layout:
+  `deploy/README.md`
+- OCI infrastructure starter:
+  `deploy/infrastructure/oci/README.md`
+
+## Current Operational Facts
+
+- The backend reads its source-of-truth layout data from Postgres.
 - The frontend is served by the Go server.
+- Canonical SQL lives under `db/sql/`.
+- Postgres helper scripts live under `db/postgres/`.
 - GitHub Actions CI already runs `go test ./...` on pushes and pull requests.
-
-## Recommended CI/CD Direction
-
-The preferred deployment approach is:
-
-1. Run CI on every push and pull request.
-2. Run `go test ./...`.
-3. Start a temporary Postgres service in CI.
-4. Apply schema and seed data to the CI database.
-5. Run API smoke checks against the seeded database.
-6. Build a single deployable backend artifact or container.
-7. Deploy automatically on merge to `main`.
-
-## Recommended Tooling
-
-- GitHub Actions for CI/CD
-- Docker for packaging
-- Postgres as a separately managed service
-- Versioned SQL migrations for production schema changes
-
-## Production Deployment Model
-
-- Deploy the Go server as the main application artifact.
-- Keep Postgres external to the app container/process.
-- Use environment-based configuration for database access.
-- Run migrations before switching production traffic to a new release.
-- Run smoke checks after deploy.
-
-Suggested smoke-check endpoints:
-
-- `/`
-- `/api/v1/scales`
-- `/api/v1/tunings`
-- `/api/v1/scales/scale_layouts`
 
 ## Important Rule
 
 Do not use the local schema rebuild or reset-and-seed flows in production.
 
-`db/postgres/rebuild_schema.sh` and `db/postgres/reset_and_seed.sh` are for:
+The local database helpers are for:
 
 - local development
 - test environments
 - CI bootstrap
 
-Production should use:
+Production database changes must follow the rules in
+`docs/DEPLOY_DATABASE.md`.
 
-- forward-only migrations
-- controlled reference-data updates
+## Near-Term Direction
 
-## Future Work
+The currently preferred application deployment direction is:
 
-When deployment work resumes, likely next steps are:
+- local server development for normal feature work
+- local container integration for runtime validation
+- GitHub Actions for CI and image build
+- OCI Container Registry for published images
+- one OCI Always Free-friendly compute instance as the runtime host
+- Docker Compose on that host for the server and database containers
 
-1. Add a `Dockerfile`
-2. Expand CI to include Postgres bootstrap and API smoke checks
-3. Add a GitHub Actions deploy workflow
-4. Add a proper migration flow separate from reset/seed
-5. Add a health endpoint
+That design is documented in `deploy/CONTAINER_DEPLOYMENT.md`.
+
+We may add a separate staging deployment environment later, but it is not part
+of the current operating model.

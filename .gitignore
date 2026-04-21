@@ -37,5 +37,20 @@ music-tools.code-workspace
 # Local config
 conf/*.env
 !conf/*.env.example
+deploy/container/docker/*.env
+!deploy/container/docker/*.env.example
 bin/local_*.sh
 docs/FEATURES.local.md
+
+# Terraform local files
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+deploy/infrastructure/oci/*.tfvars
+!deploy/infrastructure/oci/terraform.tfvars.example

@@ -1,5 +1,8 @@
 # Notes
 
+This file is for small repo-level follow-up notes that do not yet justify a
+full design doc.
+
 ## Open Questions
 - Should the random scale selection code live in `src/`?
 

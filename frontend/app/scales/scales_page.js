@@ -146,20 +146,24 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
       return;
     }
     const routeScale = findScaleByRouteValue(scales, routeState?.scale);
-    if (routeScale && routeScale.id !== Number(selectedScaleId)) {
-      setSelectedScaleId(routeScale.id);
+    if (routeScale) {
+      setSelectedScaleId((current) =>
+        routeScale.id === Number(current) ? current : routeScale.id
+      );
     }
-  }, [routeState?.scale, scales, selectedScaleId]);
+  }, [routeState?.scale, scales]);
 
   useEffect(() => {
     if (tunings.length === 0) {
       return;
     }
     const routeTuning = findTuningByRouteValue(tunings, routeState?.tuning);
-    if (routeTuning && routeTuning.id !== Number(selectedTuningId)) {
-      setSelectedTuningId(routeTuning.id);
+    if (routeTuning) {
+      setSelectedTuningId((current) =>
+        routeTuning.id === Number(current) ? current : routeTuning.id
+      );
     }
-  }, [routeState?.tuning, tunings, selectedTuningId]);
+  }, [routeState?.tuning, tunings]);
 
   useEffect(() => {
     if (routeState?.key && DEFAULT_KEYS.includes(routeState.key)) {
@@ -185,7 +189,7 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
     [tunings, selectedTuningId]
   );
   const tuningStrings = selectedTuning?.strings?.length ? selectedTuning.strings : [];
-  const tuningLabels = [...tuningStrings].reverse();
+  const tuningLabels = useMemo(() => [...tuningStrings].reverse(), [tuningStrings]);
 
   const selectedScale = useMemo(
     () => scales.find((scale) => scale.id === Number(selectedScaleId)),

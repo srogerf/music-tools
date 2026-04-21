@@ -1,0 +1,14 @@
+.git
+.github
+.codex
+.idea
+.vscode
+node_modules
+tmp
+*.log
+*.out
+*.tfstate
+*.tfstate.*
+.terraform
+deploy/infrastructure/oci/terraform.tfvars
+deploy/container/docker/compose.env

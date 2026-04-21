@@ -1,39 +1,63 @@
-## Overview
-This repository hosts a collection of small, focused command-line tools under `tools/`.
-Each tool lives in its own subdirectory and is implemented in Go, with optional shell wrappers where helpful.
+# Architecture
 
-## Structure
-- `src/`: top-level directory for code.
-- `tools/<tool_name>/`: command-line tools, one tool per directory, self-contained. Prefer Python or Go.
-- `lib/`: shared logic used by tools and servers. Go.
-- `api/`: API definitions and Swagger/OpenAPI specs.
-- `server/`: server code to run APIs/services. Go.
-- `frontend/`: frontend code (React or TypeScript).
-- `test/`: tests for the repository.
-- `data/`: static data and database schemas.
+This document describes the current repo structure and the intended ownership of
+the main top-level directories.
 
-Each tool should include:
-- `main.go` as the CLI entry point.
-- participation in the repository's root `go.mod` unless there is a clear reason to split it into its own module.
-- `README.md` describing purpose, flags, and usage.
+## Current Shape
 
-## src/ Structure
-The `src/` directory is reserved for core code that does not belong to tools, servers, or frontend apps.
-- Each subdirectory under `src/` should contain a `README.md` that defines its purpose and ownership.
-- Keep `src/` focused on reusable, internal code rather than entry points or executables.
-See `../src/STRUCTURE.md` for details.
+`music-tools` is organized as:
 
-## CLI Design
-- Keep interfaces simple and discoverable.
-- Use Go's `flag` package unless there is a clear need for a richer parser.
-- Provide sensible defaults and clear error messages.
+- Go library code under `src/`
+- small Go CLIs under `tools/`
+- API and server code under `api/` and `server/`
+- browser UI under `frontend/`
+- static reference data under `data/`
+- database schema, seed, and helper scripts under `db/`
+- deployment assets under `deploy/`
+- project guidance under `docs/`
 
-## Musical Domain Rules
-- For scale-related tools, include major and minor scales.
-- Minor variants include natural, harmonic, and melodic minors where relevant.
-- Default accidental limits should be conservative, but configurable via flags.
+## Top-Level Directory Roles
 
-## Quality
-- Prefer deterministic logic with small, testable functions.
-- Keep dependencies minimal; standard library first.
-- Aim for readable, well-documented code with concise comments only when needed.
+- `src/`
+  - Reusable internal library code.
+  - No CLI entry points here.
+  - See `src/STRUCTURE.md` for more detail.
+- `tools/`
+  - One Go CLI per directory.
+  - Each tool should remain small, self-contained, and documented.
+- `api/`
+  - API handlers and OpenAPI definitions.
+- `server/`
+  - The runnable Go server that exposes the app and APIs.
+- `frontend/`
+  - Frontend code for the browser-based fretboard UI.
+- `data/`
+  - Canonical static data such as scale definitions, tuning definitions, and
+    layout files.
+- `db/`
+  - SQL files, schema/version metadata, and Postgres helper scripts.
+  - Canonical SQL lives in `db/sql/`.
+  - Runnable Postgres helpers live in `db/postgres/`.
+- `deploy/`
+  - Infrastructure, container, and CI/CD deployment assets.
+- `docs/`
+  - Project-level design notes, constraints, and operating guidance.
+
+## Design Rules
+
+- Keep reusable domain logic in `src/`.
+- Keep operational entry points out of `src/`.
+- Keep provider-specific infrastructure under `deploy/infrastructure/`.
+- Keep container packaging assets under `deploy/container/`.
+- Keep CI/CD automation under `deploy/cicd/`.
+- Prefer one authoritative doc for each topic, and use short pointer docs when
+  a local note is helpful near the code.
+
+## Related Docs
+
+- `src/STRUCTURE.md`
+- `docs/CONSTRAINTS.md`
+- `docs/SCALE_LAYOUTS.md`
+- `docs/DEPLOYMENT.md`
+- `docs/DEPLOY_DATABASE.md`
+- `deploy/README.md`

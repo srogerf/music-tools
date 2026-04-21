@@ -52,6 +52,20 @@ function writeRouteState(routeState) {
   window.history.pushState(routeState, "", nextUrl);
 }
 
+function sameScalesRoute(left = {}, right = {}) {
+  return (
+    (left.scale || "") === (right.scale || "") &&
+    (left.key || "") === (right.key || "") &&
+    (left.position || "") === (right.position || "") &&
+    (left.tuning || "") === (right.tuning || "") &&
+    Boolean(left.threeNps) === Boolean(right.threeNps)
+  );
+}
+
+function sameRouteState(left, right) {
+  return left?.section === right?.section && sameScalesRoute(left?.scales, right?.scales);
+}
+
 function App() {
   const [routeState, setRouteState] = useState(() => readRouteState());
 
@@ -83,6 +97,9 @@ function App() {
   const activeSection = routeState.section;
 
   function updateRoute(nextRouteState) {
+    if (sameRouteState(routeState, nextRouteState)) {
+      return;
+    }
     setRouteState(nextRouteState);
     writeRouteState(nextRouteState);
   }

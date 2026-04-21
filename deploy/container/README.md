@@ -10,3 +10,7 @@ Examples:
 - `podman/`
 
 Each type directory can contain its own build files, helper scripts, and image-specific documentation.
+
+Current active path:
+
+- `docker/`

@@ -106,8 +106,7 @@ useful goal is:
 
 ## Recommended Direction
 
-The best next step is to keep one layout system, but support two layout
-families within it:
+Keep one layout system, but support two layout families within it:
 
 - standard positions: the current CAGED-oriented layouts
 - 3NPS positions: alternate layouts for the same tuning and scale
@@ -122,62 +121,6 @@ Why this is the best fit:
   authority on fret selection.
 - It avoids overloading one position definition with two incompatible note
   density rules.
-
-## Extend Existing Layouts Vs Create Separate 3NPS Layouts
-
-### Option 1: Extend Each Existing Position With A 3NPS Variant
-
-Example direction:
-
-- Keep the existing `positions` map as-is.
-- Add a parallel map for alternate variants, such as `three_nps_positions`.
-- Use the same position names (`C`, `A`, `G`, `E`, `D`) where they still make
-  sense as anchors.
-
-Pros:
-
-- Keeps the current API/resource model intact.
-- Makes the checkbox/toggle easy: choose standard map or 3NPS map.
-- Keeps standard and 3NPS validation rules distinct.
-
-Cons:
-
-- Requires backend/API/schema changes.
-- Some 3NPS shapes may not map cleanly to every CAGED label.
-
-### Option 2: Store 3NPS As An Entirely Separate Layout Resource
-
-Example direction:
-
-- Keep existing scale layouts untouched.
-- Add a second layout resource specifically for 3NPS.
-
-Pros:
-
-- Clean conceptual separation.
-- No ambiguity between families.
-
-Cons:
-
-- Adds more API and data surface area.
-- Makes the frontend do more switching between resource types.
-- Encourages duplicated loading, tests, and selection logic.
-
-### Decision
-
-Use Option 1.
-
-3NPS should be added as an option for each existing shape within the same
-scale-layout system.
-
-That means:
-
-- each anchor shape (`C`, `A`, `G`, `E`, `D`) has a standard layout option
-- each anchor shape can also have a `3nps` layout option
-- the frontend toggle selects which option for the selected shape to render
-
-A single scale-layout resource with multiple named layout families is the best
-match for the current architecture and for the UI toggle you described.
 
 ## 3NPS Rules
 
@@ -213,21 +156,6 @@ The current idea fits the existing scales page well:
 - if a 3NPS layout is missing for the selected scale/tuning/position, fall back
   gracefully to the standard layout or disable the toggle for that case
 
-## Suggested Implementation Order
-
-1. Finalize the data shape for alternate layout families.
-2. Add backend structs, loading, and validation for 3NPS variants.
-3. Seed a small set of 3NPS layouts, starting with major scale positions in
-   standard tuning.
-4. Add a frontend `3NPS` toggle that switches layout family.
-5. Add UI selection so each shape can switch between `standard` and `3nps`.
-
-## Open Questions
-
-- Should every scale have both standard and 3NPS layouts, or only scales where
-  3NPS is musically common?
-- How should the UI behave when standard exists but 3NPS does not?
-
 ## Actual 3NPS Spec
 
 This section defines the concrete direction we should use if we move 3NPS from
@@ -246,6 +174,12 @@ It should not be:
 
 The standard and 3NPS families should both live under the existing
 scale-layout resource, but as distinct stored families.
+
+That means:
+
+- each anchor shape (`C`, `A`, `G`, `E`, `D`) has a `standard` option
+- each anchor shape can also have a `3nps` option
+- the frontend toggle selects which family for the selected shape to render
 
 ### Family Model
 
@@ -416,12 +350,7 @@ The first real stored 3NPS rollout should be narrow:
 3. all five anchor positions
 4. manually authored data, not generated data
 
-After that, we can expand to:
-
-- natural minor
-- melodic minor
-- harmonic minor
-- the church modes
+After that, we can expand to additional scales where 3NPS layouts are useful.
 
 ### Recommendation For Authoring
 
