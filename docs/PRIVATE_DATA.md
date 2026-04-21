@@ -38,7 +38,7 @@ Use these copy targets:
 mkdir -p .private/oci .private/bastion
 cp deploy/infrastructure/oci/bootstrap/terraform.tfvars.example .private/oci/bootstrap.tfvars
 cp deploy/infrastructure/oci/app/terraform.tfvars.example .private/oci/app.tfvars
-cp deploy/infrastructure/oci/app/bastion.env.example .private/bastion/music-tools.env
+cp conf/bastion.env.example .private/bastion/music-tools.env
 ```
 
 The OCI helper scripts use those files by default.
