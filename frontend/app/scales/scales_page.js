@@ -100,11 +100,14 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
         const list = data.scales || [];
         setScales(list);
         setSelectedScaleId((current) => {
+          const routeScale = findScaleByRouteValue(list, routeState?.scale);
+          if (routeScale) {
+            return routeScale.id;
+          }
           if (list.some((scale) => scale.id === Number(current))) {
             return current;
           }
-          const routeScale = findScaleByRouteValue(list, routeState?.scale);
-          return (routeScale ?? list[0])?.id ?? current;
+          return list[0]?.id ?? current;
         });
       })
       .catch((err) => {
@@ -118,12 +121,15 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
         const list = data.tunings || [];
         setTunings(list);
         setSelectedTuningId((current) => {
+          const routeTuning = findTuningByRouteValue(list, routeState?.tuning);
+          if (routeTuning) {
+            return routeTuning.id;
+          }
           if (list.some((tuning) => tuning.id === Number(current))) {
             return current;
           }
-          const routeTuning = findTuningByRouteValue(list, routeState?.tuning);
           const standard = list.find((tuning) => tuning.name === DEFAULT_TUNING_NAME);
-          return (routeTuning ?? standard ?? list[0])?.id ?? current;
+          return (standard ?? list[0])?.id ?? current;
         });
       })
       .catch((err) => {
@@ -286,25 +292,51 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
     useThreeNps,
   ]);
 
-  useEffect(() => {
-    if (!onRouteChange || !selectedScale || !selectedTuning) {
+  function updateRouteFromSelection(overrides = {}) {
+    if (!onRouteChange) {
+      return;
+    }
+    const scaleName = overrides.scaleName ?? selectedScale?.name;
+    const key = overrides.key ?? selectedKey;
+    const position = overrides.position ?? selectedPosition;
+    const tuningName = overrides.tuningName ?? selectedTuning?.name;
+    const threeNps = overrides.threeNps ?? useThreeNps;
+    if (!scaleName || !key || !position || !tuningName) {
       return;
     }
     onRouteChange({
-      scale: selectedScale.name,
-      key: selectedKey,
-      position: selectedPosition,
-      tuning: selectedTuning.name,
-      threeNps: useThreeNps,
+      scale: scaleName,
+      key,
+      position,
+      tuning: tuningName,
+      threeNps,
     });
-  }, [
-    onRouteChange,
-    selectedKey,
-    selectedPosition,
-    selectedScale,
-    selectedTuning,
-    useThreeNps,
-  ]);
+  }
+
+  function handleScaleChange(event) {
+    const nextScaleId = Number(event.target.value);
+    const nextScale = scales.find((scale) => scale.id === nextScaleId);
+    setSelectedScaleId(nextScaleId);
+    updateRouteFromSelection({ scaleName: nextScale?.name });
+  }
+
+  function handleKeyChange(event) {
+    const nextKey = event.target.value;
+    setSelectedKey(nextKey);
+    updateRouteFromSelection({ key: nextKey });
+  }
+
+  function handlePositionChange(event) {
+    const nextPosition = event.target.value;
+    setSelectedPosition(nextPosition);
+    updateRouteFromSelection({ position: nextPosition });
+  }
+
+  function handleThreeNpsChange(event) {
+    const nextThreeNps = event.target.checked;
+    setUseThreeNps(nextThreeNps);
+    updateRouteFromSelection({ threeNps: nextThreeNps });
+  }
 
   return React.createElement(
     "section",
@@ -331,7 +363,7 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
           {
             id: "scale",
             value: selectedScaleId,
-            onChange: (event) => setSelectedScaleId(event.target.value),
+            onChange: handleScaleChange,
           },
           scales.map((scale) =>
             React.createElement(
@@ -351,7 +383,7 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
           {
             id: "key",
             value: selectedKey,
-            onChange: (event) => setSelectedKey(event.target.value),
+            onChange: handleKeyChange,
           },
           DEFAULT_KEYS.map((key) => React.createElement("option", { key, value: key }, key))
         )
@@ -365,7 +397,7 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
           {
             id: "position",
             value: selectedPosition,
-            onChange: (event) => setSelectedPosition(event.target.value),
+            onChange: handlePositionChange,
           },
           CAGED_SHAPES.map((shape) =>
             React.createElement("option", { key: shape, value: shape }, shape)
@@ -408,7 +440,7 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
           React.createElement("input", {
             type: "checkbox",
             checked: useThreeNps,
-            onChange: (event) => setUseThreeNps(event.target.checked),
+            onChange: handleThreeNpsChange,
           }),
           React.createElement("span", { className: "filter-label" }, "3NPS")
         )

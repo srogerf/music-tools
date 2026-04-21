@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "https://esm.sh/react@18";
+import React, { useCallback, useEffect, useState } from "https://esm.sh/react@18";
 import { createRoot } from "https://esm.sh/react-dom@18/client";
 import { ScalesPage } from "scales-page";
 
@@ -96,22 +96,22 @@ function App() {
 
   const activeSection = routeState.section;
 
-  function updateRoute(nextRouteState) {
+  const updateRoute = useCallback((nextRouteState) => {
     if (sameRouteState(routeState, nextRouteState)) {
       return;
     }
     setRouteState(nextRouteState);
     writeRouteState(nextRouteState);
-  }
+  }, [routeState]);
 
-  function updateSection(section) {
+  const updateSection = useCallback((section) => {
     updateRoute({
       ...routeState,
       section,
     });
-  }
+  }, [routeState, updateRoute]);
 
-  function updateScalesRoute(scales) {
+  const updateScalesRoute = useCallback((scales) => {
     updateRoute({
       ...routeState,
       scales: {
@@ -119,7 +119,7 @@ function App() {
         ...scales,
       },
     });
-  }
+  }, [routeState, updateRoute]);
 
   let sectionContent = null;
   if (activeSection === "Scales") {

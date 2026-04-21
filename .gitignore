@@ -8,7 +8,9 @@ yarn-debug.log*
 yarn-error.log*
 
 # Go
-/bin/
+!/bin/
+/bin/*
+!/bin/oci_*.sh
 /pkg/
 *.exe
 *.exe~
@@ -52,5 +54,9 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
-deploy/infrastructure/oci/*.tfvars
-!deploy/infrastructure/oci/terraform.tfvars.example
+deploy/infrastructure/oci/app/*.tfvars
+deploy/infrastructure/oci/app/*.tfvars.local
+!deploy/infrastructure/oci/app/terraform.tfvars.example
+deploy/infrastructure/oci/bootstrap/*.tfvars
+deploy/infrastructure/oci/bootstrap/*.tfvars.local
+!deploy/infrastructure/oci/bootstrap/terraform.tfvars.example

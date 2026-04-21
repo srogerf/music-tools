@@ -592,22 +592,7 @@ export function computeFretboardLayout({
   );
 
   let perStringFrets = null;
-  const hasSplitRanges =
-    positionLayout.mode === "split" &&
-    Array.isArray(positionLayout.split_ranges) &&
-    positionLayout.split_ranges.length > 0;
-  if (hasSplitRanges) {
-    perStringFrets = derivePerStringFrets({
-      startFret,
-      fretCount,
-      pitchClassSet,
-      noteNames,
-      indexMap,
-      displayNameMap,
-      perStringRanges,
-      tuningStrings,
-    });
-  } else if (positionLayout.per_string_frets) {
+  if (positionLayout.per_string_frets) {
     perStringFrets = {};
     let minFret = Number.POSITIVE_INFINITY;
     let maxFret = Number.NEGATIVE_INFINITY;
@@ -620,6 +605,7 @@ export function computeFretboardLayout({
       }
     });
     if (minFret < Number.POSITIVE_INFINITY && maxFret > Number.NEGATIVE_INFINITY) {
+      const hasPerStringRanges = perStringRanges && Object.keys(perStringRanges).length > 0;
       return trimFretboardLayout(
         buildLayout({
           startFret: minFret,
@@ -631,7 +617,7 @@ export function computeFretboardLayout({
           noteNames,
           indexMap,
           displayNameMap,
-          perStringRanges,
+          perStringRanges: hasPerStringRanges ? perStringRanges : null,
           perStringFrets,
           tuningStrings,
         }),
@@ -639,6 +625,21 @@ export function computeFretboardLayout({
         maxFret - minFret + 1
       );
     }
+  } else if (
+    positionLayout.mode === "split" &&
+    Array.isArray(positionLayout.split_ranges) &&
+    positionLayout.split_ranges.length > 0
+  ) {
+    perStringFrets = derivePerStringFrets({
+      startFret,
+      fretCount,
+      pitchClassSet,
+      noteNames,
+      indexMap,
+      displayNameMap,
+      perStringRanges,
+      tuningStrings,
+    });
   }
 
   return trimFretboardLayout(

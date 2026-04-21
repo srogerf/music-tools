@@ -1,0 +1,42 @@
+name: Terraform
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate ${{ matrix.name }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: OCI State Bootstrap
+            directory: deploy/infrastructure/oci/bootstrap
+          - name: OCI Infrastructure
+            directory: deploy/infrastructure/oci/app
+
+    defaults:
+      run:
+        working-directory: ${{ matrix.directory }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Check formatting
+        run: terraform fmt -check
+
+      - name: Initialize providers
+        run: terraform init -backend=false
+
+      - name: Validate configuration
+        run: terraform validate

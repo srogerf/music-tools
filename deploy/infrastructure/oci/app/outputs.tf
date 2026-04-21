@@ -14,6 +14,22 @@ output "public_load_balancer_ip_addresses" {
   value = oci_network_load_balancer_network_load_balancer.public.ip_addresses
 }
 
+output "public_load_balancer_public_ip" {
+  value = try([
+    for address in oci_network_load_balancer_network_load_balancer.public.ip_addresses :
+    address.ip_address
+    if address.is_public
+  ][0], null)
+}
+
+output "public_load_balancer_public_ips" {
+  value = [
+    for address in oci_network_load_balancer_network_load_balancer.public.ip_addresses :
+    address.ip_address
+    if address.is_public
+  ]
+}
+
 output "private_instance_id" {
   value = oci_core_instance.app.id
 }

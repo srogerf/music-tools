@@ -43,6 +43,23 @@ def load_layout_files() -> list[dict[str, Any]]:
     return layouts
 
 
+def split_ranges_for_position(position: dict[str, Any]) -> list[dict[str, Any]]:
+    split_ranges = position.get("split_ranges") or []
+    if split_ranges:
+        return split_ranges
+
+    per_string = position.get("per_string") or {}
+    grouped_ranges: dict[tuple[int, int], list[int]] = {}
+    for string_index_text, fret_range in sorted(per_string.items(), key=lambda item: int(item[0])):
+        key = (int(fret_range["start"]), int(fret_range["span"]))
+        grouped_ranges.setdefault(key, []).append(int(string_index_text))
+
+    return [
+        {"start": start, "span": span, "strings": strings}
+        for (start, span), strings in grouped_ranges.items()
+    ]
+
+
 def main() -> None:
     versions = read_versions()
     schema_version = int(versions["schema_version"])
@@ -172,7 +189,7 @@ $seed$;"""
                     f"{sql_literal(validated_manual)})"
                 )
 
-                for ordinal, split_range in enumerate(position.get("split_ranges") or [], start=1):
+                for ordinal, split_range in enumerate(split_ranges_for_position(position), start=1):
                     print_insert(
                         "INSERT INTO scale_layout_position_split_ranges "
                         "(scale_layout_position_id, ordinal, start_fret, fret_span) "

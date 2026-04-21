@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -29,6 +30,27 @@ func runSeedData(t *testing.T) string {
 		t.Fatalf("run seed_data.py: %v\n%s", err, string(out))
 	}
 	return string(out)
+}
+
+func splitRangeSQL(scaleID int, positionCode string, ordinal int, startFret int, fretSpan int) string {
+	return fmt.Sprintf(
+		"INSERT INTO scale_layout_position_split_ranges (scale_layout_position_id, ordinal, start_fret, fret_span) VALUES ((SELECT id FROM scale_layout_positions WHERE scale_layout_id = (SELECT id FROM scale_layouts WHERE scale_id = (SELECT id FROM scales WHERE external_id = %d) AND tuning_id = (SELECT id FROM tunings WHERE external_id = 1) AND family_code = 'standard') AND position_code = '%s'), %d, %d, %d);",
+		scaleID,
+		positionCode,
+		ordinal,
+		startFret,
+		fretSpan,
+	)
+}
+
+func splitRangeStringSQL(scaleID int, positionCode string, ordinal int, stringIndex int) string {
+	return fmt.Sprintf(
+		"INSERT INTO scale_layout_position_split_range_strings (split_range_id, string_index_zero_based) VALUES ((SELECT id FROM scale_layout_position_split_ranges WHERE scale_layout_position_id = (SELECT id FROM scale_layout_positions WHERE scale_layout_id = (SELECT id FROM scale_layouts WHERE scale_id = (SELECT id FROM scales WHERE external_id = %d) AND tuning_id = (SELECT id FROM tunings WHERE external_id = 1) AND family_code = 'standard') AND position_code = '%s') AND ordinal = %d), %d);",
+		scaleID,
+		positionCode,
+		ordinal,
+		stringIndex,
+	)
 }
 
 func TestSeedDataGeneratesTransactionWrappedSQL(t *testing.T) {
@@ -69,6 +91,31 @@ func TestSeedDataIncludesMajorDSplitRanges(t *testing.T) {
 		"INSERT INTO scale_layout_position_split_ranges (scale_layout_position_id, ordinal, start_fret, fret_span) VALUES ((SELECT id FROM scale_layout_positions WHERE scale_layout_id = (SELECT id FROM scale_layouts WHERE scale_id = (SELECT id FROM scales WHERE external_id = 1) AND tuning_id = (SELECT id FROM tunings WHERE external_id = 1) AND family_code = 'standard') AND position_code = 'D'), 2, 10, 4);",
 		"INSERT INTO scale_layout_position_split_range_strings (split_range_id, string_index_zero_based) VALUES ((SELECT id FROM scale_layout_position_split_ranges WHERE scale_layout_position_id = (SELECT id FROM scale_layout_positions WHERE scale_layout_id = (SELECT id FROM scale_layouts WHERE scale_id = (SELECT id FROM scales WHERE external_id = 1) AND tuning_id = (SELECT id FROM tunings WHERE external_id = 1) AND family_code = 'standard') AND position_code = 'D') AND ordinal = 2), 4);",
 		"INSERT INTO scale_layout_position_split_range_strings (split_range_id, string_index_zero_based) VALUES ((SELECT id FROM scale_layout_position_split_ranges WHERE scale_layout_position_id = (SELECT id FROM scale_layout_positions WHERE scale_layout_id = (SELECT id FROM scale_layouts WHERE scale_id = (SELECT id FROM scales WHERE external_id = 1) AND tuning_id = (SELECT id FROM tunings WHERE external_id = 1) AND family_code = 'standard') AND position_code = 'D') AND ordinal = 2), 5);",
+	}
+
+	for _, needle := range expected {
+		if !strings.Contains(out, needle) {
+			t.Fatalf("expected seed output to contain:\n%s", needle)
+		}
+	}
+}
+
+func TestSeedDataConvertsPerStringWindowsToSplitRanges(t *testing.T) {
+	out := runSeedData(t)
+
+	expected := []string{
+		splitRangeSQL(8, "D", 1, 8, 5),
+		splitRangeStringSQL(8, "D", 1, 0),
+		splitRangeStringSQL(8, "D", 1, 3),
+		splitRangeSQL(8, "D", 2, 9, 5),
+		splitRangeStringSQL(8, "D", 2, 4),
+		splitRangeStringSQL(8, "D", 2, 5),
+		splitRangeSQL(9, "D", 1, 8, 5),
+		splitRangeStringSQL(9, "D", 1, 0),
+		splitRangeStringSQL(9, "D", 1, 3),
+		splitRangeSQL(9, "D", 2, 10, 4),
+		splitRangeStringSQL(9, "D", 2, 4),
+		splitRangeStringSQL(9, "D", 2, 5),
 	}
 
 	for _, needle := range expected {
