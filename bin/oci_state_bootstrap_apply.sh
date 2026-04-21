@@ -4,19 +4,27 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 BOOTSTRAP_DIR="$ROOT_DIR/deploy/infrastructure/oci/bootstrap"
-TFVARS_FILE="${TFVARS_FILE:-terraform.tfvars.local}"
+TFVARS_FILE="${TFVARS_FILE:-$ROOT_DIR/.private/oci/bootstrap.tfvars}"
+STATE_FILE="${STATE_FILE:-$ROOT_DIR/.private/terraform/oci-bootstrap.tfstate}"
+PLAN_FILE="${PLAN_FILE:-$ROOT_DIR/.private/terraform/oci-bootstrap.tfplan}"
+
+# shellcheck disable=SC1091
+source "$ROOT_DIR/bin/lib/terraform_helpers.sh"
 
 usage() {
   cat >&2 <<'EOF'
-Usage: bash bin/oci_state_bootstrap_apply.sh [--var-file FILE] [terraform apply args...]
+Usage: bash bin/oci_state_bootstrap_apply.sh [--var-file FILE] [--state-file FILE] [--plan-file FILE] [terraform apply args...]
 
 Defaults:
-  --var-file terraform.tfvars.local
+  --var-file .private/oci/bootstrap.tfvars
+  --state-file .private/terraform/oci-bootstrap.tfstate
+  --plan-file .private/terraform/oci-bootstrap.tfplan
 
 Examples:
   bash bin/oci_state_bootstrap_apply.sh
-  bash bin/oci_state_bootstrap_apply.sh --var-file terraform.tfvars.local
-  bash bin/oci_state_bootstrap_apply.sh -auto-approve
+  bash bin/oci_state_bootstrap_apply.sh --var-file .private/oci/bootstrap.test.tfvars
+  bash bin/oci_state_bootstrap_apply.sh --state-file .private/terraform/oci-bootstrap.test.tfstate
+  bash bin/oci_state_bootstrap_apply.sh --plan-file .private/terraform/oci-bootstrap.test.tfplan
 EOF
 }
 
@@ -33,6 +41,24 @@ while [[ $# -gt 0 ]]; do
       TFVARS_FILE="$2"
       shift 2
       ;;
+    --state-file)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for --state-file" >&2
+        usage
+        exit 1
+      fi
+      STATE_FILE="$2"
+      shift 2
+      ;;
+    --plan-file)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for --plan-file" >&2
+        usage
+        exit 1
+      fi
+      PLAN_FILE="$2"
+      shift 2
+      ;;
     --help|-h)
       usage
       exit 0
@@ -44,11 +70,31 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ ! -f "$BOOTSTRAP_DIR/$TFVARS_FILE" ]]; then
-  echo "Missing tfvars file: $BOOTSTRAP_DIR/$TFVARS_FILE" >&2
-  echo "Copy deploy/infrastructure/oci/bootstrap/terraform.tfvars.example to $TFVARS_FILE and fill in your real OCI values." >&2
+TFVARS_PATH="$(resolve_repo_path "$ROOT_DIR" "$BOOTSTRAP_DIR" "$TFVARS_FILE")"
+require_tfvars_file "$TFVARS_PATH" "Copy deploy/infrastructure/oci/bootstrap/terraform.tfvars.example to .private/oci/bootstrap.tfvars and fill in your real OCI values."
+
+required_vars=(
+  tenancy_ocid
+  user_ocid
+  fingerprint
+  private_key_path
+  region
+  compartment_ocid
+  state_bucket_name
+)
+
+require_tfvars_values "$TFVARS_PATH" "${required_vars[@]}"
+
+STATE_PATH="$(resolve_output_path "$ROOT_DIR" "$STATE_FILE")"
+PLAN_PATH="$(resolve_output_path "$ROOT_DIR" "$PLAN_FILE")"
+
+if [[ ! -f "$PLAN_PATH" ]]; then
+  echo "Missing saved Terraform plan: $PLAN_PATH" >&2
+  echo "Run bash bin/oci_state_bootstrap_plan.sh before applying." >&2
   exit 1
 fi
 
+mkdir -p "$(dirname "$STATE_PATH")"
+
 terraform -chdir="$BOOTSTRAP_DIR" init
-terraform -chdir="$BOOTSTRAP_DIR" apply -var-file="$TFVARS_FILE" "${extra_args[@]}"
+terraform -chdir="$BOOTSTRAP_DIR" apply -state="$STATE_PATH" "${extra_args[@]}" "$PLAN_PATH"

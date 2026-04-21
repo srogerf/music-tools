@@ -3,15 +3,25 @@ user_ocid          = "ocid1.user.oc1..exampleuniqueID"
 fingerprint        = "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99"
 private_key_path   = "~/.oci/oci_api_key.pem"
 region             = "us-phoenix-1"
-availability_domain = "Uocm:PHX-AD-1"
+
+# Optional. Leave availability_domain unset to select by index.
+# availability_domain = "your-tenancy-prefix:PHX-AD-1"
+
+# Phoenix Always Free E2 Micro instances are expected in PHX-AD-3.
+availability_domain_index = 2
 
 apps_compartment_name    = "apps"
 project_compartment_name = "music-tools"
 
-ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... you@example"
+ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... comment"
 
-# Replace with a current image OCID for your region and architecture.
+# Working Always Free default. Use an x86_64 image OCID for this shape.
+instance_shape      = "VM.Standard.E2.1.Micro"
+instance_ocpus      = 1
+instance_memory_gbs = 1
+
+# Replace with a current x86_64 image OCID for your region.
 instance_image_ocid = "ocid1.image.oc1.phx.exampleuniqueID"
 
-# Tighten this to your real client IP if possible.
-client_cidr_allowlist = ["203.0.113.10/32"]
+# Restrict Bastion session creation to your current public IP.
+client_cidr_allowlist = ["198.51.100.10/32"]

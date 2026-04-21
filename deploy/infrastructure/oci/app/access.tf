@@ -1,5 +1,5 @@
 resource "oci_bastion_bastion" "admin" {
-  bastion_type                 = "standard"
+  bastion_type                 = "STANDARD"
   compartment_id               = local.deployment_compartment_id
   target_subnet_id             = oci_core_subnet.private_app.id
   name                         = "${var.name_prefix}-bastion"

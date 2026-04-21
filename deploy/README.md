@@ -7,8 +7,8 @@ apply across more than one subdirectory.
 
 Current top-level deployment notes:
 
-- [CONTAINER_DEPLOYMENT.md](/home/roger/vm1/development/company/riffexchange/music-tools/deploy/CONTAINER_DEPLOYMENT.md:1)
-- [infrastructure/oci/README.md](/home/roger/vm1/development/company/riffexchange/music-tools/deploy/infrastructure/oci/README.md:1)
+- [CONTAINER_DEPLOYMENT.md](CONTAINER_DEPLOYMENT.md)
+- [infrastructure/oci/README.md](infrastructure/oci/README.md)
 
 ## Structure
 

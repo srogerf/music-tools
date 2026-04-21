@@ -1,12 +1,16 @@
 resource "oci_core_instance" "app" {
-  availability_domain = var.availability_domain
+  availability_domain = local.availability_domain
   compartment_id      = local.deployment_compartment_id
   display_name        = "${var.name_prefix}-app"
   shape               = var.instance_shape
 
-  shape_config {
-    ocpus         = var.instance_ocpus
-    memory_in_gbs = var.instance_memory_gbs
+  dynamic "shape_config" {
+    for_each = var.instance_shape == "VM.Standard.A1.Flex" ? [1] : []
+
+    content {
+      ocpus         = var.instance_ocpus
+      memory_in_gbs = var.instance_memory_gbs
+    }
   }
 
   create_vnic_details {

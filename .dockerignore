@@ -1,6 +1,7 @@
 .git
 .github
 .codex
+.private
 .idea
 .vscode
 node_modules

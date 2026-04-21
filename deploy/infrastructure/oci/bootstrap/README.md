@@ -13,8 +13,11 @@ bucket it creates as its own backend.
 
 ## Usage
 
-1. Copy `terraform.tfvars.example` to `terraform.tfvars.local`.
+1. Copy `terraform.tfvars.example` to `.private/oci/bootstrap.tfvars`.
 2. Fill in your OCI values and desired state bucket name.
+   - `state_bucket_name` is the OCI bucket name, for example
+     `music_tools_terraform_state`.
+   - It is not the local bootstrap state path.
 3. Run:
 
 ```bash
@@ -22,8 +25,19 @@ bash bin/oci_state_bootstrap_plan.sh
 bash bin/oci_state_bootstrap_apply.sh
 ```
 
-The local `terraform.tfvars.local` and local `terraform.tfstate` files are
-ignored by Git.
+The plan command writes a saved plan to:
+
+- `.private/terraform/oci-bootstrap.tfplan`
+
+The apply command consumes that saved plan so the applied actions match the
+reviewed plan.
+
+The helper scripts store bootstrap local state at:
+
+- `.private/terraform/oci-bootstrap.tfstate`
+
+The state file, plan file, and `.private/oci/bootstrap.tfvars` are ignored by
+Git.
 
 ## After Apply
 

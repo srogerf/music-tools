@@ -9,7 +9,7 @@ Use:
 
 - GitHub Actions for CI, image builds, and release orchestration
 - OCI Container Registry (OCIR) for storing versioned container images
-- one OCI Always Free-friendly `VM.Standard.A1.Flex` compute instance as the
+- one OCI Always Free-friendly `VM.Standard.E2.1.Micro` compute instance as the
   runtime host
 - Docker Engine with Docker Compose on that instance to run the long-lived
   runtime containers
@@ -17,6 +17,9 @@ Use:
 
 Avoid adding OCI Kubernetes Engine or Terragrunt at this stage. The stack is
 still small enough that those layers would add more complexity than value.
+
+`VM.Standard.A1.Flex` may be worth revisiting later if capacity becomes
+available, but the current working production target is the E2 Micro shape.
 
 ## Chosen Path
 

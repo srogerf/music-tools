@@ -17,7 +17,7 @@ This directory contains the OCI Terraform stacks for `music-tools`.
 
 1. Configure OCI API access.
 2. Copy `bootstrap/terraform.tfvars.example` to
-   `bootstrap/terraform.tfvars.local`.
+   `.private/oci/bootstrap.tfvars`.
 3. Fill in the bootstrap values, including `state_bucket_name`.
 4. Run:
 
@@ -27,7 +27,7 @@ bash bin/oci_state_bootstrap_apply.sh
 ```
 
 5. Use the bootstrap outputs to configure remote state for the app stack.
-6. Copy `app/terraform.tfvars.example` to `app/terraform.tfvars.local`.
+6. Copy `app/terraform.tfvars.example` to `.private/oci/app.tfvars`.
 7. Fill in the app stack values.
 8. Run:
 
@@ -36,7 +36,8 @@ bash bin/oci_terraform_plan.sh
 bash bin/oci_terraform_apply.sh
 ```
 
-Local tfvars and state files are ignored by Git.
+Private tfvars and state files are ignored by Git. See
+`docs/PRIVATE_DATA.md` for the repo-wide private-data convention.
 
 ## OCI Access Setup
 
@@ -52,9 +53,9 @@ You need:
 
 The app stack also needs:
 
-- `availability_domain`
 - `ssh_public_key`
 - `instance_image_ocid`
+- `client_cidr_allowlist`
 
 Recommended setup process:
 
@@ -64,7 +65,7 @@ Recommended setup process:
 4. Copy the key fingerprint shown by OCI.
 5. Put the private key somewhere readable only by you, for example:
    `~/.oci/oci_api_key.pem`.
-6. Fill those values into each stack's local tfvars file.
+6. Fill those values into each stack's `.private/oci/*.tfvars` file.
 
 Example local key generation:
 
@@ -85,12 +86,16 @@ Then:
 
 The app stack is aimed at OCI Always Free where possible:
 
-- compute defaults to `VM.Standard.A1.Flex`
-- the instance defaults to `1` OCPU and `6` GB RAM
+- compute defaults to `VM.Standard.E2.1.Micro`
+- the instance defaults to `1` OCPU and `1` GB RAM
 - the public entry point uses the OCI Network Load Balancer because Oracle's
   Always Free docs explicitly list an Always Free network load balancer
 - the remote state bucket should stay well within the Always Free Object
   Storage limits for normal Terraform state usage
+
+`VM.Standard.A1.Flex` remains a possible future upgrade path, but Phoenix A1
+capacity can be unavailable. If you switch shapes, also update the image OCID to
+match the CPU architecture.
 
 This setup does not create a NAT gateway, because NAT Gateway is not clearly
 listed as Always Free.

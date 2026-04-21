@@ -73,10 +73,12 @@ Use this when creating or recreating a test database from scratch.
 Process:
 
 1. Ensure the database instance exists and connection settings are correct.
-2. Pass an explicit test environment flag.
-3. Run the schema rebuild flow.
-4. Verify that `schema_metadata` exists and the schema version is stamped.
-5. If data is needed, follow with the initial schema seeding flow.
+2. Put connection settings in `.private/conf/postgres.env` or set
+   `POSTGRES_CONFIG` to another private env file.
+3. Pass an explicit test environment flag.
+4. Run the schema rebuild flow.
+5. Verify that `schema_metadata` exists and the schema version is stamped.
+6. If data is needed, follow with the initial schema seeding flow.
 
 Current repo mechanism:
 
@@ -96,10 +98,11 @@ tables.
 Process:
 
 1. Confirm this is truly a first-time production bootstrap.
-2. Require explicit operator confirmation.
-3. Apply the schema creation SQL only.
-4. Verify the schema version stamp.
-5. Follow with initial seeding only if the production rollout requires
+2. Put production connection settings in a private env file, never in the repo.
+3. Require explicit operator confirmation.
+4. Apply the schema creation SQL only.
+5. Verify the schema version stamp.
+6. Follow with initial seeding only if the production rollout requires
    reference data at creation time.
 
 Guidance:

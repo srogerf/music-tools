@@ -2,12 +2,22 @@ variable "tenancy_ocid" {
   description = "OCI tenancy OCID."
   type        = string
   sensitive   = true
+
+  validation {
+    condition     = can(regex("^ocid1\\.tenancy\\.", var.tenancy_ocid))
+    error_message = "tenancy_ocid must be an OCI tenancy OCID starting with ocid1.tenancy."
+  }
 }
 
 variable "user_ocid" {
   description = "OCI user OCID."
   type        = string
   sensitive   = true
+
+  validation {
+    condition     = can(regex("^ocid1\\.user\\.", var.user_ocid))
+    error_message = "user_ocid must be an OCI user OCID starting with ocid1.user."
+  }
 }
 
 variable "fingerprint" {
@@ -28,14 +38,31 @@ variable "region" {
 }
 
 variable "availability_domain" {
-  description = "Availability domain name for the compute instance."
+  description = "Optional availability domain name for the compute instance. Leave null to select by availability_domain_index."
   type        = string
+  default     = null
+}
+
+variable "availability_domain_index" {
+  description = "Zero-based availability domain index to use when availability_domain is unset. Phoenix Always Free E2 Micro is expected in PHX-AD-3, usually index 2."
+  type        = number
+  default     = 2
+
+  validation {
+    condition     = var.availability_domain_index >= 0 && var.availability_domain_index <= 2
+    error_message = "availability_domain_index must be 0, 1, or 2."
+  }
 }
 
 variable "ssh_public_key" {
   description = "SSH public key content for the compute instance."
   type        = string
   sensitive   = true
+
+  validation {
+    condition     = can(regex("^(ssh-ed25519|ssh-rsa|ecdsa-sha2-[^ ]+)[[:space:]]+", var.ssh_public_key)) && !can(regex("\\.\\.\\.|example|replace", lower(var.ssh_public_key)))
+    error_message = "ssh_public_key must be a real SSH public key, not the example placeholder."
+  }
 }
 
 variable "client_cidr_allowlist" {
@@ -81,9 +108,9 @@ variable "private_subnet_cidr" {
 }
 
 variable "instance_shape" {
-  description = "Compute shape. Defaults to an Always Free-friendly Arm shape."
+  description = "Compute shape. Defaults to the Phoenix Always Free E2 Micro shape."
   type        = string
-  default     = "VM.Standard.A1.Flex"
+  default     = "VM.Standard.E2.1.Micro"
 }
 
 variable "instance_ocpus" {
@@ -95,7 +122,7 @@ variable "instance_ocpus" {
 variable "instance_memory_gbs" {
   description = "Memory in GB for the compute instance."
   type        = number
-  default     = 6
+  default     = 1
 }
 
 variable "boot_volume_size_gbs" {
@@ -108,6 +135,11 @@ variable "instance_image_ocid" {
   description = "OCID of the base image for the compute instance."
   type        = string
   sensitive   = true
+
+  validation {
+    condition     = can(regex("^ocid1\\.image\\.", var.instance_image_ocid)) && !can(regex("example|replace", lower(var.instance_image_ocid)))
+    error_message = "instance_image_ocid must be a real OCI image OCID starting with ocid1.image."
+  }
 }
 
 variable "health_check_port" {

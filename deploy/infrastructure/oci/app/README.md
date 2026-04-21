@@ -25,6 +25,9 @@ The app subnet only allows:
 - app traffic from the load balancer NSG on `80` and `443`
 - SSH on `22` from within the VCN path used for Bastion access
 
+Both subnets are regional subnets. Compute placement can move between
+availability domains without forcing subnet or Bastion replacement.
+
 ## Files
 
 - `versions.tf`
@@ -47,14 +50,34 @@ The split is intentional:
 
 ## Usage
 
-1. Copy `terraform.tfvars.example` to `terraform.tfvars.local`.
-2. Fill in your OCI tenancy values and image OCID.
+1. Copy `terraform.tfvars.example` to `.private/oci/app.tfvars`.
+2. Fill in your OCI tenancy values, SSH key, image OCID, and Bastion client
+   allowlist.
+   - `availability_domain` is optional. Leave it unset unless you need a
+     specific AD; Terraform will select by `availability_domain_index`.
+   - The working Phoenix Always Free default is `VM.Standard.E2.1.Micro` with
+     `availability_domain_index = 2`, which maps to PHX-AD-3 in the current
+     tenancy.
+   - `ssh_public_key` must be the full content of a real public key, such as
+     the contents of `~/.ssh/id_ed25519.pub`.
+   - `instance_image_ocid` must be a real image OCID for your region and CPU
+     architecture. For `VM.Standard.E2.1.Micro`, use an x86_64 image.
+   - `client_cidr_allowlist` should be your current public IP with `/32`.
+   - If you later switch to `VM.Standard.A1.Flex`, use an Arm-compatible image
+     and adjust the AD index only if OCI reports capacity issues.
 3. Run:
 
 ```bash
 bash bin/oci_terraform_plan.sh
 bash bin/oci_terraform_apply.sh
 ```
+
+The plan command writes a saved plan to:
+
+- `.private/terraform/oci-app.tfplan`
+
+The apply command consumes that saved plan so the applied actions match the
+reviewed plan.
 
 ## Bastion Access
 
@@ -63,8 +86,8 @@ Do not open port `22` to the internet.
 Recommended SSH access flow:
 
 1. Apply the Terraform configuration.
-2. Create an OCI Bastion session against the private instance.
-3. Use managed SSH or SSH port forwarding through Bastion.
+2. Create `.private/bastion/music-tools.env` from the Terraform outputs.
+3. Run `bash bin/oci_bastion_ssh.sh --new-session`.
 
 Keep the instance in the private subnet with no public IP. Bastion is the
 intended admin path.

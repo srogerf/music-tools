@@ -42,7 +42,8 @@ sudo mkdir -p /srv/rifferone/postgres-data
 sudo chown -R 999:999 /srv/rifferone/postgres-data
 ```
 
-If you want a different path, set `POSTGRES_DATA_PATH` in `compose.env`.
+If you want a different path, set `POSTGRES_DATA_PATH` in
+`.private/container/compose.env`.
 
 ## Postgres Port Exposure
 
@@ -55,19 +56,19 @@ commands without exposing it broadly on the VM network interface.
 
 ## Usage
 
-1. Copy `compose.env.example` to `compose.env`.
+1. Copy `compose.env.example` to `.private/container/compose.env`.
 2. Fill in the real database password and any port overrides.
 3. Start the runtime stack:
 
 ```bash
-docker compose -f deploy/container/docker/docker-compose.yml --env-file deploy/container/docker/compose.env up -d
+docker compose -f deploy/container/docker/docker-compose.yml --env-file .private/container/compose.env up -d
 ```
 
 For normal application-only updates:
 
 ```bash
-docker compose -f deploy/container/docker/docker-compose.yml --env-file deploy/container/docker/compose.env pull rifferone
-docker compose -f deploy/container/docker/docker-compose.yml --env-file deploy/container/docker/compose.env up -d rifferone
+docker compose -f deploy/container/docker/docker-compose.yml --env-file .private/container/compose.env pull rifferone
+docker compose -f deploy/container/docker/docker-compose.yml --env-file .private/container/compose.env up -d rifferone
 ```
 
 ## Migration Note

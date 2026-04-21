@@ -37,6 +37,7 @@ Thumbs.db
 music-tools.code-workspace
 
 # Local config
+.private/
 conf/*.env
 !conf/*.env.example
 deploy/container/docker/*.env

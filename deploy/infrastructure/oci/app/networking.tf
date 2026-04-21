@@ -69,6 +69,7 @@ resource "oci_core_security_list" "private_subnet" {
 resource "oci_core_subnet" "public_lb" {
   compartment_id             = local.deployment_compartment_id
   vcn_id                     = oci_core_vcn.this.id
+  availability_domain        = null
   cidr_block                 = var.public_subnet_cidr
   display_name               = "${var.name_prefix}-public-lb-subnet"
   dns_label                  = "publiclb"
@@ -80,6 +81,7 @@ resource "oci_core_subnet" "public_lb" {
 resource "oci_core_subnet" "private_app" {
   compartment_id             = local.deployment_compartment_id
   vcn_id                     = oci_core_vcn.this.id
+  availability_domain        = null
   cidr_block                 = var.private_subnet_cidr
   display_name               = "${var.name_prefix}-private-app-subnet"
   dns_label                  = "privateapp"

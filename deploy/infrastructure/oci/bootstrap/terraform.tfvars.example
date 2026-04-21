@@ -8,4 +8,5 @@ region           = "us-phoenix-1"
 # This can be the root tenancy OCID or an existing admin/bootstrap compartment.
 compartment_ocid = "ocid1.compartment.oc1..exampleuniqueID"
 
-state_bucket_name = "music-tools-terraform-state"
+# OCI bucket name only. Do not put a local .tfstate path here.
+state_bucket_name = "replace_with_globally_unique_state_bucket_name"

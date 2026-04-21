@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 SQL_DIR="$ROOT_DIR/db/sql"
-DEFAULT_CONFIG_FILE="$ROOT_DIR/conf/postgres.env"
+DEFAULT_CONFIG_FILE="$ROOT_DIR/.private/conf/postgres.env"
 EXAMPLE_CONFIG_FILE="$ROOT_DIR/conf/postgres.env.example"
 CONFIG_FILE="${POSTGRES_CONFIG:-$DEFAULT_CONFIG_FILE}"
 ENVIRONMENT="production"
@@ -72,16 +72,12 @@ if [[ -f "$CONFIG_FILE" ]]; then
   # shellcheck disable=SC1090
   source "$CONFIG_FILE"
   set +a
-elif [[ "$CONFIG_FILE" == "$DEFAULT_CONFIG_FILE" && -f "$EXAMPLE_CONFIG_FILE" ]]; then
-  set -a
-  # shellcheck disable=SC1090
-  source "$EXAMPLE_CONFIG_FILE"
-  set +a
 fi
 
 if [[ -z "${DATABASE_URL:-}" ]]; then
   if [[ -z "${PGHOST:-}" || -z "${PGPORT:-}" || -z "${PGDATABASE:-}" || -z "${PGUSER:-}" || -z "${PGPASSWORD:-}" ]]; then
     echo "Set DATABASE_URL or provide PGHOST, PGPORT, PGDATABASE, PGUSER, and PGPASSWORD via $CONFIG_FILE" >&2
+    echo "You can copy $EXAMPLE_CONFIG_FILE to $DEFAULT_CONFIG_FILE and fill in real local values." >&2
     exit 1
   fi
   DATABASE_URL="postgres://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}"

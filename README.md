@@ -26,6 +26,7 @@ go test ./...
 - [Deploy Database](docs/DEPLOY_DATABASE.md)
 - [Scale Layouts](docs/SCALE_LAYOUTS.md)
 - [Deployment](docs/DEPLOYMENT.md)
+- [Private Data](docs/PRIVATE_DATA.md)
 - [Container Deployment](deploy/CONTAINER_DEPLOYMENT.md)
 - [Deploy Directory](deploy/README.md)
 - [Constraints](docs/CONSTRAINTS.md)
