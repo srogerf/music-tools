@@ -1,4 +1,5 @@
 [![CI](https://github.com/srogerf/music-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/srogerf/music-tools/actions/workflows/ci.yml)
+[![Terraform](https://github.com/srogerf/music-tools/actions/workflows/terraform.yml/badge.svg)](https://github.com/srogerf/music-tools/actions/workflows/terraform.yml)
 
 # music-tools
 
