@@ -80,10 +80,12 @@ if [[ -z "${DATABASE_URL:-}" ]]; then
     echo "You can copy $EXAMPLE_CONFIG_FILE to $DEFAULT_CONFIG_FILE and fill in real local values." >&2
     exit 1
   fi
-  DATABASE_URL="postgres://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}"
+  PSQL_TARGET=(-h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE")
+else
+  PSQL_TARGET=("$DATABASE_URL")
 fi
 
 echo "Target database environment: $ENVIRONMENT"
 
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$SQL_DIR/drop_schema.sql"
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$SQL_DIR/schema.sql"
+psql "${PSQL_TARGET[@]}" -v ON_ERROR_STOP=1 -f "$SQL_DIR/drop_schema.sql"
+psql "${PSQL_TARGET[@]}" -v ON_ERROR_STOP=1 -f "$SQL_DIR/schema.sql"

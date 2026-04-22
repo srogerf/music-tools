@@ -50,8 +50,23 @@ resource "oci_core_security_list" "public_subnet" {
   }
 
   egress_security_rules {
-    protocol    = "all"
-    destination = "0.0.0.0/0"
+    protocol    = "6"
+    destination = var.private_subnet_cidr
+
+    tcp_options {
+      min = 80
+      max = 80
+    }
+  }
+
+  egress_security_rules {
+    protocol    = "6"
+    destination = var.private_subnet_cidr
+
+    tcp_options {
+      min = 443
+      max = 443
+    }
   }
 }
 

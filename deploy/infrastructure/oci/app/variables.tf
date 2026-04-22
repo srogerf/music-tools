@@ -68,7 +68,15 @@ variable "ssh_public_key" {
 variable "client_cidr_allowlist" {
   description = "CIDRs allowed to create Bastion sessions."
   type        = list(string)
-  default     = ["0.0.0.0/0"]
+
+  validation {
+    condition = (
+      length(var.client_cidr_allowlist) > 0 &&
+      !contains(var.client_cidr_allowlist, "0.0.0.0/0") &&
+      !contains(var.client_cidr_allowlist, "::/0")
+    )
+    error_message = "client_cidr_allowlist must be explicit and cannot include 0.0.0.0/0 or ::/0."
+  }
 }
 
 variable "name_prefix" {

@@ -9,6 +9,7 @@ bucket it creates as its own backend.
 ## What It Creates
 
 - one OCI Object Storage bucket
+- bucket public access forced to `NoPublicAccess`
 - bucket versioning enabled for state recovery
 
 ## Usage

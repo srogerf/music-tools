@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 OCI_DIR="$ROOT_DIR/deploy/infrastructure/oci/app"
 TFVARS_FILE="${TFVARS_FILE:-$ROOT_DIR/.private/oci/app.tfvars}"
+BACKEND_CONFIG_FILE="${BACKEND_CONFIG_FILE:-$ROOT_DIR/.private/oci/app.backend.hcl}"
 PLAN_FILE="${PLAN_FILE:-$ROOT_DIR/.private/terraform/oci-app.tfplan}"
 
 # shellcheck disable=SC1091
@@ -12,15 +13,17 @@ source "$ROOT_DIR/bin/lib/terraform_helpers.sh"
 
 usage() {
   cat >&2 <<'EOF'
-Usage: bash bin/oci_terraform_plan.sh [--var-file FILE] [--plan-file FILE] [terraform plan args...]
+Usage: bash bin/oci_terraform_plan.sh [--var-file FILE] [--backend-config FILE] [--plan-file FILE] [terraform plan args...]
 
 Defaults:
   --var-file .private/oci/app.tfvars
+  --backend-config .private/oci/app.backend.hcl
   --plan-file .private/terraform/oci-app.tfplan
 
 Examples:
   bash bin/oci_terraform_plan.sh
   bash bin/oci_terraform_plan.sh --var-file .private/oci/app.test.tfvars
+  bash bin/oci_terraform_plan.sh --backend-config .private/oci/app.test.backend.hcl
   bash bin/oci_terraform_plan.sh --plan-file .private/terraform/oci-app.test.tfplan
 EOF
 }
@@ -47,6 +50,15 @@ while [[ $# -gt 0 ]]; do
       PLAN_FILE="$2"
       shift 2
       ;;
+    --backend-config)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for --backend-config" >&2
+        usage
+        exit 1
+      fi
+      BACKEND_CONFIG_FILE="$2"
+      shift 2
+      ;;
     -out|-out=*)
       echo "Use --plan-file instead of Terraform's -out option." >&2
       usage
@@ -65,6 +77,8 @@ done
 
 TFVARS_PATH="$(resolve_repo_path "$ROOT_DIR" "$OCI_DIR" "$TFVARS_FILE")"
 require_tfvars_file "$TFVARS_PATH" "Copy deploy/infrastructure/oci/app/terraform.tfvars.example to .private/oci/app.tfvars and fill in your real OCI values."
+BACKEND_CONFIG_PATH="$(resolve_repo_path "$ROOT_DIR" "$OCI_DIR" "$BACKEND_CONFIG_FILE")"
+require_tfvars_file "$BACKEND_CONFIG_PATH" "Copy deploy/infrastructure/oci/app/backend.hcl.example to .private/oci/app.backend.hcl and fill in the bucket, namespace, region, and key from the bootstrap outputs."
 
 required_vars=(
   tenancy_ocid
@@ -83,5 +97,5 @@ PLAN_PATH="$(resolve_output_path "$ROOT_DIR" "$PLAN_FILE")"
 
 mkdir -p "$(dirname "$PLAN_PATH")"
 
-terraform -chdir="$OCI_DIR" init
+terraform -chdir="$OCI_DIR" init -backend-config="$BACKEND_CONFIG_PATH"
 terraform -chdir="$OCI_DIR" plan -var-file="$TFVARS_PATH" -out="$PLAN_PATH" "${extra_args[@]}"

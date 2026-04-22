@@ -286,7 +286,9 @@ answer:
 Current local/test-oriented commands:
 
 - `bin/local_init_postgres.sh`
-  - ensures the local Postgres roles and database exist
+  - ensures the local Postgres role and database exist
+  - requires `APP_DATABASE_OWNER_PASSWORD` so a weak password is not baked into
+    the script
 - `bash db/postgres/rebuild_schema.sh --env test`
   - destructive schema rebuild
 - `bash db/postgres/reset_and_seed.sh --env test`

@@ -4,7 +4,18 @@ set -euo pipefail
 POSTGRES_CLUSTER_PORT="${POSTGRES_CLUSTER_PORT:-5435}"
 APP_DATABASE="${APP_DATABASE:-music_tools}"
 APP_DATABASE_OWNER="${APP_DATABASE_OWNER:-riffer}"
-APP_DATABASE_OWNER_PASSWORD="${APP_DATABASE_OWNER_PASSWORD:-riffer}"
+
+for identifier in "$APP_DATABASE" "$APP_DATABASE_OWNER"; do
+  if [[ ! "$identifier" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+    echo "Database names and role names must contain only letters, numbers, and underscores, and cannot start with a number." >&2
+    exit 1
+  fi
+done
+
+if [[ -z "${APP_DATABASE_OWNER_PASSWORD:-}" ]]; then
+  echo "Set APP_DATABASE_OWNER_PASSWORD before running this script." >&2
+  exit 1
+fi
 
 if ! sudo -u postgres psql -p "$POSTGRES_CLUSTER_PORT" -tAc "SELECT 1 FROM pg_roles WHERE rolname = '$APP_DATABASE_OWNER'" | grep -q 1; then
   sudo -u postgres psql \

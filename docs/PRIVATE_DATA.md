@@ -9,6 +9,9 @@ configuration. The entire directory is ignored by Git.
   - contains OCI input values such as `state_bucket_name`
   - `state_bucket_name` is an OCI bucket name, not a local state-file path
 - `.private/oci/app.tfvars`
+- `.private/oci/app.backend.hcl`
+  - contains the OCI backend bucket, namespace, region, and state key for the
+    app stack
 - `.private/terraform/oci-bootstrap.tfstate`
   - local Terraform state file for the bootstrap stack
 - `.private/terraform/oci-bootstrap.tfplan`
@@ -38,6 +41,7 @@ Use these copy targets:
 mkdir -p .private/oci .private/bastion
 cp deploy/infrastructure/oci/bootstrap/terraform.tfvars.example .private/oci/bootstrap.tfvars
 cp deploy/infrastructure/oci/app/terraform.tfvars.example .private/oci/app.tfvars
+cp deploy/infrastructure/oci/app/backend.hcl.example .private/oci/app.backend.hcl
 cp conf/bastion.env.example .private/bastion/music-tools.env
 ```
 

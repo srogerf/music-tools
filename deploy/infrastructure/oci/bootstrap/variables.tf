@@ -57,14 +57,3 @@ variable "state_bucket_name" {
     error_message = "state_bucket_name must contain only letters, numbers, dashes, and underscores. This is an OCI bucket name, not a local .tfstate path."
   }
 }
-
-variable "state_bucket_access_type" {
-  description = "Access type for the Terraform state bucket."
-  type        = string
-  default     = "NoPublicAccess"
-
-  validation {
-    condition     = contains(["NoPublicAccess", "ObjectRead", "ObjectReadWithoutList"], var.state_bucket_access_type)
-    error_message = "state_bucket_access_type must be NoPublicAccess, ObjectRead, or ObjectReadWithoutList."
-  }
-}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"sort"
 	"strings"
@@ -74,19 +75,24 @@ func ConnectionStringFromEnvFile(path string) (string, error) {
 	dbName := firstNonEmpty(os.Getenv("PGDATABASE"), values["PGDATABASE"])
 	user := firstNonEmpty(os.Getenv("PGUSER"), values["PGUSER"])
 	password := firstNonEmpty(os.Getenv("PGPASSWORD"), values["PGPASSWORD"])
+	sslMode := firstNonEmpty(os.Getenv("PGSSLMODE"), values["PGSSLMODE"], "disable")
 
 	if host == "" || port == "" || dbName == "" || user == "" {
 		return "", fmt.Errorf("postgres config requires PGHOST, PGPORT, PGDATABASE, and PGUSER")
 	}
 
-	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		user,
-		password,
-		host,
-		port,
-		dbName,
-	), nil
+	databaseURL := &url.URL{
+		Scheme: "postgres",
+		User:   url.UserPassword(user, password),
+		Host:   fmt.Sprintf("%s:%s", host, port),
+		Path:   dbName,
+	}
+
+	query := databaseURL.Query()
+	query.Set("sslmode", sslMode)
+	databaseURL.RawQuery = query.Encode()
+
+	return databaseURL.String(), nil
 }
 
 func firstNonEmpty(values ...string) string {

@@ -1,0 +1,32 @@
+# Copy this file to:
+#
+#   .private/oci/app.backend.hcl
+#
+# Fill the state location from the bootstrap stack outputs:
+#
+#   terraform -chdir=deploy/infrastructure/oci/bootstrap output \
+#     -state=.private/terraform/oci-bootstrap.tfstate
+
+# Required by the Terraform OCI backend.
+bucket    = "replace_with_state_bucket_name"
+namespace = "replace_with_object_storage_namespace"
+
+# Recommended for this project.
+region               = "us-phoenix-1"
+key                  = "music-tools/oci/terraform.tfstate"
+workspace_key_prefix = "music-tools/oci/workspaces"
+
+# Preferred local auth path. This avoids putting OCI API details in backend
+# config, which Terraform may copy into .terraform metadata.
+auth                = "APIKey"
+config_file_profile = "DEFAULT"
+
+# Alternative API-key auth fields if you are not using ~/.oci/config or env
+# vars. Keep real values only in .private/oci/app.backend.hcl, never here.
+# tenancy_ocid     = "ocid1.tenancy.oc1..exampleuniqueID"
+# user_ocid        = "ocid1.user.oc1..exampleuniqueID"
+# fingerprint      = "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99"
+# private_key_path = "~/.oci/oci_api_key.pem"
+
+# Optional future hardening if we create a customer-managed KMS key.
+# kms_key_id = "ocid1.key.oc1.phx.exampleuniqueID"

@@ -80,15 +80,17 @@ if [[ -z "${DATABASE_URL:-}" ]]; then
     echo "You can copy $EXAMPLE_CONFIG_FILE to $DEFAULT_CONFIG_FILE and fill in real local values." >&2
     exit 1
   fi
-  DATABASE_URL="postgres://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}"
+  PSQL_TARGET=(-h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE")
+else
+  PSQL_TARGET=("$DATABASE_URL")
 fi
 
 echo "Target database environment: $ENVIRONMENT"
 
-if [[ "$(psql "$DATABASE_URL" -tA -v ON_ERROR_STOP=1 -c "SELECT to_regclass('public.schema_metadata') IS NOT NULL")" != "t" ]]; then
+if [[ "$(psql "${PSQL_TARGET[@]}" -tA -v ON_ERROR_STOP=1 -c "SELECT to_regclass('public.schema_metadata') IS NOT NULL")" != "t" ]]; then
   echo "Schema metadata table not found. Run 'bash db/postgres/rebuild_schema.sh' before reset_and_seed.sh." >&2
   exit 1
 fi
 
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$SQL_DIR/clear_data.sql"
-python3 "$SCRIPT_DIR/seed_data.py" | psql "$DATABASE_URL" -v ON_ERROR_STOP=1
+psql "${PSQL_TARGET[@]}" -v ON_ERROR_STOP=1 -f "$SQL_DIR/clear_data.sql"
+python3 "$SCRIPT_DIR/seed_data.py" | psql "${PSQL_TARGET[@]}" -v ON_ERROR_STOP=1

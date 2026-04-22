@@ -26,10 +26,12 @@ bash bin/oci_state_bootstrap_plan.sh
 bash bin/oci_state_bootstrap_apply.sh
 ```
 
-5. Use the bootstrap outputs to configure remote state for the app stack.
+5. Use the bootstrap outputs to configure `.private/oci/app.backend.hcl` for
+   the app stack's OCI remote state backend.
 6. Copy `app/terraform.tfvars.example` to `.private/oci/app.tfvars`.
-7. Fill in the app stack values.
-8. Run:
+7. Copy `app/backend.hcl.example` to `.private/oci/app.backend.hcl`.
+8. Fill in the app stack values and backend config.
+9. Run:
 
 ```bash
 bash bin/oci_terraform_plan.sh
@@ -92,6 +94,11 @@ The app stack is aimed at OCI Always Free where possible:
   Always Free docs explicitly list an Always Free network load balancer
 - the remote state bucket should stay well within the Always Free Object
   Storage limits for normal Terraform state usage
+- the remote state bucket is forced to `NoPublicAccess`
+
+The app stack opens public ports `80` and `443` on the load balancer. Port `80`
+is retained so HTTP can redirect to HTTPS once TLS is configured; do not use it
+for non-redirect application traffic long term.
 
 `VM.Standard.A1.Flex` remains a possible future upgrade path, but Phoenix A1
 capacity can be unavailable. If you switch shapes, also update the image OCID to
