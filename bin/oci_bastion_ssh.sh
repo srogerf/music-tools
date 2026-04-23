@@ -117,6 +117,14 @@ if [[ ! -f "$BASTION_SSH_PUB" ]]; then
   exit 1
 fi
 
+generated_bastion_public_key="$(ssh-keygen -y -f "$BASTION_SSH_KEY" 2>/dev/null | awk '{print $1 " " $2}')"
+configured_bastion_public_key="$(awk '{print $1 " " $2}' "$BASTION_SSH_PUB")"
+if [[ -z "$generated_bastion_public_key" || "$generated_bastion_public_key" != "$configured_bastion_public_key" ]]; then
+  echo "Bastion SSH private key and public key do not match." >&2
+  echo "Regenerate the public key with: ssh-keygen -y -f \"$BASTION_SSH_KEY\" > \"$BASTION_SSH_PUB\"" >&2
+  exit 1
+fi
+
 if [[ ! -f "$INSTANCE_SSH_KEY" ]]; then
   echo "Missing instance SSH private key: $INSTANCE_SSH_KEY" >&2
   exit 1

@@ -9,6 +9,7 @@ Current top-level deployment notes:
 
 - [CONTAINER_DEPLOYMENT.md](CONTAINER_DEPLOYMENT.md)
 - [infrastructure/oci/README.md](infrastructure/oci/README.md)
+- [cicd/ansible/README.md](cicd/ansible/README.md)
 
 ## Structure
 
@@ -31,5 +32,6 @@ Create a subdirectory under each section for the specific provider or tool being
 
 - Infrastructure currently lives under `deploy/infrastructure/oci/`.
 - Container rollout direction is documented in `deploy/CONTAINER_DEPLOYMENT.md`.
+- OCI host bootstrap automation lives under `deploy/cicd/ansible/`.
 - This directory should prefer one focused doc per concern rather than
   repeating the same deployment guidance in multiple places.

@@ -1,9 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+CONFIG_FILE="${1:-}"
+if [[ -n "$CONFIG_FILE" ]]; then
+  if [[ ! -f "$CONFIG_FILE" ]]; then
+    echo "Missing Postgres env file: $CONFIG_FILE" >&2
+    exit 1
+  fi
+  set -a
+  # shellcheck disable=SC1090
+  source "$CONFIG_FILE"
+  set +a
+fi
+
 POSTGRES_CLUSTER_PORT="${POSTGRES_CLUSTER_PORT:-5435}"
 APP_DATABASE="${APP_DATABASE:-music_tools}"
 APP_DATABASE_OWNER="${APP_DATABASE_OWNER:-riffer}"
+
+POSTGRES_CLUSTER_PORT="${PGPORT:-$POSTGRES_CLUSTER_PORT}"
+APP_DATABASE="${PGDATABASE:-$APP_DATABASE}"
+APP_DATABASE_OWNER="${PGUSER:-$APP_DATABASE_OWNER}"
+APP_DATABASE_OWNER_PASSWORD="${PGPASSWORD:-${APP_DATABASE_OWNER_PASSWORD:-}}"
 
 for identifier in "$APP_DATABASE" "$APP_DATABASE_OWNER"; do
   if [[ ! "$identifier" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
@@ -23,6 +40,13 @@ if ! sudo -u postgres psql -p "$POSTGRES_CLUSTER_PORT" -tAc "SELECT 1 FROM pg_ro
     -v app_database_owner="$APP_DATABASE_OWNER" \
     -v app_database_owner_password="$APP_DATABASE_OWNER_PASSWORD" <<'SQL'
 SELECT format('CREATE ROLE %I LOGIN PASSWORD %L', :'app_database_owner', :'app_database_owner_password') \gexec
+SQL
+else
+  sudo -u postgres psql \
+    -p "$POSTGRES_CLUSTER_PORT" \
+    -v app_database_owner="$APP_DATABASE_OWNER" \
+    -v app_database_owner_password="$APP_DATABASE_OWNER_PASSWORD" <<'SQL'
+SELECT format('ALTER ROLE %I WITH PASSWORD %L', :'app_database_owner', :'app_database_owner_password') \gexec
 SQL
 fi
 

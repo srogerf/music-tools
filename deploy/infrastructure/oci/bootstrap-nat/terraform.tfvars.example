@@ -1,0 +1,11 @@
+tenancy_ocid     = "ocid1.tenancy.oc1..example"
+user_ocid        = "ocid1.user.oc1..example"
+fingerprint      = "00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00"
+private_key_path = "~/.oci/oci_api_key.pem"
+region           = "us-phoenix-1"
+
+compartment_ocid  = "ocid1.compartment.oc1..example"
+vcn_id            = "ocid1.vcn.oc1.phx.example"
+private_subnet_id = "ocid1.subnet.oc1.phx.example"
+
+name_prefix = "music-tools-bootstrap"

@@ -5,11 +5,19 @@ import (
 	"net/http"
 )
 
+// StaticConfig defines where the browser assets are served from.
+type StaticConfig struct {
+	AppDir       string
+	FretboardDir string
+}
+
 // NewRouter wires the API routes for the server.
-func NewRouter(scaleService *ScaleService, layoutService *ScaleLayoutService, tuningService *TuningService) http.Handler {
+func NewRouter(scaleService *ScaleService, layoutService *ScaleLayoutService, tuningService *TuningService, staticConfig StaticConfig) http.Handler {
 	mux := http.NewServeMux()
-	mux.Handle("/fretboard/", http.StripPrefix("/fretboard/", http.FileServer(http.Dir("frontend/fretboard"))))
-	mux.Handle("/", http.FileServer(http.Dir("frontend/app")))
+	if staticConfig.FretboardDir != "" {
+		mux.Handle("/fretboard/", http.StripPrefix("/fretboard/", http.FileServer(http.Dir(staticConfig.FretboardDir))))
+	}
+	mux.Handle("/", http.FileServer(http.Dir(staticConfig.AppDir)))
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", newV1Router(scaleService, layoutService, tuningService)))
 	return requestLogger(mux)
 }

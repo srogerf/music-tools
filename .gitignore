@@ -1,6 +1,5 @@
 # Node
 node_modules/
-package-lock.json
 pnpm-lock.yaml
 yarn.lock
 npm-debug.log*
@@ -10,7 +9,18 @@ yarn-error.log*
 # Go
 !/bin/
 /bin/*
+!/bin/bootstrap_local_dev_host.sh
+!/bin/build_artifacts.sh
+!/bin/build_frontend.sh
+!/bin/build_server.sh
+!/bin/init_local_envs.sh
 !/bin/oci_*.sh
+!/bin/oci_prepare_host_repos.sh
+!/bin/seed_dev.sh
+!/bin/seed_test.sh
+!/bin/smoke_test_artifacts.sh
+!/bin/start_dev.sh
+!/bin/start_test.sh
 /pkg/
 *.exe
 *.exe~
@@ -38,8 +48,11 @@ music-tools.code-workspace
 
 # Local config
 .private/
+build/
 conf/*.env
 !conf/*.env.example
+env/**/*.env
+!env/**/*.env.example
 deploy/container/docker/*.env
 !deploy/container/docker/*.env.example
 bin/local_*.sh

@@ -43,8 +43,9 @@ explicit release operation.
 The current delivery process is intentionally simple:
 
 1. Local server development
-2. Local container integration
-3. Production deployment
+2. Local test artifact verification
+3. Local container integration
+4. Production deployment
 
 ### 1. Local Server Development
 
@@ -57,6 +58,19 @@ Goal:
 
 ### 2. Local Container Integration
 
+### 2. Local Test Artifact Verification
+
+Build the pre-container artifacts and run them separately from source dev:
+
+- server binary under `build/test/server/`
+- frontend assets under `build/test/frontend/`
+- runtime port `8081`
+- database name `music_tools_test`
+
+This verifies the files we plan to package before the Docker build step.
+
+### 3. Local Container Integration
+
 Use the local Docker runtime to verify:
 
 - the `rifferOne` image builds
@@ -67,7 +81,7 @@ Use the local Docker runtime to verify:
 
 This is the main pre-production integration environment for now.
 
-### 3. Production Deployment
+### 4. Production Deployment
 
 Production uses the OCI VM runtime with Docker Compose for the long-lived
 containers and a separate migration step during deploy.

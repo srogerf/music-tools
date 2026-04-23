@@ -281,6 +281,36 @@ answer:
 - what is the previous production version we must migrate from?
 - what script or procedure upgrades between them?
 
+## Production Role Isolation
+
+Local dev/test databases may be permissive so the tools stay easy to use, but
+production should use tighter database isolation.
+
+Production guidance:
+
+- use a dedicated production database role for the app
+- grant only the privileges the app needs
+- avoid broad grants across unrelated databases or schemas
+- do not rely on table-name visibility as an access-control boundary
+- keep migration/admin privileges separate from the runtime app role
+- review default `public` schema privileges before production launch
+- verify production role access with explicit privilege checks
+
+Example checks:
+
+```sql
+SELECT current_database();
+SELECT current_user;
+SELECT has_table_privilege(current_user, 'scales', 'SELECT');
+```
+
+Why this matters:
+
+- PostgreSQL users may see database/schema/table metadata even when they should
+  not have data access
+- dev/test convenience grants should not become the production security model
+- production migrations need more privilege than normal app runtime queries
+
 ## Current Repo Commands
 
 Current local/test-oriented commands:
@@ -289,6 +319,10 @@ Current local/test-oriented commands:
   - ensures the local Postgres role and database exist
   - requires `APP_DATABASE_OWNER_PASSWORD` so a weak password is not baked into
     the script
+- `bin/seed_dev.sh`
+  - rebuilds and seeds the dev database from `.private/env/dev/postgres.env`
+- `bin/seed_test.sh`
+  - rebuilds and seeds the test database from `.private/env/test/postgres.env`
 - `bash db/postgres/rebuild_schema.sh --env test`
   - destructive schema rebuild
 - `bash db/postgres/reset_and_seed.sh --env test`

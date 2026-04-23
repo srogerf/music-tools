@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "build:frontend": "vite build"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "6.0.1",
+    "vite": "8.0.9"
+  }
+}

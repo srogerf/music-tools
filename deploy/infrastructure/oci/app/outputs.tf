@@ -10,6 +10,10 @@ output "vcn_id" {
   value = oci_core_vcn.this.id
 }
 
+output "private_subnet_id" {
+  value = oci_core_subnet.private_app.id
+}
+
 output "public_load_balancer_ip_addresses" {
   value = oci_network_load_balancer_network_load_balancer.public.ip_addresses
 }

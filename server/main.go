@@ -15,6 +15,8 @@ import (
 func main() {
 	addr := flag.String("addr", ":8080", "server listen address")
 	postgresConfigPath := flag.String("postgres-config", "conf/postgres.env", "path to postgres env config")
+	staticDir := flag.String("static-dir", "frontend/app", "path to frontend app static assets")
+	fretboardDir := flag.String("fretboard-dir", "frontend/fretboard", "path to fretboard static assets; leave empty when bundled into static-dir")
 	flag.Parse()
 
 	ctx := context.Background()
@@ -31,7 +33,10 @@ func main() {
 	scaleService := api.NewScaleService(store)
 	layoutService := api.NewScaleLayoutService(store)
 	tuningService := api.NewTuningService(store)
-	handler := api.NewRouter(scaleService, layoutService, tuningService)
+	handler := api.NewRouter(scaleService, layoutService, tuningService, api.StaticConfig{
+		AppDir:       *staticDir,
+		FretboardDir: *fretboardDir,
+	})
 
 	server := &http.Server{
 		Addr:              *addr,

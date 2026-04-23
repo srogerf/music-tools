@@ -1,0 +1,152 @@
+---
+- name: Bootstrap music-tools Docker host
+  hosts: music_tools_hosts
+  become: true
+  gather_facts: true
+
+  vars:
+    docker_users:
+      - opc
+    docker_repo_url: https://download.docker.com/linux/rhel/docker-ce.repo
+    docker_packages:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    bootstrap_packages:
+      - dnf-plugins-core
+      - git
+      - firewalld
+    oracle_bootstrap_repos:
+      - ol10_baseos_latest
+      - ol10_appstream
+      - ol10_addons
+    docker_install_repos:
+      - ol10_baseos_latest
+      - ol10_appstream
+      - ol10_addons
+      - docker-ce-stable
+    postgres_data_path: /srv/rifferone/postgres-data
+    app_runtime_path: /srv/rifferone/app
+    postgres_uid: 999
+    postgres_gid: 999
+    bootstrap_proxy_url: "{{ lookup('env', 'BOOTSTRAP_PROXY_URL') | default('', true) }}"
+    bootstrap_proxy_environment: "{{ {'http_proxy': bootstrap_proxy_url, 'https_proxy': bootstrap_proxy_url, 'HTTP_PROXY': bootstrap_proxy_url, 'HTTPS_PROXY': bootstrap_proxy_url} if bootstrap_proxy_url | length > 0 else {} }}"
+
+  environment: "{{ bootstrap_proxy_environment }}"
+
+  pre_tasks:
+    - name: Confirm supported OS family
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.os_family == "RedHat"
+        fail_msg: "This playbook currently supports Oracle Linux / RHEL-family hosts only."
+
+    - name: Prepare Oracle Linux repos for bootstrap
+      ansible.builtin.import_tasks: ../tasks/prepare_oracle_linux_repos.yml
+
+  tasks:
+    - name: Install bootstrap packages
+      ansible.builtin.dnf:
+        name: "{{ bootstrap_packages }}"
+        state: present
+        disablerepo: "*"
+        enablerepo: "{{ oracle_bootstrap_repos }}"
+
+    - name: Add Docker CE repository
+      ansible.builtin.command:
+        cmd: "dnf config-manager --add-repo {{ docker_repo_url }}"
+        creates: /etc/yum.repos.d/docker-ce.repo
+
+    - name: Install Docker Engine and Compose plugin
+      ansible.builtin.dnf:
+        name: "{{ docker_packages }}"
+        state: present
+        disablerepo: "*"
+        enablerepo: "{{ docker_install_repos }}"
+
+    - name: Enable Docker service
+      ansible.builtin.systemd:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Add runtime users to docker group
+      ansible.builtin.user:
+        name: "{{ item }}"
+        groups: docker
+        append: true
+      loop: "{{ docker_users }}"
+
+    - name: Create application runtime directory
+      ansible.builtin.file:
+        path: "{{ app_runtime_path }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Create Postgres data directory
+      ansible.builtin.file:
+        path: "{{ postgres_data_path }}"
+        state: directory
+        owner: "{{ postgres_uid }}"
+        group: "{{ postgres_gid }}"
+        mode: "0750"
+
+    - name: Start firewalld
+      ansible.builtin.systemd:
+        name: firewalld
+        enabled: true
+        state: started
+
+    - name: Check HTTP firewall rule
+      ansible.builtin.command:
+        cmd: firewall-cmd --permanent --query-service=http
+      register: http_firewall_rule
+      changed_when: false
+      failed_when: http_firewall_rule.rc not in [0, 1]
+
+    - name: Open HTTP for load balancer traffic
+      ansible.builtin.command:
+        cmd: firewall-cmd --permanent --add-service=http
+      when: http_firewall_rule.rc == 1
+      notify: Reload firewalld
+
+    - name: Check HTTPS firewall rule
+      ansible.builtin.command:
+        cmd: firewall-cmd --permanent --query-service=https
+      register: https_firewall_rule
+      changed_when: false
+      failed_when: https_firewall_rule.rc not in [0, 1]
+
+    - name: Open HTTPS for load balancer traffic
+      ansible.builtin.command:
+        cmd: firewall-cmd --permanent --add-service=https
+      when: https_firewall_rule.rc == 1
+      notify: Reload firewalld
+
+    - name: Check Docker version
+      ansible.builtin.command:
+        cmd: docker --version
+      register: docker_version
+      changed_when: false
+
+    - name: Check Docker Compose version
+      ansible.builtin.command:
+        cmd: docker compose version
+      register: docker_compose_version
+      changed_when: false
+
+    - name: Show installed container runtime
+      ansible.builtin.debug:
+        msg:
+          - "{{ docker_version.stdout }}"
+          - "{{ docker_compose_version.stdout }}"
+          - "Reconnect SSH before running Docker as a non-root user so group membership refreshes."
+
+  handlers:
+    - name: Reload firewalld
+      ansible.builtin.command:
+        cmd: firewall-cmd --reload

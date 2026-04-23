@@ -15,10 +15,39 @@
 
 ## Development
 
+Bootstrap an Ubuntu/Debian local development host with:
+
+```bash
+bash bin/bootstrap_local_dev_host.sh
+npm install
+```
+
 Run the test suite locally with:
 
 ```bash
 go test ./...
+```
+
+Run the source-asset development server with:
+
+```bash
+bash bin/seed_dev.sh
+bash bin/start_dev.sh
+```
+
+Build and run the pre-container test artifacts with:
+
+```bash
+bash bin/build_artifacts.sh
+bash bin/seed_test.sh
+bash bin/start_test.sh
+```
+
+Prepare local deployment tooling and the OCI host bootstrap path with:
+
+```bash
+bash bin/bootstrap_local_dev_host.sh
+bash bin/oci_prepare_host_repos.sh
 ```
 
 ## Documentation
@@ -28,6 +57,8 @@ go test ./...
 - [Scale Layouts](docs/SCALE_LAYOUTS.md)
 - [Deployment](docs/DEPLOYMENT.md)
 - [Private Data](docs/PRIVATE_DATA.md)
+- [Local Environments](env/README.md)
 - [Container Deployment](deploy/CONTAINER_DEPLOYMENT.md)
+- [Ansible Host Bootstrap](deploy/cicd/ansible/README.md)
 - [Deploy Directory](deploy/README.md)
 - [Constraints](docs/CONSTRAINTS.md)

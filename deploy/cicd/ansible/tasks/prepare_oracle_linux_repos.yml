@@ -1,0 +1,48 @@
+---
+- name: Find Oracle Linux repo files
+  ansible.builtin.find:
+    paths: /etc/yum.repos.d
+    patterns: "*.repo"
+    file_type: file
+  register: oracle_linux_repo_files
+
+- name: Use public Oracle yum mirror when bootstrapping through proxy
+  ansible.builtin.replace:
+    path: "{{ item.path }}"
+    regexp: 'https://yum\$ociregion\.\$ocidomain/repo'
+    replace: 'https://yum.oracle.com/repo'
+  loop: "{{ oracle_linux_repo_files.files }}"
+  when: bootstrap_proxy_url | length > 0
+
+- name: Find Oracle Ksplice repo files
+  ansible.builtin.find:
+    paths: /etc/yum.repos.d
+    patterns: "ksplice-*.repo"
+    file_type: file
+  register: ksplice_repo_files
+
+- name: Disable Oracle Ksplice repo during bootstrap
+  ansible.builtin.replace:
+    path: "{{ item.path }}"
+    regexp: '(^\[ol[0-9]+_ksplice\]\n(?:[^\[]*\n)*?)enabled=1'
+    replace: '\1enabled=0'
+  loop: "{{ ksplice_repo_files.files }}"
+
+- name: Check whether OCI included repo exists
+  ansible.builtin.stat:
+    path: /etc/yum.repos.d/oci-included-ol10.repo
+  register: oci_included_repo
+
+- name: Disable OCI included repo during proxied bootstrap
+  ansible.builtin.replace:
+    path: /etc/yum.repos.d/oci-included-ol10.repo
+    regexp: '(^\[ol[0-9]+_oci_included\]\n(?:[^\[]*\n)*?)enabled=1'
+    replace: '\1enabled=0'
+  when:
+    - bootstrap_proxy_url | length > 0
+    - oci_included_repo.stat.exists
+
+- name: Verify required Oracle repos through configured proxy
+  ansible.builtin.command:
+    cmd: dnf makecache --timer --disablerepo="*" --enablerepo=ol10_baseos_latest --enablerepo=ol10_appstream --enablerepo=ol10_addons --setopt=timeout=20 --setopt=retries=0
+  changed_when: false

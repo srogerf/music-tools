@@ -49,7 +49,10 @@ Production database changes must follow the rules in
 The currently preferred application deployment direction is:
 
 - local server development for normal feature work
+- local dev runtime on port `8080` using source assets and `music_tools_dev`
 - local container integration for runtime validation
+- local test artifact runtime on port `8081` using built/staged assets and
+  `music_tools_test`
 - GitHub Actions for CI and image build
 - OCI Container Registry for published images
 - one OCI Always Free-friendly compute instance as the runtime host

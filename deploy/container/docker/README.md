@@ -29,6 +29,15 @@ This Docker setup is currently meant for:
 
 It is not tied to a separate staging deployment environment at this time.
 
+Before building or running the container, use the local test artifact path:
+
+```bash
+bash bin/build_artifacts.sh
+bash bin/start_test.sh
+```
+
+That gives us a pre-container check of the server binary and frontend assets.
+
 ## Postgres Data Path
 
 The Compose file defaults the Postgres host data path to:
