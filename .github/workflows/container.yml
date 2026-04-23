@@ -1,0 +1,40 @@
+name: Container
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Build And Validate Container
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build test artifacts
+        run: bash bin/build_artifacts.sh
+
+      - name: Build application image
+        run: docker build -t rifferone:ci -f deploy/container/docker/rifferOne/Dockerfile .
+
+      - name: Validate Docker Compose configuration
+        run: docker compose -f deploy/container/docker/docker-compose.yml --env-file deploy/container/docker/compose.env.example config >/dev/null
