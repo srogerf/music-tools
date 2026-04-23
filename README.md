@@ -18,7 +18,7 @@
 Bootstrap an Ubuntu/Debian local development host with:
 
 ```bash
-bash bin/bootstrap_local_dev_host.sh
+bash bin/localhost_bootstrap_env.sh
 npm install
 ```
 
@@ -31,22 +31,22 @@ go test ./...
 Run the source-asset development server with:
 
 ```bash
-bash bin/seed_dev.sh
-bash bin/start_dev.sh
+bash bin/dev_seed.sh
+bash bin/dev_start.sh
 ```
 
 Build and run the pre-container test artifacts with:
 
 ```bash
 bash bin/build_artifacts.sh
-bash bin/seed_test.sh
-bash bin/start_test.sh
+bash bin/test_seed.sh
+bash bin/test_start.sh
 ```
 
 Prepare local deployment tooling and the OCI host bootstrap path with:
 
 ```bash
-bash bin/bootstrap_local_dev_host.sh
+bash bin/localhost_bootstrap_env.sh
 bash bin/oci_prepare_host_repos.sh
 ```
 

@@ -23,25 +23,13 @@ It installs and configures:
 The OCI app instance is in a private subnet and the Terraform stack currently
 does not create a NAT gateway.
 
-That means package installation needs an outbound path. For a paid account or a
-tenancy where NAT Gateway limits allow it, the separate `bootstrap-nat`
-Terraform stack can provide a short-lived path:
+That means package installation needs an outbound path. The current supported
+bootstrap path is to route package downloads through a local proxy over the
+Bastion SSH tunnel.
 
-```bash
-bash bin/oci_bootstrap_nat_plan.sh
-bash bin/oci_bootstrap_nat_apply.sh
-```
-
-Run the Ansible bootstrap while that NAT path exists, then remove it:
-
-```bash
-bash bin/oci_bootstrap_nat_destroy_plan.sh
-bash bin/oci_bootstrap_nat_destroy_apply.sh
-```
-
-For the free-tier path, do not assume NAT Gateway is available. Prefer a custom
-image that already has Docker installed, or route bootstrap package downloads
-through a local proxy over the Bastion SSH tunnel.
+Do not assume NAT Gateway is available or part of the normal production path.
+If we later choose a paid or alternate bootstrap path, that should be treated
+as an explicit exception, not the default workflow.
 
 ## Bastion Proxy Tunnel
 
@@ -51,8 +39,8 @@ It needs local project tooling and a local HTTP proxy on your workstation.
 Local project tooling:
 
 ```bash
-bash bin/bootstrap_local_dev_host.sh
-bash bin/init_local_envs.sh
+bash bin/localhost_bootstrap_env.sh
+bash bin/localhost_init_envs.sh
 ```
 
 At minimum, the local control machine needs:
@@ -212,5 +200,5 @@ sudo ls -ld /srv/rifferone/postgres-data
 - Oracle Linux also supports Podman through `container-tools`, but that is not
   the current production runtime choice.
 - Keep real inventory, SSH keys, and host-specific values under `.private/`.
-- Keep NAT Gateway usage short-lived if used; it is not part of the steady-state
-  app network design.
+- The steady-state production network path is private subnet plus Bastion, not
+  private subnet plus NAT.

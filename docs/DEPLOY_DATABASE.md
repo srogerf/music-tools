@@ -315,13 +315,13 @@ Why this matters:
 
 Current local/test-oriented commands:
 
-- `bin/local_init_postgres.sh`
+- `bin/localhost_init_postgres.sh`
   - ensures the local Postgres role and database exist
   - requires `APP_DATABASE_OWNER_PASSWORD` so a weak password is not baked into
     the script
-- `bin/seed_dev.sh`
+- `bin/dev_seed.sh`
   - rebuilds and seeds the dev database from `.private/env/dev/postgres.env`
-- `bin/seed_test.sh`
+- `bin/test_seed.sh`
   - rebuilds and seeds the test database from `.private/env/test/postgres.env`
 - `bash db/postgres/rebuild_schema.sh --env test`
   - destructive schema rebuild

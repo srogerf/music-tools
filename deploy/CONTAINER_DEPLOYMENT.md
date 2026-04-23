@@ -81,6 +81,15 @@ Use the local Docker runtime to verify:
 
 This is the main pre-production integration environment for now.
 
+The local integration environment should keep its mutable config and Postgres
+data under `.private/`, not in tracked repo paths:
+
+- `.private/container/compose.env`
+- `.private/container/local-integration/postgres-data`
+
+The application image packages prebuilt artifacts from `build/test`, so run
+`bash bin/build_artifacts.sh` before `docker compose build`.
+
 ### 4. Production Deployment
 
 Production uses the OCI VM runtime with Docker Compose for the long-lived
@@ -172,6 +181,11 @@ A good first cut would be:
 - `rifferone`
 - `music-tools-migrations`
 - the official `postgres` image for the database runtime
+
+The current `rifferone` Dockerfile packages:
+
+- `build/test/server/rifferone`
+- `build/test/frontend/app/`
 
 We are not planning to generate a custom Postgres image by default.
 

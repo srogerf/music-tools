@@ -7,10 +7,10 @@ Real environment files should live under `.private/env/`.
 Create missing private env files with:
 
 ```bash
-bash bin/init_local_envs.sh
+bash bin/localhost_init_envs.sh
 ```
 
-`start_dev.sh` and `start_test.sh` also run this initializer automatically when
+`dev_start.sh` and `test_start.sh` also run this initializer automatically when
 their expected private env files are missing.
 
 ## Dev
@@ -26,8 +26,8 @@ their expected private env files are missing.
 Run with:
 
 ```bash
-bash bin/seed_dev.sh
-bash bin/start_dev.sh
+bash bin/dev_seed.sh
+bash bin/dev_start.sh
 ```
 
 ## Test
@@ -46,18 +46,29 @@ Install frontend build dependencies once:
 npm install
 ```
 
+Frontend build modes:
+
+```bash
+bash bin/build_frontend.sh
+bash bin/build_frontend.sh --debug
+```
+
+The default build is compressed for the normal test artifact at
+`build/test/frontend/app/`. The debug build keeps whitespace, readable names,
+and sourcemaps under `build/test/frontend-debug/app/`.
+
 Run with:
 
 ```bash
 bash bin/build_artifacts.sh
-bash bin/seed_test.sh
-bash bin/start_test.sh
+bash bin/test_seed.sh
+bash bin/test_start.sh
 ```
 
 Then smoke-check with:
 
 ```bash
-bash bin/smoke_test_artifacts.sh
+bash bin/test_smoke.sh
 ```
 
 The frontend artifact build uses Vite and outputs a production-style bundle

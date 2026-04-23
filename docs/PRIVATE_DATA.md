@@ -9,8 +9,8 @@ configuration. The entire directory is ignored by Git.
   - contains OCI input values such as `state_bucket_name`
   - `state_bucket_name` is an OCI bucket name, not a local state-file path
 - `.private/oci/bootstrap-nat.tfvars`
-  - contains the private app subnet, VCN, and compartment OCIDs used by the
-    temporary NAT stack
+  - optional legacy/exception file for the temporary NAT stack
+  - not needed for the current Bastion-proxy production path
 - `.private/oci/app.tfvars`
 - `.private/oci/app.backend.hcl`
   - contains the OCI backend bucket, namespace, region, and state key for the
@@ -29,6 +29,7 @@ configuration. The entire directory is ignored by Git.
 - `.private/env/test/postgres.env`
 - `.private/env/test/runtime.env`
 - `.private/container/compose.env`
+- `.private/container/local-integration/postgres-data/`
 - `.private/keys/`
 
 Committed example files should stay near the code they document. Real values
@@ -50,7 +51,6 @@ Use these copy targets:
 ```bash
 mkdir -p .private/oci .private/bastion
 cp deploy/infrastructure/oci/bootstrap/terraform.tfvars.example .private/oci/bootstrap.tfvars
-cp deploy/infrastructure/oci/bootstrap-nat/terraform.tfvars.example .private/oci/bootstrap-nat.tfvars
 cp deploy/infrastructure/oci/app/terraform.tfvars.example .private/oci/app.tfvars
 cp deploy/infrastructure/oci/app/backend.hcl.example .private/oci/app.backend.hcl
 cp conf/bastion.env.example .private/bastion/music-tools.env
@@ -63,8 +63,11 @@ cp env/test/runtime.env.example .private/env/test/runtime.env
 
 The OCI helper scripts use those files by default.
 
+Only create `.private/oci/bootstrap-nat.tfvars` if you intentionally choose the
+optional NAT fallback path.
+
 You can also create the local dev/test env files with:
 
 ```bash
-bash bin/init_local_envs.sh
+bash bin/localhost_init_envs.sh
 ```

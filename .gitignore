@@ -9,18 +9,23 @@ yarn-error.log*
 # Go
 !/bin/
 /bin/*
-!/bin/bootstrap_local_dev_host.sh
+!/bin/localhost_bootstrap_env.sh
 !/bin/build_artifacts.sh
+!/bin/check_docker_access.sh
 !/bin/build_frontend.sh
 !/bin/build_server.sh
-!/bin/init_local_envs.sh
+!/bin/dev_seed.sh
+!/bin/dev_start.sh
+!/bin/localhost_init_envs.sh
+!/bin/localhost_init_postgres.sh
+!/bin/local_integration_seed.sh
+!/bin/local_integration_start.sh
+!/bin/local_integration_stop.sh
 !/bin/oci_*.sh
 !/bin/oci_prepare_host_repos.sh
-!/bin/seed_dev.sh
-!/bin/seed_test.sh
-!/bin/smoke_test_artifacts.sh
-!/bin/start_dev.sh
-!/bin/start_test.sh
+!/bin/test_seed.sh
+!/bin/test_smoke.sh
+!/bin/test_start.sh
 /pkg/
 *.exe
 *.exe~
@@ -55,7 +60,6 @@ env/**/*.env
 !env/**/*.env.example
 deploy/container/docker/*.env
 !deploy/container/docker/*.env.example
-bin/local_*.sh
 docs/FEATURES.local.md
 
 # Terraform local files

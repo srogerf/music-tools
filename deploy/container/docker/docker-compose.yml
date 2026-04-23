@@ -1,10 +1,19 @@
 services:
   rifferone:
-    container_name: rifferOne
+    container_name: rifferone
     image: rifferone:local
     build:
       context: ../../..
       dockerfile: deploy/container/docker/rifferOne/Dockerfile
+    command:
+      - -addr
+      - :8080
+      - -postgres-config
+      - ""
+      - -static-dir
+      - /app/frontend/app
+      - -fretboard-dir
+      - ""
     restart: unless-stopped
     depends_on:
       postgres:
@@ -15,6 +24,7 @@ services:
       PGDATABASE: ${POSTGRES_DB}
       PGUSER: ${POSTGRES_USER}
       PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGSSLMODE: disable
     ports:
       - "${RIFFERONE_HTTP_PORT:-8080}:8080"
 
@@ -29,7 +39,7 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
-      - "${POSTGRES_DATA_PATH:-/srv/rifferone/postgres-data}:/var/lib/postgresql/data"
+      - "${POSTGRES_DATA_PATH:-../../../.private/container/local-integration/postgres-data}:/var/lib/postgresql/data"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s

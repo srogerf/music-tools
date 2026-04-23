@@ -6,7 +6,7 @@ POSTGRES_CONFIG="${POSTGRES_CONFIG:-$ROOT_DIR/.private/env/test/postgres.env}"
 export POSTGRES_CONFIG
 
 if [[ ! -f "$POSTGRES_CONFIG" ]]; then
-  bash "$ROOT_DIR/bin/init_local_envs.sh"
+  bash "$ROOT_DIR/bin/localhost_init_envs.sh"
 fi
 
 if [[ ! -f "$POSTGRES_CONFIG" ]]; then

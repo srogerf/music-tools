@@ -9,7 +9,7 @@ ASSUME_YES="false"
 
 usage() {
   cat >&2 <<'EOF'
-Usage: bash bin/bootstrap_local_dev_host.sh [options]
+Usage: bash bin/localhost_bootstrap_env.sh [options]
 
 Bootstraps an Ubuntu/Debian workstation for local music-tools development and
 deployment operations.
@@ -202,7 +202,7 @@ echo
 echo "Bootstrap complete."
 echo "You may need to log out and back in before Docker group membership applies."
 echo "Recommended next project commands:"
-echo "  bash bin/init_local_envs.sh"
-echo "  bash bin/local_init_postgres.sh .private/env/dev/postgres.env"
-echo "  bash bin/seed_dev.sh"
-echo "  bash bin/start_dev.sh"
+echo "  bash bin/localhost_init_envs.sh"
+echo "  bash bin/localhost_init_postgres.sh .private/env/dev/postgres.env"
+echo "  bash bin/dev_seed.sh"
+echo "  bash bin/dev_start.sh"

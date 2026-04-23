@@ -11,7 +11,8 @@ This directory contains the OCI Terraform stacks for `music-tools`.
 - `bootstrap-nat/`
   - Creates a temporary NAT Gateway path for the private app subnet.
   - Uses local Terraform state intentionally.
-  - Create it only while bootstrapping the host, then destroy it.
+  - Not part of the normal production path.
+  - Keep only as an optional exception/experiment stack.
 - `app/`
   - Creates the application infrastructure in OCI.
   - Creates and uses the nested compartment path `apps/music-tools`.
@@ -42,23 +43,24 @@ bash bin/oci_terraform_plan.sh
 bash bin/oci_terraform_apply.sh
 ```
 
-10. If the private instance needs outbound package downloads and NAT Gateway is
-    available in the tenancy, copy `bootstrap-nat/terraform.tfvars.example` to
-    `.private/oci/bootstrap-nat.tfvars`, fill it from the app outputs, and run:
+10. Prepare a local HTTP proxy such as `tinyproxy` on your workstation.
+11. Start the Bastion reverse-proxy tunnel:
 
 ```bash
-bash bin/oci_bootstrap_nat_plan.sh
-bash bin/oci_bootstrap_nat_apply.sh
+bash bin/oci_bastion_proxy_tunnel.sh
 ```
 
-11. Run the bootstrap work that needs outbound access, such as Ansible host
-    setup.
-12. Remove the temporary NAT path:
+12. Run the host bootstrap through that proxy path:
 
 ```bash
-bash bin/oci_bootstrap_nat_destroy_plan.sh
-bash bin/oci_bootstrap_nat_destroy_apply.sh
+BOOTSTRAP_PROXY_URL=http://127.0.0.1:3128 \
+ANSIBLE_CONFIG=deploy/cicd/ansible/ansible.cfg \
+ansible-playbook \
+  -i .private/ansible/hosts.yml \
+  deploy/cicd/ansible/playbooks/bootstrap_docker_host.yml
 ```
+
+13. Stop the Bastion proxy tunnel after bootstrap completes.
 
 Private tfvars and state files are ignored by Git. See
 `docs/PRIVATE_DATA.md` for the repo-wide private-data convention.
@@ -80,12 +82,6 @@ The app stack also needs:
 - `ssh_public_key`
 - `instance_image_ocid`
 - `client_cidr_allowlist`
-
-The temporary NAT stack also needs app outputs:
-
-- `project_compartment_id`
-- `vcn_id`
-- `private_subnet_id`
 
 Recommended setup process:
 
@@ -135,11 +131,12 @@ match the CPU architecture.
 This setup does not create a NAT gateway, because NAT Gateway is not clearly
 listed as Always Free.
 
-The `bootstrap-nat/` stack exists for short-lived package installation only, and
-it is not the default free-tier path. Destroy it after bootstrap work completes
-to avoid surprise cost and to return the private subnet to its stricter egress
-posture. If NAT Gateway creation fails because of limits, use a pre-baked image
-or stage installation artifacts through Bastion instead.
+The supported host-bootstrap path is the Bastion proxy tunnel described in
+`deploy/cicd/ansible/README.md`.
+
+The `bootstrap-nat/` stack remains in the repo only as an optional fallback or
+historical reference. It is not part of the current recommended production
+workflow.
 
 ## Sources
 

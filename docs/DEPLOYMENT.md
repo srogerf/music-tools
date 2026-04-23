@@ -57,6 +57,8 @@ The currently preferred application deployment direction is:
 - OCI Container Registry for published images
 - one OCI Always Free-friendly compute instance as the runtime host
 - Docker Compose on that host for the server and database containers
+- Bastion-based private host access and Bastion-proxy host bootstrap, not NAT,
+  for the default OCI path
 
 That design is documented in `deploy/CONTAINER_DEPLOYMENT.md`.
 

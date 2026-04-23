@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="${DEV_RUNTIME_ENV:-$ROOT_DIR/.private/env/dev/runtime.env}"
 
 if [[ ! -f "$ENV_FILE" || ! -f "$ROOT_DIR/.private/env/dev/postgres.env" ]]; then
-  bash "$ROOT_DIR/bin/init_local_envs.sh"
+  bash "$ROOT_DIR/bin/localhost_init_envs.sh"
 fi
 
 if [[ -f "$ENV_FILE" ]]; then
