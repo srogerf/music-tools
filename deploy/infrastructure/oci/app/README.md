@@ -16,7 +16,8 @@ The current layout creates:
 - one internet gateway
 - one route table for the public subnet
 - NSGs for the load balancer and app instance
-- one public network load balancer with only ports `80` and `443`
+- one public network load balancer with port `80` enabled by default
+- optional passthrough `443` listener when the host is ready to serve TLS on `443`
 - one private compute instance with no public IP
 - one OCI Bastion targeting the private subnet for admin access
 
@@ -105,11 +106,11 @@ intended admin path.
 
 ## Public Ports
 
-The public load balancer intentionally listens on `80` and `443`.
+The public load balancer intentionally listens on `80`.
 
-Port `80` should remain open only as the HTTP entry point needed to redirect
-to HTTPS once TLS termination or an app-level redirect is in place. Do not add
-other public ports without documenting the reason.
+Port `443` is optional and disabled by default in Terraform until the host is
+actually serving TLS on `443`. Do not enable the passthrough `443` listener
+until the application stack or a reverse proxy on the instance terminates TLS.
 
 ## Important Caveat
 

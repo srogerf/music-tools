@@ -156,6 +156,12 @@ variable "health_check_port" {
   default     = 80
 }
 
+variable "enable_https_listener" {
+  description = "Whether to create the HTTPS passthrough listener/backend on port 443. Leave false until the host serves TLS on 443."
+  type        = bool
+  default     = false
+}
+
 variable "bastion_session_ttl_seconds" {
   description = "Maximum Bastion session TTL."
   type        = number

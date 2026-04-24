@@ -38,6 +38,7 @@ resource "oci_network_load_balancer_listener" "http" {
 }
 
 resource "oci_network_load_balancer_backend_set" "app_https" {
+  count                    = var.enable_https_listener ? 1 : 0
   name                     = "app-https"
   network_load_balancer_id = oci_network_load_balancer_network_load_balancer.public.id
   policy                   = "FIVE_TUPLE"
@@ -49,7 +50,8 @@ resource "oci_network_load_balancer_backend_set" "app_https" {
 }
 
 resource "oci_network_load_balancer_backend" "app_https" {
-  backend_set_name         = oci_network_load_balancer_backend_set.app_https.name
+  count                    = var.enable_https_listener ? 1 : 0
+  backend_set_name         = oci_network_load_balancer_backend_set.app_https[0].name
   network_load_balancer_id = oci_network_load_balancer_network_load_balancer.public.id
   ip_address               = oci_core_instance.app.private_ip
   port                     = 443
@@ -60,9 +62,10 @@ resource "oci_network_load_balancer_backend" "app_https" {
 }
 
 resource "oci_network_load_balancer_listener" "https" {
+  count                    = var.enable_https_listener ? 1 : 0
   name                     = "https"
   network_load_balancer_id = oci_network_load_balancer_network_load_balancer.public.id
-  default_backend_set_name = oci_network_load_balancer_backend_set.app_https.name
+  default_backend_set_name = oci_network_load_balancer_backend_set.app_https[0].name
   port                     = 443
   protocol                 = "TCP"
 }

@@ -114,6 +114,10 @@ Guidance:
 - if the initial production bootstrap also needs seed data, that seed step
   should require `--override-production-failsafe` too
 
+Current repo wrapper:
+
+- `bash bin/production_db_rebuild.sh`
+
 ## 2. Initial Schema Seeding
 
 Initial schema seeding means populating a schema that already exists with the
@@ -156,6 +160,10 @@ Guidance:
 - production seed changes should be deliberate and reviewable
 - the only allowed exception is first-time production bootstrap with an
   explicit `--override-production-failsafe`
+
+Current repo wrapper:
+
+- `bash bin/production_db_seed.sh`
 
 ## 3. Schema Change / Upgrade
 
@@ -234,6 +242,63 @@ This gives us a minimum contract between:
 - table shape
 - seed data shape
 - operational scripts
+
+## Follow-Up Improvements
+
+We have two follow-up hardening items to reduce cross-environment mistakes.
+
+### 1. Unify Database Config Locations
+
+Today, database-related connection config can be discovered from more than one
+place depending on the environment:
+
+- dev and test use private env files under `.private/env/`
+- local integration uses Compose env under `.private/container/`
+- production runtime uses Compose env under `.private/deploy/` and on-host
+  runtime files under `/srv/...`
+- the DB helper scripts still default to `.private/conf/postgres.env`
+
+That layout makes it too easy to run a schema or seed command against the wrong
+database.
+
+Planned follow-up:
+
+- standardize the config layout so each environment exposes database connection
+  settings in a more predictable location
+- make DB scripts prefer explicit environment-specific config over legacy
+  `.private/conf/postgres.env`
+- reduce hidden fallback behavior when `PG*` env vars and config files disagree
+
+Current mitigation:
+
+- `bin/production_db_rebuild.sh`
+- `bin/production_db_seed.sh`
+- `bin/production_db_psql.sh`
+
+These wrappers fetch the live `POSTGRES_*` values from the deployed OCI host
+compose env and tunnel directly to the production database, which avoids
+guessing from local fallback config files.
+
+### 2. Stamp Database Environment In Metadata
+
+`schema_metadata` currently records:
+
+- `schema_version`
+- `seed_data_format_version`
+
+That is not enough to tell whether a live database is meant to be `test` or
+`production`.
+
+Planned follow-up:
+
+- add an environment marker to `schema_metadata`, such as
+  `database_environment`
+- have schema/bootstrap scripts stamp that value explicitly
+- make seed and maintenance scripts fail fast if the requested environment does
+  not match the stamped database environment
+
+This would give us another guardrail against accidentally pointing production
+or test operations at the wrong database.
 
 ## Production Schema Baselines
 

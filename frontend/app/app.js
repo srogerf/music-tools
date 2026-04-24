@@ -3,48 +3,59 @@ import { createRoot } from "https://esm.sh/react-dom@18/client";
 import { ScalesPage } from "scales-page";
 
 const NAV_ITEMS = ["Home", "Scales", "Chords", "Progressions"];
+const EMPTY_SCALES_ROUTE = {
+  scale: "",
+  key: "",
+  position: "",
+  tuning: "",
+  threeNps: false,
+};
 
 function normalizeSection(section) {
   const normalized = String(section || "").trim().toLowerCase();
   return NAV_ITEMS.find((item) => item.toLowerCase() === normalized) || "Scales";
 }
 
+function buildUrl(routeState) {
+  const params = new URLSearchParams();
+
+  if (routeState.section === "Scales") {
+    const scales = routeState.scales || {};
+    if (scales.scale) params.set("scale", scales.scale);
+    if (scales.key) params.set("key", scales.key);
+    if (scales.position) params.set("position", scales.position);
+    if (scales.tuning) params.set("tuning", scales.tuning);
+    if (scales.threeNps) params.set("threeNps", "true");
+  }
+
+  const query = params.toString();
+  const hash = `#${routeState.section.toLowerCase()}`;
+  return query
+    ? `${window.location.pathname}?${query}${hash}`
+    : `${window.location.pathname}${hash}`;
+}
+
 function readRouteState() {
   const params = new URLSearchParams(window.location.search);
   const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash;
   const legacySection = params.get("section");
+  const section = normalizeSection(hash || legacySection);
   return {
-    section: normalizeSection(hash || legacySection),
-    scales: {
-      scale: params.get("scale") || "",
-      key: params.get("key") || "",
-      position: params.get("position") || "",
-      tuning: params.get("tuning") || "",
-      threeNps: params.get("threeNps") === "true",
-    },
+    section,
+    scales: section === "Scales"
+      ? {
+          scale: params.get("scale") || "",
+          key: params.get("key") || "",
+          position: params.get("position") || "",
+          tuning: params.get("tuning") || "",
+          threeNps: params.get("threeNps") === "true",
+        }
+      : { ...EMPTY_SCALES_ROUTE },
   };
 }
 
 function writeRouteState(routeState) {
-  const params = new URLSearchParams(window.location.search);
-
-  const scales = routeState.scales || {};
-  if (scales.scale) params.set("scale", scales.scale);
-  else params.delete("scale");
-  if (scales.key) params.set("key", scales.key);
-  else params.delete("key");
-  if (scales.position) params.set("position", scales.position);
-  else params.delete("position");
-  if (scales.tuning) params.set("tuning", scales.tuning);
-  else params.delete("tuning");
-  if (scales.threeNps) params.set("threeNps", "true");
-  else params.delete("threeNps");
-
-  const query = params.toString();
-  const hash = `#${routeState.section.toLowerCase()}`;
-  const nextUrl = query
-    ? `${window.location.pathname}?${query}${hash}`
-    : `${window.location.pathname}${hash}`;
+  const nextUrl = buildUrl(routeState);
   const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
   if (nextUrl === currentUrl) {
     return;
@@ -73,12 +84,7 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     const legacySection = params.get("section");
     if (!window.location.hash && legacySection) {
-      params.delete("section");
-      const query = params.toString();
-      const hash = `#${routeState.section.toLowerCase()}`;
-      const nextUrl = query
-        ? `${window.location.pathname}?${query}${hash}`
-        : `${window.location.pathname}${hash}`;
+      const nextUrl = buildUrl(routeState);
       window.history.replaceState(routeState, "", nextUrl);
     }
   }, [routeState]);

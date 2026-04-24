@@ -3,6 +3,7 @@ package api
 import (
 	"log"
 	"net/http"
+	"strings"
 )
 
 // StaticConfig defines where the browser assets are served from.
@@ -17,9 +18,31 @@ func NewRouter(scaleService *ScaleService, layoutService *ScaleLayoutService, tu
 	if staticConfig.FretboardDir != "" {
 		mux.Handle("/fretboard/", http.StripPrefix("/fretboard/", http.FileServer(http.Dir(staticConfig.FretboardDir))))
 	}
-	mux.Handle("/", http.FileServer(http.Dir(staticConfig.AppDir)))
+	mux.Handle("/", staticAppHandler(staticConfig.AppDir))
 	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", newV1Router(scaleService, layoutService, tuningService)))
 	return requestLogger(mux)
+}
+
+// NewUnavailableRouter keeps the frontend reachable while the API returns a
+// startup error such as an unavailable database.
+func NewUnavailableRouter(staticConfig StaticConfig, message string) http.Handler {
+	mux := http.NewServeMux()
+	if staticConfig.FretboardDir != "" {
+		mux.Handle("/fretboard/", http.StripPrefix("/fretboard/", http.FileServer(http.Dir(staticConfig.FretboardDir))))
+	}
+	mux.Handle("/", staticAppHandler(staticConfig.AppDir))
+	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", unavailableV1Router(message)))
+	return requestLogger(mux)
+}
+
+func staticAppHandler(appDir string) http.Handler {
+	fileServer := http.FileServer(http.Dir(appDir))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if shouldDisableStaticCaching(r.URL.Path) {
+			w.Header().Set("Cache-Control", "no-store")
+		}
+		fileServer.ServeHTTP(w, r)
+	})
 }
 
 func newV1Router(scaleService *ScaleService, layoutService *ScaleLayoutService, tuningService *TuningService) http.Handler {
@@ -32,6 +55,16 @@ func newV1Router(scaleService *ScaleService, layoutService *ScaleLayoutService, 
 	mux.HandleFunc("/tunings", tuningService.ListTuningsHandler)
 	mux.HandleFunc("/tunings/", tuningService.GetTuningHandler)
 	return mux
+}
+
+func unavailableV1Router(message string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		writeError(w, http.StatusServiceUnavailable, message)
+	})
+}
+
+func shouldDisableStaticCaching(path string) bool {
+	return path == "/" || strings.HasSuffix(path, ".html")
 }
 
 func requestLogger(next http.Handler) http.Handler {

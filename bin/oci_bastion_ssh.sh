@@ -184,6 +184,7 @@ echo "Opening local tunnel on 127.0.0.1:$LOCAL_PORT..."
 
 ssh -i "$BASTION_SSH_KEY" \
   -N \
+  -o ExitOnForwardFailure=yes \
   -L "${LOCAL_PORT}:${PRIVATE_IP}:22" \
   -p 22 \
   "$SESSION_ID@$BASTION_HOST" &
@@ -198,6 +199,11 @@ cleanup() {
 trap cleanup EXIT
 
 sleep 3
+
+if ! kill -0 "$TUNNEL_PID" >/dev/null 2>&1; then
+  echo "Bastion SSH tunnel failed to start on localhost:$LOCAL_PORT." >&2
+  exit 1
+fi
 
 if [[ "$RUN_SSH" != "true" ]]; then
   echo "Tunnel running with PID $TUNNEL_PID."

@@ -1,0 +1,26 @@
+---
+- name: Configure Docker daemon proxy
+  hosts: music_tools_hosts
+  become: true
+  gather_facts: false
+
+  vars:
+    docker_proxy_url: "{{ lookup('env', 'BOOTSTRAP_PROXY_URL') | default('', true) }}"
+
+  pre_tasks:
+    - name: Require BOOTSTRAP_PROXY_URL
+      ansible.builtin.assert:
+        that:
+          - docker_proxy_url | length > 0
+        fail_msg: "Set BOOTSTRAP_PROXY_URL to the remote proxy URL before running this playbook."
+
+  tasks:
+    - name: Configure Docker proxy for registry pulls
+      ansible.builtin.import_tasks: ../tasks/configure_docker_proxy.yml
+
+  handlers:
+    - name: Restart docker
+      ansible.builtin.systemd:
+        name: docker
+        daemon_reload: true
+        state: restarted

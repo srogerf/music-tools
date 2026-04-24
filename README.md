@@ -51,12 +51,22 @@ bash bin/localhost_bootstrap_env.sh
 bash bin/oci_prepare_host_repos.sh
 ```
 
+For production DB access through Bastion:
+
+```bash
+bash bin/production_db_psql.sh
+```
+
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Deploy Database](docs/DEPLOY_DATABASE.md)
 - [Scale Layouts](docs/SCALE_LAYOUTS.md)
 - [Deployment](docs/DEPLOYMENT.md)
+- [Environment: Dev](docs/ENVIROMENTS_DEV.md)
+- [Environment: Test](docs/ENVIROMENTS_TEST.md)
+- [Environment: Local Integration](docs/ENVIROMENTS_LOCAL_INTEGRATION.md)
+- [Environment: Production](docs/ENVIROMENTS_PRODUCTION.md)
 - [Private Data](docs/PRIVATE_DATA.md)
 - [Local Environments](env/README.md)
 - [Container Deployment](deploy/CONTAINER_DEPLOYMENT.md)

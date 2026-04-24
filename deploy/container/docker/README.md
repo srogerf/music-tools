@@ -9,8 +9,12 @@ for `music-tools`.
   - packages prebuilt server/frontend artifacts into the application image
 - `docker-compose.yml`
   - defines the long-lived runtime services
+- `docker-compose.production.yml`
+  - pull-only production runtime definition for the OCI host
 - `compose.env.example`
   - example runtime configuration for local or VM deployment
+- `compose.production.env.example`
+  - example runtime env for the GHCR-based production host
 
 ## Current Runtime Model
 
@@ -67,7 +71,7 @@ bash bin/local_integration_start.sh
 If Docker daemon access is not ready yet, run:
 
 ```bash
-bash bin/check_docker_access.sh
+bash bin/localhost_docker_access_check.sh
 ```
 
 Recommended stop command:
@@ -125,6 +129,29 @@ docker compose -f deploy/container/docker/docker-compose.yml --env-file .private
 docker compose -f deploy/container/docker/docker-compose.yml --env-file .private/container/compose.env pull rifferone
 docker compose -f deploy/container/docker/docker-compose.yml --env-file .private/container/compose.env up -d rifferone
 ```
+
+For production, prefer pulling a published image from GHCR rather than building
+on the OCI host. Because the OCI host sits in a private subnet without NAT,
+image pulls from `ghcr.io` need the Bastion proxy path described in
+`deploy/cicd/ansible/README.md`.
+
+In practice, Docker daemon pulls on that host also need
+`/etc/docker/daemon.json` to point at the reverse proxy URL. Shell proxy
+variables alone are not enough for `docker login`, `docker pull`, or
+`docker compose pull`.
+
+The shell wrappers for this flow are:
+
+```bash
+bash bin/production_image_build.sh --tag sha-<git-sha>
+bash bin/production_image_push.sh --tag sha-<git-sha>
+bash bin/production_deploy.sh --tag sha-<git-sha>
+```
+
+For the current OCI load balancer setup, the production host should publish the
+application on host port `80`. Do not rely on port `443` until TLS handling is
+added on the instance and the optional HTTPS passthrough listener is enabled in
+Terraform.
 
 ## Migration Note
 

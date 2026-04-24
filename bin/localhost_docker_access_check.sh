@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
   cat >&2 <<'EOF'
-Usage: bash bin/check_docker_access.sh
+Usage: bash bin/localhost_docker_access_check.sh
 
 Checks whether the current shell user can talk to the Docker daemon.
 EOF

@@ -11,7 +11,7 @@ REMOTE_PROXY_PORT="${REMOTE_PROXY_PORT:-3128}"
 
 usage() {
   cat >&2 <<'EOF'
-Usage: bash bin/oci_bastion_proxy_tunnel.sh [--env-file FILE] [--user USER] [--local-proxy-port PORT] [--remote-proxy-port PORT]
+Usage: bash bin/oci_bastion_proxy_tunnel.sh [--env-file FILE] [--user USER] [--local-proxy-port PORT] [--remote-proxy-port PORT] [--new-session]
 
 Defaults:
   --env-file .private/bastion/music-tools.env
@@ -28,6 +28,8 @@ Then use this on the remote host or with Ansible:
   http://127.0.0.1:REMOTE_PROXY_PORT
 EOF
 }
+
+FORCE_NEW_SESSION="false"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -67,6 +69,10 @@ while [[ $# -gt 0 ]]; do
       REMOTE_PROXY_PORT="$2"
       shift 2
       ;;
+    --new-session)
+      FORCE_NEW_SESSION="true"
+      shift
+      ;;
     --help|-h)
       usage
       exit 0
@@ -105,32 +111,56 @@ if ! timeout 2 bash -c "</dev/tcp/$LOCAL_PROXY_HOST/$LOCAL_PROXY_PORT" >/dev/nul
   exit 1
 fi
 
-echo "Starting OCI Bastion SSH tunnel..."
-bash "$ROOT_DIR/bin/oci_bastion_ssh.sh" \
-  --env-file "$ENV_FILE" \
-  --user "$REMOTE_USER" \
-  --no-ssh &
+echo "Checking OCI Bastion SSH tunnel..."
+bastion_args=(
+  --env-file "$ENV_FILE"
+  --user "$REMOTE_USER"
+  --no-ssh
+)
 
-BASTION_TUNNEL_PID="$!"
+if [[ "$FORCE_NEW_SESSION" == "true" ]]; then
+  bastion_args+=(--new-session)
+fi
+
+BASTION_TUNNEL_PID=""
+STARTED_BASTION_TUNNEL="false"
 
 cleanup() {
-  if kill -0 "$BASTION_TUNNEL_PID" >/dev/null 2>&1; then
+  if [[ "$STARTED_BASTION_TUNNEL" == "true" ]] && kill -0 "$BASTION_TUNNEL_PID" >/dev/null 2>&1; then
     kill "$BASTION_TUNNEL_PID" >/dev/null 2>&1 || true
   fi
 }
 trap cleanup EXIT
 
-for _ in {1..20}; do
-  if ssh -i "$INSTANCE_SSH_KEY" \
+ssh_ready() {
+  ssh -i "$INSTANCE_SSH_KEY" \
     -p "$LOCAL_PORT" \
     -o BatchMode=yes \
     -o ConnectTimeout=3 \
     -o StrictHostKeyChecking=accept-new \
-    "$REMOTE_USER@localhost" true >/dev/null 2>&1; then
-    break
+    "$REMOTE_USER@localhost" true >/dev/null 2>&1
+}
+
+if ssh_ready; then
+  echo "Reusing existing OCI Bastion SSH tunnel on localhost:$LOCAL_PORT."
+else
+  bash "$ROOT_DIR/bin/oci_bastion_ssh.sh" "${bastion_args[@]}" &
+  BASTION_TUNNEL_PID="$!"
+  STARTED_BASTION_TUNNEL="true"
+
+  for _ in {1..20}; do
+    if ssh_ready; then
+      break
+    fi
+    sleep 1
+  done
+
+  if ! ssh_ready; then
+    echo "OCI Bastion SSH tunnel did not become ready on localhost:$LOCAL_PORT." >&2
+    echo "Retry with: bash bin/oci_bastion_proxy_tunnel.sh --new-session" >&2
+    exit 1
   fi
-  sleep 1
-done
+fi
 
 echo "Opening reverse proxy tunnel."
 echo "Remote proxy URL: http://127.0.0.1:$REMOTE_PROXY_PORT"
@@ -139,5 +169,6 @@ echo "For Ansible, run with: BOOTSTRAP_PROXY_URL=http://127.0.0.1:$REMOTE_PROXY_
 ssh -i "$INSTANCE_SSH_KEY" \
   -p "$LOCAL_PORT" \
   -N \
+  -o ExitOnForwardFailure=yes \
   -R "127.0.0.1:${REMOTE_PROXY_PORT}:${LOCAL_PROXY_HOST}:${LOCAL_PROXY_PORT}" \
   "$REMOTE_USER@localhost"

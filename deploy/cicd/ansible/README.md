@@ -17,6 +17,8 @@ It installs and configures:
 - `/srv/rifferone/app`
 - `/srv/rifferone/postgres-data`
 - Docker group membership for `opc`
+- Docker daemon proxy config at `/etc/docker/daemon.json` when
+  `BOOTSTRAP_PROXY_URL` is set
 
 ## Network Requirement
 
@@ -67,6 +69,9 @@ host:
 bash bin/oci_bastion_proxy_tunnel.sh
 ```
 
+If the Bastion SSH tunnel is already running on local port `2222`, the proxy
+helper reuses it instead of trying to open a second local forward.
+
 That creates this path:
 
 ```text
@@ -107,6 +112,8 @@ The Ansible bootstrap now prepares repos before package installation:
 - disables Ksplice during bootstrap
 - disables the OCI included repo during proxied bootstrap
 - installs packages with explicit `disablerepo` and `enablerepo` lists
+- writes `/etc/docker/daemon.json` so Docker daemon registry pulls also use the
+  Bastion-assisted proxy path
 
 You can run just the repo preparation and verification step before the full
 bootstrap:
@@ -123,6 +130,13 @@ ANSIBLE_CONFIG=deploy/cicd/ansible/ansible.cfg \
 ansible-playbook \
   -i .private/ansible/hosts.yml \
   deploy/cicd/ansible/playbooks/bootstrap_docker_host.yml
+```
+
+If you only need to refresh Docker's proxy config for registry pulls on an
+existing host:
+
+```bash
+bash bin/oci_configure_docker_proxy.sh
 ```
 
 ## Local Control Machine Setup
@@ -186,6 +200,8 @@ sudo ls -ld /srv/rifferone/postgres-data
   path is Docker Compose.
 - If `BOOTSTRAP_PROXY_URL` is set, package install tasks use it for outbound
   HTTP and HTTPS access.
+- If `BOOTSTRAP_PROXY_URL` is set, the playbook also writes
+  `/etc/docker/daemon.json` so Docker daemon registry pulls use the same proxy.
 - If `BOOTSTRAP_PROXY_URL` is set, the playbook also rewrites Oracle Linux repo
   URLs from the regional OCI yum mirror to the public `yum.oracle.com` mirror
   because the regional mirror can time out through the reverse proxy path.

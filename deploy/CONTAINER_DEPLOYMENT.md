@@ -8,7 +8,7 @@ This document records the current recommended build and deployment approach if
 Use:
 
 - GitHub Actions for CI, image builds, and release orchestration
-- OCI Container Registry (OCIR) for storing versioned container images
+- GitHub Container Registry (GHCR) for storing versioned container images
 - one OCI Always Free-friendly `VM.Standard.E2.1.Micro` compute instance as the
   runtime host
 - Docker Engine with Docker Compose on that instance to run the long-lived
@@ -152,13 +152,67 @@ Recommended flow:
 
 1. GitHub Actions runs tests on push and pull request.
 2. On merge to `main`, GitHub Actions builds versioned images.
-3. GitHub Actions pushes those images to OCIR.
+3. GitHub Actions pushes those images to GHCR, for example
+   `ghcr.io/srogerf/music-tools/rifferone:<tag>`.
 4. A deployment step runs schema migrations against Postgres as a separate
    operation.
-5. The private compute instance updates the runtime stack.
-6. The instance runs `docker compose pull rifferone` and
+5. The private compute instance reaches GHCR through the Bastion proxy tunnel
+   because the production subnet has no NAT gateway.
+6. The private compute instance updates the runtime stack.
+7. The instance runs `docker compose pull rifferone` and
    `docker compose up -d rifferone` for normal app deploys.
-7. Post-deploy smoke checks verify the app is healthy.
+8. Post-deploy smoke checks verify the app is healthy.
+
+At the moment, the production container should publish on host port `80` so it
+matches the active OCI load balancer backend. Leave the optional `443`
+passthrough path disabled until the host is configured to serve TLS on `443`.
+
+## GHCR Release Shape
+
+Recommended image naming:
+
+- `ghcr.io/srogerf/music-tools/rifferone:main`
+- `ghcr.io/srogerf/music-tools/rifferone:sha-<git-sha>`
+- optionally `ghcr.io/srogerf/music-tools/rifferone:vX.Y.Z` for explicit releases
+
+Recommended publish model:
+
+- publish from GitHub Actions after the normal CI checks pass
+- authenticate to GHCR with the workflow `GITHUB_TOKEN`
+- push at least an immutable SHA tag
+- optionally move `main` or release tags after a successful publish
+
+Recommended pull model on the OCI host:
+
+- keep the OCI host private
+- start the Bastion proxy tunnel from the operator workstation
+- configure Docker on the OCI host to pull through that proxy path during deploy
+  with `/etc/docker/daemon.json`
+- authenticate Docker to GHCR with a GitHub personal access token or a
+  dedicated machine token that has package read access
+
+Example OCI-host deploy flow:
+
+```bash
+export HTTPS_PROXY=http://127.0.0.1:3128
+export HTTP_PROXY=http://127.0.0.1:3128
+echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+docker compose pull rifferone
+docker compose up -d rifferone
+```
+
+The shell proxy environment helps for reachability checks like `curl`, but
+Docker daemon pulls need `/etc/docker/daemon.json` to include the same proxy
+settings. The production deploy wrapper and Ansible host bootstrap now both
+write that Docker daemon proxy config.
+
+The current shell wrappers for this flow are:
+
+```bash
+bash bin/production_image_build.sh --tag sha-<git-sha>
+bash bin/production_image_push.sh --tag sha-<git-sha>
+bash bin/production_deploy.sh --tag sha-<git-sha>
+```
 
 ## Migration Strategy
 
@@ -342,8 +396,8 @@ reviewed on April 20, 2026:
 
 - OCI Always Free resources:
   https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm
-- OCI Container Registry overview:
-  https://docs.oracle.com/en-us/iaas/Content/Registry/Concepts/registryoverview.htm
+- GitHub Container Registry:
+  https://docs.github.com/packages/guides/pushing-and-pulling-docker-images
 - OCI Container Instances overview:
   https://docs.oracle.com/en-us/iaas/Content/container-instances/overview-of-container-instances.htm
 - OCI Creating a Container Instance:

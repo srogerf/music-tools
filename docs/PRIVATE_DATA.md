@@ -28,6 +28,8 @@ configuration. The entire directory is ignored by Git.
 - `.private/env/dev/runtime.env`
 - `.private/env/test/postgres.env`
 - `.private/env/test/runtime.env`
+- `.private/deploy/production.env`
+- `.private/deploy/production.compose.env`
 - `.private/container/compose.env`
 - `.private/container/local-integration/postgres-data/`
 - `.private/keys/`
@@ -54,6 +56,9 @@ cp deploy/infrastructure/oci/bootstrap/terraform.tfvars.example .private/oci/boo
 cp deploy/infrastructure/oci/app/terraform.tfvars.example .private/oci/app.tfvars
 cp deploy/infrastructure/oci/app/backend.hcl.example .private/oci/app.backend.hcl
 cp conf/bastion.env.example .private/bastion/music-tools.env
+mkdir -p .private/deploy
+cp deploy/cicd/production.env.example .private/deploy/production.env
+cp deploy/container/docker/compose.production.env.example .private/deploy/production.compose.env
 mkdir -p .private/env/dev .private/env/test
 cp env/dev/postgres.env.example .private/env/dev/postgres.env
 cp env/dev/runtime.env.example .private/env/dev/runtime.env

@@ -1,0 +1,27 @@
+---
+- name: Ensure Docker config directory exists
+  ansible.builtin.file:
+    path: /etc/docker
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Configure Docker daemon proxy
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      {
+        "proxies": {
+          "http-proxy": "{{ docker_proxy_url }}",
+          "https-proxy": "{{ docker_proxy_url }}",
+          "no-proxy": "127.0.0.1,localhost,::1"
+        }
+      }
+  notify: Restart docker
+
+- name: Flush Docker proxy restart handler
+  ansible.builtin.meta: flush_handlers

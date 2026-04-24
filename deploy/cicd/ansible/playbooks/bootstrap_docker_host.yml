@@ -72,6 +72,12 @@
         enabled: true
         state: started
 
+    - name: Configure Docker proxy for registry pulls
+      ansible.builtin.import_tasks: ../tasks/configure_docker_proxy.yml
+      vars:
+        docker_proxy_url: "{{ bootstrap_proxy_url }}"
+      when: bootstrap_proxy_url | length > 0
+
     - name: Add runtime users to docker group
       ansible.builtin.user:
         name: "{{ item }}"
@@ -150,3 +156,9 @@
     - name: Reload firewalld
       ansible.builtin.command:
         cmd: firewall-cmd --reload
+
+    - name: Restart docker
+      ansible.builtin.systemd:
+        name: docker
+        daemon_reload: true
+        state: restarted

@@ -20,30 +20,43 @@ func main() {
 	flag.Parse()
 
 	ctx := context.Background()
+	staticConfig := api.StaticConfig{
+		AppDir:       *staticDir,
+		FretboardDir: *fretboardDir,
+	}
+
 	databaseURL, err := postgresdb.ConnectionStringFromEnvFile(*postgresConfigPath)
 	if err != nil {
-		log.Fatalf("load postgres config: %v", err)
+		log.Printf("load postgres config: %v", err)
+		handler := api.NewUnavailableRouter(staticConfig, "database unavailable: failed to load postgres config")
+		startServer(*addr, handler)
+		return
 	}
+
 	store, err := postgresdb.Open(ctx, databaseURL)
 	if err != nil {
-		log.Fatalf("connect postgres: %v", err)
+		log.Printf("connect postgres: %v", err)
+		handler := api.NewUnavailableRouter(staticConfig, "database unavailable: could not connect to postgres")
+		startServer(*addr, handler)
+		return
 	}
 	defer store.Close()
 
 	scaleService := api.NewScaleService(store)
 	layoutService := api.NewScaleLayoutService(store)
 	tuningService := api.NewTuningService(store)
-	handler := api.NewRouter(scaleService, layoutService, tuningService, api.StaticConfig{
-		AppDir:       *staticDir,
-		FretboardDir: *fretboardDir,
-	})
+	handler := api.NewRouter(scaleService, layoutService, tuningService, staticConfig)
 
+	startServer(*addr, handler)
+}
+
+func startServer(addr string, handler http.Handler) {
 	server := &http.Server{
-		Addr:              *addr,
+		Addr:              addr,
 		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	fmt.Printf("Listening on %s\n", *addr)
+	fmt.Printf("Listening on %s\n", addr)
 	log.Fatal(server.ListenAndServe())
 }

@@ -20,7 +20,7 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
   exit 0
 fi
 
-bash "$ROOT_DIR/bin/check_docker_access.sh"
+bash "$ROOT_DIR/bin/localhost_docker_access_check.sh"
 
 mkdir -p "$ROOT_DIR/.private/container/local-integration"
 
