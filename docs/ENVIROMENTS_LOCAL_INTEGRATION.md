@@ -13,18 +13,23 @@ This document describes the local Docker Compose integration environment.
 - runtime:
   - Docker Compose
 - services:
+  - nginx reverse proxy container
   - application container
   - official Postgres container
 - mutable private state:
   - `.private/container/compose.env`
   - `.private/container/local-integration/postgres-data/`
+  - `.private/container/local-integration/logs/nginx/`
+  - `.private/container/local-integration/reports/`
 - image input:
   - application image built from the verified `build/test` artifacts
 
 ## Default Shape
 
-- application port:
+- public HTTP port:
   - local host port from `.private/container/compose.env`
+  - nginx listens on this port and proxies to the application container on
+    internal port `8080`
 - database port:
   - `127.0.0.1:5432`
 - Postgres data path:
@@ -56,11 +61,21 @@ Stop the environment:
 bash bin/local_integration_stop.sh
 ```
 
+Generate a GoAccess report from nginx access logs:
+
+```bash
+bash bin/local_integration_goaccess.sh
+```
+
 ## Design Notes
 
 - this environment is the closest local match to the production runtime model
 - the application image packages the test artifacts rather than building inside
   the image
+- nginx owns the public local HTTP port so local integration matches the
+  intended production reverse proxy shape
+- GoAccess reads nginx's standard `combined` access log and writes a static
+  report under `.private/container/local-integration/reports/`
 - Postgres data is intentionally kept under `.private/`
 - the environment is meant for integration validation, not fast frontend
   iteration

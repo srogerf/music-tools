@@ -3,6 +3,20 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+usage() {
+  cat >&2 <<'EOF'
+Usage: bash bin/localhost_init_envs.sh
+
+Copies missing example env files into .private/env/dev/ and .private/env/test/
+for local development and test usage.
+EOF
+}
+
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  usage
+  exit 0
+fi
+
 copy_if_missing() {
   local source_file="$1"
   local target_file="$2"

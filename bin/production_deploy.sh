@@ -142,6 +142,14 @@ scp -i "$INSTANCE_SSH_KEY" -P "$LOCAL_PORT" \
   "$REMOTE_USER@localhost:$REMOTE_STAGE_DIR/docker-compose.yml"
 
 scp -i "$INSTANCE_SSH_KEY" -P "$LOCAL_PORT" \
+  "$ROOT_DIR/deploy/container/docker/nginx/production.conf" \
+  "$REMOTE_USER@localhost:$REMOTE_STAGE_DIR/nginx.production.conf"
+
+scp -i "$INSTANCE_SSH_KEY" -P "$LOCAL_PORT" \
+  "$ROOT_DIR/deploy/container/docker/nginx/favicon.svg" \
+  "$REMOTE_USER@localhost:$REMOTE_STAGE_DIR/favicon.svg"
+
+scp -i "$INSTANCE_SSH_KEY" -P "$LOCAL_PORT" \
   "$TEMP_COMPOSE_ENV" \
   "$REMOTE_USER@localhost:$REMOTE_STAGE_DIR/compose.env"
 
@@ -156,7 +164,10 @@ ssh -i "$INSTANCE_SSH_KEY" -p "$LOCAL_PORT" "$REMOTE_USER@localhost" \
   'bash -s' <<'EOF'
 set -euo pipefail
 sudo mkdir -p "$REMOTE_RUNTIME_PATH"
+sudo mkdir -p "$REMOTE_RUNTIME_PATH/nginx"
 sudo mv "$REMOTE_STAGE_DIR/docker-compose.yml" "$REMOTE_COMPOSE_FILE"
+sudo mv "$REMOTE_STAGE_DIR/nginx.production.conf" "$REMOTE_RUNTIME_PATH/nginx/production.conf"
+sudo mv "$REMOTE_STAGE_DIR/favicon.svg" "$REMOTE_RUNTIME_PATH/nginx/favicon.svg"
 sudo mv "$REMOTE_STAGE_DIR/compose.env" "$REMOTE_COMPOSE_ENV_FILE"
 
 sudo mkdir -p /etc/docker
@@ -196,7 +207,7 @@ if [[ "$ghcr_status" != "200" && "$ghcr_status" != "401" ]]; then
 fi
 echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 docker compose -f "$REMOTE_COMPOSE_FILE" --env-file "$REMOTE_COMPOSE_ENV_FILE" pull rifferone
-docker compose -f "$REMOTE_COMPOSE_FILE" --env-file "$REMOTE_COMPOSE_ENV_FILE" up -d rifferone
+docker compose -f "$REMOTE_COMPOSE_FILE" --env-file "$REMOTE_COMPOSE_ENV_FILE" up -d postgres rifferone nginx
 EOF
 
 echo "Production deploy complete."

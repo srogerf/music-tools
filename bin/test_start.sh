@@ -4,6 +4,20 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="${TEST_RUNTIME_ENV:-$ROOT_DIR/.private/env/test/runtime.env}"
 
+usage() {
+  cat >&2 <<'EOF'
+Usage: bash bin/test_start.sh
+
+Starts the built test artifact server using .private/env/test/ by default.
+This serves the production-style frontend bundle and built Go binary.
+EOF
+}
+
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  usage
+  exit 0
+fi
+
 if [[ ! -f "$ENV_FILE" || ! -f "$ROOT_DIR/.private/env/test/postgres.env" ]]; then
   bash "$ROOT_DIR/bin/localhost_init_envs.sh"
 fi

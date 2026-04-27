@@ -17,8 +17,10 @@ This document describes the current production deployment model.
 - runtime:
   - Docker Compose on the compute instance
 - services:
+  - nginx reverse proxy container
   - application container
   - official Postgres container
+  - optional GoAccess report container
 - image source:
   - GitHub Container Registry
 - private config:
@@ -30,10 +32,16 @@ This document describes the current production deployment model.
 
 - public entry point:
   - load balancer on port `80`
+  - nginx owns host port `80` and proxies to the application container on
+    internal port `8080`
 - instance runtime path:
   - host-managed application directory
 - Postgres data path:
   - host-managed persistent directory
+- nginx logs:
+  - host-managed path from production compose env
+- GoAccess reports:
+  - host-managed path from production compose env
 - image pull path:
   - GHCR through the Bastion-assisted proxy path
 
@@ -45,6 +53,12 @@ Typical release wrappers:
 bash bin/production_image_build.sh --tag sha-<git-sha>
 bash bin/production_image_push.sh --tag sha-<git-sha>
 bash bin/production_deploy.sh --tag sha-<git-sha>
+```
+
+Generate and copy back a private GoAccess report:
+
+```bash
+bash bin/production_goaccess.sh
 ```
 
 Tunnel order:
@@ -71,6 +85,8 @@ Current deployment prerequisites:
 - the runtime is intentionally Docker Compose rather than a larger orchestrator
 - database migrations are a separate concern and are not yet fully wired into
   the release flow
+- GoAccess is available as an operator report against nginx access logs; it is
+  not exposed publicly by default
 
 ## Issues We Have Seen
 
@@ -88,6 +104,7 @@ Current deployment prerequisites:
 ## Debugging Checklist
 
 - confirm the load balancer and host port mapping still agree on port `80`
+- confirm `rifferone-nginx` is the container publishing host port `80`
 - confirm the Bastion SSH tunnel is active before deployment
 - confirm the reverse proxy tunnel is active before deployment
 - confirm the remote host can `curl https://ghcr.io/v2/` when proxy variables

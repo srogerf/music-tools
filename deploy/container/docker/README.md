@@ -19,7 +19,9 @@ for `music-tools`.
 ## Current Runtime Model
 
 - `rifferOne` is the application container
+- `nginx` is the public reverse proxy container
 - `postgres` uses the official Postgres image
+- `goaccess` is an optional report container
 - for local integration, Postgres data lives under `.private/container/`
 - for production, Postgres data should live on a managed host path such as
   `/srv/rifferone/postgres-data`
@@ -149,9 +151,10 @@ bash bin/production_deploy.sh --tag sha-<git-sha>
 ```
 
 For the current OCI load balancer setup, the production host should publish the
-application on host port `80`. Do not rely on port `443` until TLS handling is
-added on the instance and the optional HTTPS passthrough listener is enabled in
-Terraform.
+nginx reverse proxy on host port `80`, with the application reachable only on
+the internal Compose network at `rifferone:8080`. Do not rely on port `443`
+until TLS handling is added on the instance and the optional HTTPS passthrough
+listener is enabled in Terraform.
 
 ## Migration Note
 

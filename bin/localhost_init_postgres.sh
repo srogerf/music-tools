@@ -2,6 +2,23 @@
 set -euo pipefail
 
 CONFIG_FILE="${1:-}"
+
+usage() {
+  cat >&2 <<'EOF'
+Usage: bash bin/localhost_init_postgres.sh [postgres env file]
+
+Ensures a local Postgres role and database exist for the values provided in the
+selected env file, such as:
+  .private/env/dev/postgres.env
+  .private/env/test/postgres.env
+EOF
+}
+
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  usage
+  exit 0
+fi
+
 if [[ -n "$CONFIG_FILE" ]]; then
   if [[ ! -f "$CONFIG_FILE" ]]; then
     echo "Missing Postgres env file: $CONFIG_FILE" >&2

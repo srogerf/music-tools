@@ -60,6 +60,7 @@ bash bin/production_db_psql.sh
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
+- [Certificates](docs/CERTIFICATES.md)
 - [Deploy Database](docs/DEPLOY_DATABASE.md)
 - [Scale Layouts](docs/SCALE_LAYOUTS.md)
 - [Deployment](docs/DEPLOYMENT.md)

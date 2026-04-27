@@ -25,8 +25,34 @@ services:
       PGUSER: ${POSTGRES_USER}
       PGPASSWORD: ${POSTGRES_PASSWORD}
       PGSSLMODE: disable
+    expose:
+      - "8080"
+
+  nginx:
+    container_name: rifferone-nginx
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      - rifferone
     ports:
-      - "${RIFFERONE_HTTP_PORT:-8080}:8080"
+      - "${RIFFERONE_HTTP_PORT:-8080}:80"
+    volumes:
+      - ./nginx/local-integration.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../../../frontend/app/favicon.svg:/etc/nginx/assets/favicon.svg:ro
+      - "${NGINX_LOG_PATH:-../../../.private/container/local-integration/logs/nginx}:/var/log/nginx"
+
+  goaccess:
+    container_name: rifferone-goaccess
+    image: allinurl/goaccess:latest
+    profiles:
+      - reports
+    volumes:
+      - "${NGINX_LOG_PATH:-../../../.private/container/local-integration/logs/nginx}:/var/log/nginx:ro"
+      - "${GOACCESS_REPORT_PATH:-../../../.private/container/local-integration/reports}:/var/www/goaccess"
+    command:
+      - /var/log/nginx/access.log
+      - --log-format=COMBINED
+      - --output=/var/www/goaccess/index.html
 
   postgres:
     container_name: postgres

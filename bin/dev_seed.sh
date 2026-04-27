@@ -5,6 +5,20 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 POSTGRES_CONFIG="${POSTGRES_CONFIG:-$ROOT_DIR/.private/env/dev/postgres.env}"
 export POSTGRES_CONFIG
 
+usage() {
+  cat >&2 <<'EOF'
+Usage: bash bin/dev_seed.sh
+
+Rebuilds and seeds the local development database using
+.private/env/dev/postgres.env by default.
+EOF
+}
+
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  usage
+  exit 0
+fi
+
 if [[ ! -f "$POSTGRES_CONFIG" ]]; then
   bash "$ROOT_DIR/bin/localhost_init_envs.sh"
 fi

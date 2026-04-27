@@ -4,6 +4,20 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="${DEV_RUNTIME_ENV:-$ROOT_DIR/.private/env/dev/runtime.env}"
 
+usage() {
+  cat >&2 <<'EOF'
+Usage: bash bin/dev_start.sh
+
+Starts the source-asset development server using the dev runtime env and dev
+Postgres config under .private/env/dev/ by default.
+EOF
+}
+
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  usage
+  exit 0
+fi
+
 if [[ ! -f "$ENV_FILE" || ! -f "$ROOT_DIR/.private/env/dev/postgres.env" ]]; then
   bash "$ROOT_DIR/bin/localhost_init_envs.sh"
 fi

@@ -21,6 +21,7 @@ yarn-error.log*
 !/bin/localhost_postgres_start.sh
 !/bin/localhost_server_start.sh
 !/bin/local_integration_seed.sh
+!/bin/local_integration_goaccess.sh
 !/bin/local_integration_start.sh
 !/bin/local_integration_stop.sh
 !/bin/oci_*.sh
@@ -29,6 +30,7 @@ yarn-error.log*
 !/bin/production_db_psql.sh
 !/bin/production_db_rebuild.sh
 !/bin/production_db_seed.sh
+!/bin/production_goaccess.sh
 !/bin/production_image_build.sh
 !/bin/production_image_push.sh
 /bin/lib/*
