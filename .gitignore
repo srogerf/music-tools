@@ -30,6 +30,7 @@ yarn-error.log*
 !/bin/production_db_psql.sh
 !/bin/production_db_rebuild.sh
 !/bin/production_db_seed.sh
+!/bin/production_db_upgrade_scale_intervals.sh
 !/bin/production_goaccess.sh
 !/bin/production_image_build.sh
 !/bin/production_image_push.sh

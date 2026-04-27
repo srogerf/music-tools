@@ -88,5 +88,5 @@ func resolvePath(override string, primary string, fallback string) string {
 
 func printScale(scale scales.Definition) {
 	fmt.Printf("%s (%s) - %s\n", scale.Name, scale.CommonName, scale.Type)
-	fmt.Printf("intervals: %v\n", scale.Intervals)
+	fmt.Printf("intervals: %v\n", scale.SemitoneIntervals())
 }

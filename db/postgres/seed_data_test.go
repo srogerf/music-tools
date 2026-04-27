@@ -69,7 +69,7 @@ func TestSeedDataChecksSchemaVersionCompatibility(t *testing.T) {
 	checks := []string{
 		"FROM schema_metadata",
 		"seed data format version % does not support schema version %",
-		"UPDATE schema_metadata SET seed_data_format_version = 1 WHERE singleton = TRUE;",
+		"UPDATE schema_metadata SET seed_data_format_version = 2 WHERE singleton = TRUE;",
 	}
 
 	for _, needle := range checks {
@@ -136,6 +136,8 @@ func TestSchemaDefinesSplitLayoutTables(t *testing.T) {
 		"CREATE TABLE schema_metadata",
 		"INSERT INTO schema_metadata (singleton, schema_version, seed_data_format_version)",
 		"CREATE TABLE scale_layout_positions",
+		"degree_class SMALLINT NOT NULL",
+		"interval_label TEXT NOT NULL",
 		"CREATE TABLE scale_layout_position_split_ranges",
 		"CREATE TABLE scale_layout_position_split_range_strings",
 		"CREATE TABLE scale_layout_position_string_frets",
@@ -147,6 +149,20 @@ func TestSchemaDefinesSplitLayoutTables(t *testing.T) {
 		if !strings.Contains(text, needle) {
 			t.Fatalf("expected schema.sql to contain %q", needle)
 		}
+	}
+}
+
+func TestSeedDataIncludesScaleIntervalLabels(t *testing.T) {
+	out := runSeedData(t)
+
+	expected := "INSERT INTO scale_intervals (scale_id, ordinal, semitones, degree_class, interval_label) VALUES ((SELECT id FROM scales WHERE external_id = 11), 2, 3, 3, 'b3');"
+	if !strings.Contains(out, expected) {
+		t.Fatalf("expected seed output to contain:\n%s", expected)
+	}
+
+	expected = "INSERT INTO scale_intervals (scale_id, ordinal, semitones, degree_class, interval_label) VALUES ((SELECT id FROM scales WHERE external_id = 11), 5, 10, 7, 'b7');"
+	if !strings.Contains(out, expected) {
+		t.Fatalf("expected seed output to contain:\n%s", expected)
 	}
 }
 

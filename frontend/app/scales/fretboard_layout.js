@@ -63,6 +63,21 @@ function noteNameToPitchClass(noteName) {
 }
 
 function buildDiatonicNotes(normalizedKey, rootIndex, scale) {
+  const degreeClasses = scale.intervals.map((_, degree) => degree + 1);
+  return buildNotesForDegreeClasses(normalizedKey, rootIndex, scale, degreeClasses);
+}
+
+function intervalSemitones(interval) {
+  return typeof interval === "number" ? interval : interval?.semitones;
+}
+
+function intervalDegree(interval, fallback) {
+  return typeof interval === "object" && Number.isFinite(interval?.degree)
+    ? interval.degree
+    : fallback;
+}
+
+function buildNotesForDegreeClasses(normalizedKey, rootIndex, scale, degreeClasses) {
   const match = normalizedKey.match(/^([A-G])([b#]?)$/);
   if (!match) {
     return null;
@@ -76,8 +91,16 @@ function buildDiatonicNotes(normalizedKey, rootIndex, scale) {
 
   const notes = [];
   for (let degree = 0; degree < scale.intervals.length; degree += 1) {
-    const targetPitch = (rootIndex + scale.intervals[degree]) % 12;
-    const letter = LETTER_ORDER[(rootLetterIndex + degree) % LETTER_ORDER.length];
+    const semitones = intervalSemitones(scale.intervals[degree]);
+    if (!Number.isFinite(semitones)) {
+      return null;
+    }
+    const targetPitch = (rootIndex + semitones) % 12;
+    const degreeClass = degreeClasses[degree];
+    if (!degreeClass) {
+      return null;
+    }
+    const letter = LETTER_ORDER[(rootLetterIndex + degreeClass - 1) % LETTER_ORDER.length];
     let offset = (targetPitch - NATURAL_PITCH[letter] + 12) % 12;
     if (offset > 6) {
       offset -= 12;
@@ -172,6 +195,35 @@ function intervalLabelForNote(rootName, noteName) {
   return String(degreeClass);
 }
 
+function intervalLabelForDefinition(interval) {
+  const semitones = intervalSemitones(interval);
+  const degreeClass = intervalDegree(interval, null);
+  if (!Number.isFinite(semitones) || !degreeClass) {
+    return "";
+  }
+
+  const base = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 }[degreeClass];
+  if (base === undefined) {
+    return "";
+  }
+
+  let offset = (semitones - base + 12) % 12;
+  if (offset > 6) {
+    offset -= 12;
+  }
+
+  if (degreeClass === 1 && offset === 0) {
+    return "root";
+  }
+  if (offset === 0) {
+    return String(degreeClass);
+  }
+  if (offset > 0) {
+    return `${"#".repeat(offset)}${degreeClass}`;
+  }
+  return `${"b".repeat(-offset)}${degreeClass}`;
+}
+
 export function buildScaleNotes(key, scale) {
   const normalized = normalizeKey(key);
   const useFlats = shouldUseFlats(normalized);
@@ -182,6 +234,7 @@ export function buildScaleNotes(key, scale) {
     return {
       rootIndex: 0,
       notes: [],
+      noteDetails: [],
       pitchClassSet: new Set(),
       intervalMap: new Map(),
       displayNameMap: new Map(),
@@ -193,11 +246,18 @@ export function buildScaleNotes(key, scale) {
   }
 
   let notes = null;
+  const definitionDegreeClasses = scale.intervals.map((interval, degree) =>
+    intervalDegree(interval, degree + 1)
+  );
   if (scale.type === "diatonic" && Array.isArray(scale.intervals) && scale.intervals.length === 7) {
-    notes = buildDiatonicNotes(normalized, rootIndex, scale);
+    notes = buildNotesForDegreeClasses(normalized, rootIndex, scale, definitionDegreeClasses)
+      || buildDiatonicNotes(normalized, rootIndex, scale);
   }
   if (!notes) {
-    notes = scale.intervals.map((interval) => noteNames[(rootIndex + interval) % 12]);
+    notes = buildNotesForDegreeClasses(normalized, rootIndex, scale, definitionDegreeClasses);
+  }
+  if (!notes) {
+    notes = scale.intervals.map((interval) => noteNames[(rootIndex + intervalSemitones(interval)) % 12]);
   }
 
   const pitchClassSet = new Set();
@@ -205,20 +265,31 @@ export function buildScaleNotes(key, scale) {
   const displayNameMap = new Map();
   const degreeClassMap = new Map();
   const intervalLabelMap = new Map();
+  const noteDetails = [];
   scale.intervals.forEach((interval, degree) => {
-    const pitchClass = (rootIndex + interval) % 12;
+    const semitones = intervalSemitones(interval);
+    const pitchClass = (rootIndex + semitones) % 12;
     pitchClassSet.add(pitchClass);
-    intervalMap.set(pitchClass, interval);
+    intervalMap.set(pitchClass, semitones);
     const noteName = notes[degree];
     displayNameMap.set(pitchClass, noteName);
-    const degreeClass = degreeClassForNote(normalized, noteName) ?? (degree + 1);
+    const degreeClass = definitionDegreeClasses[degree] ?? degreeClassForNote(normalized, noteName) ?? (degree + 1);
     degreeClassMap.set(pitchClass, degreeClass);
-    intervalLabelMap.set(pitchClass, intervalLabelForNote(normalized, noteName));
+    const definitionIntervalLabel = intervalLabelForDefinition(interval);
+    const intervalLabel = definitionIntervalLabel || intervalLabelForNote(normalized, noteName);
+    intervalLabelMap.set(pitchClass, intervalLabel);
+    noteDetails.push({
+      note: noteName,
+      interval: semitones,
+      intervalLabel,
+      degreeClass,
+    });
   });
 
   return {
     rootIndex,
     notes,
+    noteDetails,
     pitchClassSet,
     intervalMap,
     displayNameMap,

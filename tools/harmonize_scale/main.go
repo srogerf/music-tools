@@ -57,7 +57,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	harmonized, err := chords.HarmonizeDiatonicScale(notes, scale.Intervals)
+	harmonized, err := chords.HarmonizeDiatonicScale(notes, scale.SemitoneIntervals())
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -115,7 +115,7 @@ func main() {
 			Name:       name,
 			CommonName: common,
 			Type:       scales.ScaleTypeQuadad,
-			Intervals:  intervals,
+			Intervals:  chordScaleIntervals(intervals),
 		})
 		updated = true
 	}
@@ -162,13 +162,30 @@ func quadadQualityIndex(defs []scales.Definition) map[string]chordQuality {
 		if def.Type != scales.ScaleTypeQuadad {
 			continue
 		}
-		index[intervalKey(def.Intervals)] = chordQuality{
+		intervals := def.SemitoneIntervals()
+		index[intervalKey(intervals)] = chordQuality{
 			Name:       def.Name,
 			CommonName: def.CommonName,
-			Intervals:  def.Intervals,
+			Intervals:  intervals,
 		}
 	}
 	return index
+}
+
+func chordScaleIntervals(intervals []int) []scales.ScaleInterval {
+	degrees := []int{1, 3, 5, 7}
+	result := make([]scales.ScaleInterval, 0, len(intervals))
+	for i, semitones := range intervals {
+		degree := i + 1
+		if i < len(degrees) {
+			degree = degrees[i]
+		}
+		result = append(result, scales.ScaleInterval{
+			Semitones: semitones,
+			Degree:    degree,
+		})
+	}
+	return result
 }
 
 func intervalKey(intervals []int) string {

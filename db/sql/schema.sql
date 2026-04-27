@@ -7,7 +7,7 @@ CREATE TABLE schema_metadata (
 );
 
 INSERT INTO schema_metadata (singleton, schema_version, seed_data_format_version)
-VALUES (TRUE, 3, NULL);
+VALUES (TRUE, 4, NULL);
 
 CREATE TABLE scale_types (
     id BIGSERIAL PRIMARY KEY,
@@ -28,9 +28,13 @@ CREATE TABLE scale_intervals (
     scale_id BIGINT NOT NULL REFERENCES scales(id) ON DELETE CASCADE,
     ordinal SMALLINT NOT NULL,
     semitones SMALLINT NOT NULL,
+    degree_class SMALLINT NOT NULL,
+    interval_label TEXT NOT NULL,
     PRIMARY KEY (scale_id, ordinal),
     CHECK (ordinal >= 1),
-    CHECK (semitones >= 0 AND semitones <= 24)
+    CHECK (semitones >= 0 AND semitones <= 24),
+    CHECK (degree_class BETWEEN 1 AND 7),
+    CHECK (interval_label <> '')
 );
 
 CREATE TABLE key_signature_groups (

@@ -182,8 +182,18 @@ components:
         intervals:
           type: array
           items:
-            type: integer
-          description: Semitone intervals from the root.
+            type: object
+            required:
+              - semitones
+              - degree
+            properties:
+              semitones:
+                type: integer
+                description: Semitone distance from the root.
+              degree:
+                type: integer
+                description: Functional scale degree used for note spelling.
+          description: Ordered functional intervals for the scale.
     ScaleListResponse:
       type: object
       required:

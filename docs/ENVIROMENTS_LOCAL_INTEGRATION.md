@@ -30,6 +30,9 @@ This document describes the local Docker Compose integration environment.
   - local host port from `.private/container/compose.env`
   - nginx listens on this port and proxies to the application container on
     internal port `8080`
+- request throttling:
+  - nginx applies the same per-IP request and connection limits used by
+    production
 - database port:
   - `127.0.0.1:5432`
 - Postgres data path:
@@ -74,6 +77,8 @@ bash bin/local_integration_goaccess.sh
   the image
 - nginx owns the public local HTTP port so local integration matches the
   intended production reverse proxy shape
+- nginx mounts a root config as well as a server config so rate-limit zones can
+  be tested locally before production
 - GoAccess reads nginx's standard `combined` access log and writes a static
   report under `.private/container/local-integration/reports/`
 - Postgres data is intentionally kept under `.private/`

@@ -142,6 +142,10 @@ scp -i "$INSTANCE_SSH_KEY" -P "$LOCAL_PORT" \
   "$REMOTE_USER@localhost:$REMOTE_STAGE_DIR/docker-compose.yml"
 
 scp -i "$INSTANCE_SSH_KEY" -P "$LOCAL_PORT" \
+  "$ROOT_DIR/deploy/container/docker/nginx/nginx.conf" \
+  "$REMOTE_USER@localhost:$REMOTE_STAGE_DIR/nginx.conf"
+
+scp -i "$INSTANCE_SSH_KEY" -P "$LOCAL_PORT" \
   "$ROOT_DIR/deploy/container/docker/nginx/production.conf" \
   "$REMOTE_USER@localhost:$REMOTE_STAGE_DIR/nginx.production.conf"
 
@@ -166,6 +170,7 @@ set -euo pipefail
 sudo mkdir -p "$REMOTE_RUNTIME_PATH"
 sudo mkdir -p "$REMOTE_RUNTIME_PATH/nginx"
 sudo mv "$REMOTE_STAGE_DIR/docker-compose.yml" "$REMOTE_COMPOSE_FILE"
+sudo mv "$REMOTE_STAGE_DIR/nginx.conf" "$REMOTE_RUNTIME_PATH/nginx/nginx.conf"
 sudo mv "$REMOTE_STAGE_DIR/nginx.production.conf" "$REMOTE_RUNTIME_PATH/nginx/production.conf"
 sudo mv "$REMOTE_STAGE_DIR/favicon.svg" "$REMOTE_RUNTIME_PATH/nginx/favicon.svg"
 sudo mv "$REMOTE_STAGE_DIR/compose.env" "$REMOTE_COMPOSE_ENV_FILE"

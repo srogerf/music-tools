@@ -34,6 +34,29 @@ def print_insert(statement: str) -> None:
     print(statement.rstrip() + ";")
 
 
+def interval_label(semitones: int, degree: int) -> str:
+    major_or_perfect = {
+        1: 0,
+        2: 2,
+        3: 4,
+        4: 5,
+        5: 7,
+        6: 9,
+        7: 11,
+    }
+    offset = (semitones - major_or_perfect[degree] + 12) % 12
+    if offset > 6:
+        offset -= 12
+
+    if degree == 1 and offset == 0:
+        return "root"
+    if offset == 0:
+        return str(degree)
+    if offset > 0:
+        return "#" * offset + str(degree)
+    return "b" * abs(offset) + str(degree)
+
+
 def load_layout_files() -> list[dict[str, Any]]:
     paths = sorted(glob.glob(os.path.join(ROOT, "data", "scales", "layouts", "*.json")))
     layouts = []
@@ -116,12 +139,14 @@ $seed$;"""
             f"VALUES ({scale['id']}, {sql_literal(scale['name'])}, {sql_literal(scale['common_name'])}, "
             f"(SELECT id FROM scale_types WHERE code = {sql_literal(scale['type'])}))"
         )
-        for ordinal, semitones in enumerate(scale["intervals"], start=1):
+        for ordinal, interval in enumerate(scale["intervals"], start=1):
+            semitones = interval["semitones"]
+            degree_class = interval["degree"]
             print_insert(
-                "INSERT INTO scale_intervals (scale_id, ordinal, semitones) "
+                "INSERT INTO scale_intervals (scale_id, ordinal, semitones, degree_class, interval_label) "
                 "VALUES ("
                 f"(SELECT id FROM scales WHERE external_id = {scale['id']}), "
-                f"{ordinal}, {semitones})"
+                f"{ordinal}, {semitones}, {degree_class}, {sql_literal(interval_label(semitones, degree_class))})"
             )
 
     for group_code in sorted(key_signatures.keys()):

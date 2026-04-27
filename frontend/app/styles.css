@@ -190,6 +190,19 @@ canvas {
   background: #fff0de;
   border: 1px solid #e5c8aa;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.note-name {
+  font-weight: 800;
+}
+
+.note-interval {
+  color: #6b5948;
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
 .info-bar {

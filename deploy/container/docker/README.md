@@ -22,6 +22,8 @@ for `music-tools`.
 - `nginx` is the public reverse proxy container
 - `postgres` uses the official Postgres image
 - `goaccess` is an optional report container
+- nginx uses a mounted root config for shared `http`-level settings such as
+  per-IP rate-limit zones, plus an environment-specific server config
 - for local integration, Postgres data lives under `.private/container/`
 - for production, Postgres data should live on a managed host path such as
   `/srv/rifferone/postgres-data`

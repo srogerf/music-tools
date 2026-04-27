@@ -218,6 +218,10 @@ Guidance:
 - destructive rebuild is not an acceptable production upgrade path
 - each schema version change should have a documented upgrade procedure
 
+Current schema version 3 to 4 wrapper:
+
+- `bash bin/production_db_upgrade_scale_intervals.sh`
+
 ## Version Contract
 
 The repo now has a version handshake between schema and seed data.

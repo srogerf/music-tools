@@ -17,11 +17,16 @@ const (
 )
 
 type Definition struct {
-	ID         int       `json:"id"`
-	Name       string    `json:"name"`
-	CommonName string    `json:"common_name"`
-	Type       ScaleType `json:"type"`
-	Intervals  []int     `json:"intervals"`
+	ID         int             `json:"id"`
+	Name       string          `json:"name"`
+	CommonName string          `json:"common_name"`
+	Type       ScaleType       `json:"type"`
+	Intervals  []ScaleInterval `json:"intervals"`
+}
+
+type ScaleInterval struct {
+	Semitones int `json:"semitones"`
+	Degree    int `json:"degree"`
 }
 
 type DefinitionSet struct {
@@ -60,6 +65,14 @@ func (set DefinitionSet) ByID(id int) (Definition, bool) {
 	return Definition{}, false
 }
 
+func (scale Definition) SemitoneIntervals() []int {
+	intervals := make([]int, 0, len(scale.Intervals))
+	for _, interval := range scale.Intervals {
+		intervals = append(intervals, interval.Semitones)
+	}
+	return intervals
+}
+
 // NotesFor returns the note names for a key and scale name/common name.
 // The key should be a pitch class like C, Eb, or F#.
 func (set DefinitionSet) NotesFor(key string, scaleName string) ([]string, error) {
@@ -68,10 +81,10 @@ func (set DefinitionSet) NotesFor(key string, scaleName string) ([]string, error
 		return nil, fmt.Errorf("unknown scale: %s", scaleName)
 	}
 
-	return notesForKeyAndIntervals(key, scale.Intervals)
+	return notesForKeyAndScale(key, scale)
 }
 
-func notesForKeyAndIntervals(key string, intervals []int) ([]string, error) {
+func notesForKeyAndScale(key string, scale Definition) ([]string, error) {
 	normalized := normalizeKey(key)
 	if normalized == "" {
 		return nil, fmt.Errorf("invalid key: %s", key)
@@ -102,9 +115,13 @@ func notesForKeyAndIntervals(key string, intervals []int) ([]string, error) {
 		return nil, fmt.Errorf("unsupported key: %s", key)
 	}
 
-	notes := make([]string, 0, len(intervals))
-	for _, interval := range intervals {
-		pitchClass := (root + interval) % 12
+	if notes, ok := notesForDegreeClasses(normalized, root, scale); ok {
+		return notes, nil
+	}
+
+	notes := make([]string, 0, len(scale.Intervals))
+	for _, interval := range scale.Intervals {
+		pitchClass := (root + interval.Semitones) % 12
 		if pitchClass < 0 {
 			pitchClass += 12
 		}
@@ -112,6 +129,73 @@ func notesForKeyAndIntervals(key string, intervals []int) ([]string, error) {
 	}
 
 	return notes, nil
+}
+
+func notesForDegreeClasses(key string, root int, scale Definition) ([]string, bool) {
+	rootLetter := key[:1]
+	rootLetterIndex := -1
+	for i, letter := range letterOrder {
+		if letter == rootLetter {
+			rootLetterIndex = i
+			break
+		}
+	}
+	if rootLetterIndex == -1 {
+		return nil, false
+	}
+
+	notes := make([]string, 0, len(scale.Intervals))
+	for _, interval := range scale.Intervals {
+		degreeClass := interval.Degree
+		if degreeClass < 1 || degreeClass > 7 {
+			return nil, false
+		}
+		letter := letterOrder[(rootLetterIndex+degreeClass-1)%len(letterOrder)]
+		targetPitch := (root + interval.Semitones) % 12
+		if targetPitch < 0 {
+			targetPitch += 12
+		}
+		offset := (targetPitch - naturalPitch[letter] + 12) % 12
+		if offset > 6 {
+			offset -= 12
+		}
+		accidental, ok := accidentalForOffset(offset)
+		if !ok {
+			return nil, false
+		}
+		notes = append(notes, letter+accidental)
+	}
+
+	return notes, true
+}
+
+var letterOrder = []string{"C", "D", "E", "F", "G", "A", "B"}
+
+var naturalPitch = map[string]int{
+	"C": 0,
+	"D": 2,
+	"E": 4,
+	"F": 5,
+	"G": 7,
+	"A": 9,
+	"B": 11,
+}
+
+func accidentalForOffset(offset int) (string, bool) {
+	switch offset {
+	case -2:
+		return "bb", true
+	case -1:
+		return "b", true
+	case 0:
+		return "", true
+	case 1:
+		return "#", true
+	case 2:
+		return "##", true
+	default:
+		return "", false
+	}
 }
 
 func normalizeKey(key string) string {

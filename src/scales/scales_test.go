@@ -18,6 +18,38 @@ func TestLoadDefinitions(t *testing.T) {
 	}
 }
 
+func TestDefinitionsIncludeFunctionalIntervals(t *testing.T) {
+	set, err := LoadDefinitions("../../data/scales/DEFINITIONS.json")
+	if err != nil {
+		t.Fatalf("load definitions: %v", err)
+	}
+
+	for _, scale := range set.Scales {
+		for i, interval := range scale.Intervals {
+			if interval.Degree < 1 || interval.Degree > 7 {
+				t.Fatalf("%s interval %d degree must be 1-7, got %d", scale.Name, i, interval.Degree)
+			}
+		}
+	}
+
+	scale, ok := set.ByName("Minor Pentatonic")
+	if !ok {
+		t.Fatalf("expected to find Minor Pentatonic")
+	}
+	expected := []ScaleInterval{
+		{Semitones: 0, Degree: 1},
+		{Semitones: 3, Degree: 3},
+		{Semitones: 5, Degree: 4},
+		{Semitones: 7, Degree: 5},
+		{Semitones: 10, Degree: 7},
+	}
+	for i, interval := range expected {
+		if scale.Intervals[i] != interval {
+			t.Fatalf("minor pentatonic interval %d: expected %+v, got %+v", i, interval, scale.Intervals[i])
+		}
+	}
+}
+
 func TestByName(t *testing.T) {
 	set, err := LoadDefinitions("../../data/scales/DEFINITIONS.json")
 	if err != nil {
@@ -50,6 +82,25 @@ func TestNotesForEMajor(t *testing.T) {
 		t.Fatalf("expected %d notes, got %d", len(expected), len(notes))
 	}
 
+	for i, note := range expected {
+		if notes[i] != note {
+			t.Fatalf("note %d: expected %s, got %s", i, note, notes[i])
+		}
+	}
+}
+
+func TestNotesForCMinorPentatonicUsesFlatDegrees(t *testing.T) {
+	set, err := LoadDefinitions("../../data/scales/DEFINITIONS.json")
+	if err != nil {
+		t.Fatalf("load definitions: %v", err)
+	}
+
+	notes, err := set.NotesFor("C", "Minor Pentatonic")
+	if err != nil {
+		t.Fatalf("notes for C minor pentatonic: %v", err)
+	}
+
+	expected := []string{"C", "Eb", "F", "G", "Bb"}
 	for i, note := range expected {
 		if notes[i] != note {
 			t.Fatalf("note %d: expected %s, got %s", i, note, notes[i])

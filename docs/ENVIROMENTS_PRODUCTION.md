@@ -42,6 +42,10 @@ This document describes the current production deployment model.
   - host-managed path from production compose env
 - GoAccess reports:
   - host-managed path from production compose env
+- request throttling:
+  - nginx rate limits are defined in the mounted root nginx config
+  - default limit is `5r/s` per IP with a burst of `20`
+  - concurrent connections are limited to `20` per IP
 - image pull path:
   - GHCR through the Bastion-assisted proxy path
 
@@ -50,6 +54,7 @@ This document describes the current production deployment model.
 Typical release wrappers:
 
 ```bash
+bash bin/production_db_upgrade_scale_intervals.sh
 bash bin/production_image_build.sh --tag sha-<git-sha>
 bash bin/production_image_push.sh --tag sha-<git-sha>
 bash bin/production_deploy.sh --tag sha-<git-sha>
@@ -85,6 +90,8 @@ Current deployment prerequisites:
 - the runtime is intentionally Docker Compose rather than a larger orchestrator
 - database migrations are a separate concern and are not yet fully wired into
   the release flow
+- nginx has a separate root config so `http`-level rate-limit zones can be
+  shared by the production server config
 - GoAccess is available as an operator report against nginx access logs; it is
   not exposed publicly by default
 

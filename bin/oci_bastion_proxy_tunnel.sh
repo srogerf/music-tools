@@ -141,6 +141,15 @@ ssh_ready() {
     "$REMOTE_USER@localhost" true >/dev/null 2>&1
 }
 
+remote_ssh() {
+  ssh -i "$INSTANCE_SSH_KEY" \
+    -p "$LOCAL_PORT" \
+    -o BatchMode=yes \
+    -o ConnectTimeout=5 \
+    -o StrictHostKeyChecking=accept-new \
+    "$REMOTE_USER@localhost" "$@"
+}
+
 if ssh_ready; then
   echo "Reusing existing OCI Bastion SSH tunnel on localhost:$LOCAL_PORT."
 else
@@ -160,6 +169,35 @@ else
     echo "Retry with: bash bin/oci_bastion_proxy_tunnel.sh --new-session" >&2
     exit 1
   fi
+fi
+
+remote_port_owner="$(remote_ssh "sudo ss -ltnp 2>/dev/null | grep ':$REMOTE_PROXY_PORT ' || true")"
+if [[ -n "$remote_port_owner" ]]; then
+  echo "Remote port 127.0.0.1:$REMOTE_PROXY_PORT is already in use on the OCI host." >&2
+  echo "$remote_port_owner" >&2
+
+  remote_pid="$(printf '%s\n' "$remote_port_owner" | sed -n 's/.*pid=\([0-9][0-9]*\).*/\1/p' | head -n 1)"
+  if [[ -n "$remote_pid" ]]; then
+    cat >&2 <<EOF
+
+If this is a stale reverse tunnel, free the port with:
+
+  ssh -i "$INSTANCE_SSH_KEY" -p "$LOCAL_PORT" "$REMOTE_USER@localhost" 'kill $remote_pid'
+
+Then rerun:
+
+  bash bin/oci_bastion_proxy_tunnel.sh
+EOF
+  else
+    cat >&2 <<EOF
+
+Inspect the remote listener, then free the port or choose another one:
+
+  ssh -i "$INSTANCE_SSH_KEY" -p "$LOCAL_PORT" "$REMOTE_USER@localhost" 'sudo ss -ltnp | grep ":$REMOTE_PROXY_PORT" || true'
+  bash bin/oci_bastion_proxy_tunnel.sh --remote-proxy-port <other-port>
+EOF
+  fi
+  exit 1
 fi
 
 echo "Opening reverse proxy tunnel."

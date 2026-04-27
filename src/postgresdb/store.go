@@ -107,7 +107,7 @@ func firstNonEmpty(values ...string) string {
 func (s *Store) LoadScaleDefinitions(ctx context.Context) (scales.DefinitionSet, error) {
 	log.Printf("db query load_scale_definitions")
 	rows, err := s.pool.Query(ctx, `
-		SELECT s.external_id, s.name, s.common_name, st.code, si.ordinal, si.semitones
+		SELECT s.external_id, s.name, s.common_name, st.code, si.ordinal, si.semitones, si.degree_class
 		FROM scales s
 		JOIN scale_types st ON st.id = s.scale_type_id
 		JOIN scale_intervals si ON si.scale_id = s.id
@@ -125,9 +125,9 @@ func (s *Store) LoadScaleDefinitions(ctx context.Context) (scales.DefinitionSet,
 	var order []int
 
 	for rows.Next() {
-		var id, ordinal, semitones int
+		var id, ordinal, semitones, degreeClass int
 		var name, commonName, scaleType string
-		if err := rows.Scan(&id, &name, &commonName, &scaleType, &ordinal, &semitones); err != nil {
+		if err := rows.Scan(&id, &name, &commonName, &scaleType, &ordinal, &semitones, &degreeClass); err != nil {
 			return scales.DefinitionSet{}, fmt.Errorf("scan scale definitions: %w", err)
 		}
 		item, ok := byID[id]
@@ -138,13 +138,16 @@ func (s *Store) LoadScaleDefinitions(ctx context.Context) (scales.DefinitionSet,
 					Name:       name,
 					CommonName: commonName,
 					Type:       scales.ScaleType(scaleType),
-					Intervals:  []int{},
+					Intervals:  []scales.ScaleInterval{},
 				},
 			}
 			byID[id] = item
 			order = append(order, id)
 		}
-		item.definition.Intervals = append(item.definition.Intervals, semitones)
+		item.definition.Intervals = append(item.definition.Intervals, scales.ScaleInterval{
+			Semitones: semitones,
+			Degree:    degreeClass,
+		})
 	}
 	if err := rows.Err(); err != nil {
 		return scales.DefinitionSet{}, fmt.Errorf("iterate scale definitions: %w", err)

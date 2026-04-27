@@ -473,7 +473,7 @@ func generateScaleLayoutPosition(tuning ScaleLayoutTuning, definition Definition
 	noteIndex := noteIndexMap()
 	scalePitchClasses := map[int]struct{}{}
 	for _, interval := range definition.Intervals {
-		scalePitchClasses[(interval%12+12)%12] = struct{}{}
+		scalePitchClasses[(interval.Semitones%12+12)%12] = struct{}{}
 	}
 
 	candidatesByPitch := map[int][]pitchCandidate{}
@@ -659,7 +659,7 @@ func shapeRootIssues(
 	noteIndex := noteIndexMap()
 	rootPitchClass := 0
 	if len(scale.Intervals) > 0 {
-		rootPitchClass = ((scale.Intervals[0] % 12) + 12) % 12
+		rootPitchClass = ((scale.Intervals[0].Semitones % 12) + 12) % 12
 	}
 
 	var issues []string
@@ -939,7 +939,7 @@ func validateScaleLayoutPosition(
 	noteIndex := noteIndexMap()
 	scalePitchClasses := map[int]struct{}{}
 	for _, interval := range scale.Intervals {
-		scalePitchClasses[(interval%12+12)%12] = struct{}{}
+		scalePitchClasses[(interval.Semitones%12+12)%12] = struct{}{}
 	}
 
 	minPitch := int(^uint(0) >> 1)

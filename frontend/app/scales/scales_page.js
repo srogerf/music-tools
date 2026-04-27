@@ -221,9 +221,9 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
     );
   }, [selectedLayoutInstance, selectedScale, selectedPosition, useThreeNps]);
 
-  const scaleNotes = useMemo(() => {
+  const scaleNoteDetails = useMemo(() => {
     if (!selectedScale) return [];
-    return buildScaleNotes(selectedKey, selectedScale).notes;
+    return buildScaleNotes(selectedKey, selectedScale).noteDetails;
   }, [selectedScale, selectedKey]);
 
   const visibleDegreeClasses = useMemo(() => {
@@ -475,8 +475,17 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
               React.createElement(
                 "div",
                 { className: "note-list" },
-                scaleNotes.map((note) =>
-                  React.createElement("span", { className: "note-pill", key: note }, note)
+                scaleNoteDetails.map((note) =>
+                  React.createElement(
+                    "span",
+                    { className: "note-pill", key: `${note.note}-${note.interval}` },
+                    React.createElement("span", { className: "note-name" }, note.note),
+                    React.createElement(
+                      "span",
+                      { className: "note-interval" },
+                      note.intervalLabel || `${note.interval} semitones`
+                    )
+                  )
                 )
               )
             ),
