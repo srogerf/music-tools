@@ -44,7 +44,7 @@ services:
 
   goaccess:
     container_name: rifferone-goaccess
-    image: allinurl/goaccess:latest
+    image: allinurl/goaccess:1.10.2
     profiles:
       - reports
     volumes:

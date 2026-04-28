@@ -35,7 +35,9 @@ yarn-error.log*
 !/bin/production_image_build.sh
 !/bin/production_image_push.sh
 /bin/lib/*
+!/bin/lib/
 !/bin/lib/production_db_helpers.sh
+!/bin/lib/shell_helpers.sh
 !/bin/test_seed.sh
 !/bin/test_smoke.sh
 !/bin/test_start.sh

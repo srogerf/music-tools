@@ -5,6 +5,9 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMPOSE_ENV_FILE="${LOCAL_INTEGRATION_ENV_FILE:-$ROOT_DIR/.private/container/compose.env}"
 TEMP_CONFIG_FILE="$(mktemp)"
 
+# shellcheck disable=SC1091
+source "$ROOT_DIR/bin/lib/shell_helpers.sh"
+
 usage() {
   cat >&2 <<'EOF'
 Usage: bash bin/local_integration_seed.sh
@@ -30,14 +33,9 @@ if [[ ! -f "$COMPOSE_ENV_FILE" ]]; then
   exit 1
 fi
 
-get_env_value() {
-  local key="$1"
-  grep -E "^[[:space:]]*${key}[[:space:]]*=" "$COMPOSE_ENV_FILE" | tail -n 1 | cut -d= -f2-
-}
-
-POSTGRES_DB="$(get_env_value POSTGRES_DB)"
-POSTGRES_USER="$(get_env_value POSTGRES_USER)"
-POSTGRES_PASSWORD="$(get_env_value POSTGRES_PASSWORD)"
+POSTGRES_DB="$(env_file_value "$COMPOSE_ENV_FILE" POSTGRES_DB)"
+POSTGRES_USER="$(env_file_value "$COMPOSE_ENV_FILE" POSTGRES_USER)"
+POSTGRES_PASSWORD="$(env_file_value "$COMPOSE_ENV_FILE" POSTGRES_PASSWORD)"
 
 if [[ -z "$POSTGRES_DB" || -z "$POSTGRES_USER" || -z "$POSTGRES_PASSWORD" ]]; then
   echo "compose env must define POSTGRES_DB, POSTGRES_USER, and POSTGRES_PASSWORD." >&2

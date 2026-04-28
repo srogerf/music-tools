@@ -8,6 +8,9 @@ COMPOSE_DIR="$ROOT_DIR/deploy/container/docker"
 DEFAULT_NGINX_LOG_PATH="$ROOT_DIR/.private/container/local-integration/logs/nginx"
 DEFAULT_GOACCESS_REPORT_PATH="$ROOT_DIR/.private/container/local-integration/reports"
 
+# shellcheck disable=SC1091
+source "$ROOT_DIR/bin/lib/shell_helpers.sh"
+
 usage() {
   cat >&2 <<'EOF'
 Usage: bash bin/local_integration_goaccess.sh
@@ -29,21 +32,8 @@ if [[ ! -f "$ENV_FILE" ]]; then
   exit 1
 fi
 
-NGINX_LOG_PATH="$(grep -E '^[[:space:]]*NGINX_LOG_PATH[[:space:]]*=' "$ENV_FILE" | tail -n 1 | cut -d= -f2- || true)"
-if [[ -z "$NGINX_LOG_PATH" ]]; then
-  NGINX_LOG_PATH="$DEFAULT_NGINX_LOG_PATH"
-fi
-if [[ "$NGINX_LOG_PATH" != /* ]]; then
-  NGINX_LOG_PATH="$(realpath -m "$COMPOSE_DIR/$NGINX_LOG_PATH")"
-fi
-
-GOACCESS_REPORT_PATH="$(grep -E '^[[:space:]]*GOACCESS_REPORT_PATH[[:space:]]*=' "$ENV_FILE" | tail -n 1 | cut -d= -f2- || true)"
-if [[ -z "$GOACCESS_REPORT_PATH" ]]; then
-  GOACCESS_REPORT_PATH="$DEFAULT_GOACCESS_REPORT_PATH"
-fi
-if [[ "$GOACCESS_REPORT_PATH" != /* ]]; then
-  GOACCESS_REPORT_PATH="$(realpath -m "$COMPOSE_DIR/$GOACCESS_REPORT_PATH")"
-fi
+NGINX_LOG_PATH="$(env_file_path_value "$ENV_FILE" NGINX_LOG_PATH "$DEFAULT_NGINX_LOG_PATH" "$COMPOSE_DIR")"
+GOACCESS_REPORT_PATH="$(env_file_path_value "$ENV_FILE" GOACCESS_REPORT_PATH "$DEFAULT_GOACCESS_REPORT_PATH" "$COMPOSE_DIR")"
 
 if [[ ! -s "$NGINX_LOG_PATH/access.log" ]]; then
   echo "No nginx access log entries found at $NGINX_LOG_PATH/access.log" >&2

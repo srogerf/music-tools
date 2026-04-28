@@ -8,7 +8,7 @@ REMOTE_USER="${REMOTE_USER:-opc}"
 
 usage() {
   cat >&2 <<'EOF'
-Usage: bash bin/oci_bastion_ssh.sh [--env-file FILE] [--user USER] [--no-ssh] [--new-session]
+Usage: bash bin/oci_bastion_ssh.sh [--env-file FILE] [--user USER] [--no-ssh] [--new-session] [--cleanup-sessions]
 
 Defaults:
   --env-file .private/bastion/music-tools.env
@@ -30,6 +30,7 @@ EOF
 
 RUN_SSH="true"
 FORCE_NEW_SESSION="false"
+CLEANUP_SESSIONS="false"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -57,6 +58,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --new-session)
       FORCE_NEW_SESSION="true"
+      shift
+      ;;
+    --cleanup-sessions)
+      CLEANUP_SESSIONS="true"
       shift
       ;;
     --help|-h)
@@ -132,17 +137,57 @@ fi
 
 SESSION_ID=""
 
-if [[ "$FORCE_NEW_SESSION" != "true" ]]; then
-  echo "Looking for an active Bastion session named $BASTION_SESSION_DISPLAY_NAME..."
-  SESSION_ID=$(SUPPRESS_LABEL_WARNING=True ~/bin/oci bastion session list \
+list_active_sessions() {
+  SUPPRESS_LABEL_WARNING=True ~/bin/oci bastion session list \
     --bastion-id "$BASTION_ID" \
     --display-name "$BASTION_SESSION_DISPLAY_NAME" \
     --session-lifecycle-state ACTIVE \
     --sort-by timeCreated \
     --sort-order DESC \
-    --limit 1 \
-    --query 'data[0].id' \
-    --raw-output 2>/dev/null || true)
+    --all \
+    --output json 2>/dev/null | python3 -c '
+import json
+import sys
+
+try:
+    payload = json.load(sys.stdin)
+except json.JSONDecodeError:
+    sys.exit(0)
+
+for item in payload.get("data", []):
+    session_id = item.get("id", "")
+    if session_id.startswith("ocid1.bastionsession."):
+        print(session_id)
+' || true
+}
+
+delete_active_sessions() {
+  local sessions session_id
+  sessions="$(list_active_sessions)"
+  if [[ -z "$sessions" ]]; then
+    echo "No active Bastion sessions named $BASTION_SESSION_DISPLAY_NAME found."
+    return 0
+  fi
+
+  while IFS= read -r session_id; do
+    if [[ -z "$session_id" || "$session_id" == "null" ]]; then
+      continue
+    fi
+    echo "Deleting active Bastion session: $session_id"
+    SUPPRESS_LABEL_WARNING=True ~/bin/oci bastion session delete \
+      --session-id "$session_id" \
+      --force >/dev/null
+  done <<<"$sessions"
+}
+
+if [[ "$CLEANUP_SESSIONS" == "true" ]]; then
+  delete_active_sessions
+  exit 0
+fi
+
+if [[ "$FORCE_NEW_SESSION" != "true" ]]; then
+  echo "Looking for an active Bastion session named $BASTION_SESSION_DISPLAY_NAME..."
+  SESSION_ID="$(list_active_sessions | head -n 1)"
 fi
 
 if [[ -z "$SESSION_ID" || "$SESSION_ID" == "null" ]]; then
@@ -182,16 +227,20 @@ fi
 
 echo "Opening local tunnel on 127.0.0.1:$LOCAL_PORT..."
 
+TUNNEL_LOG="$(mktemp)"
+
 ssh -i "$BASTION_SSH_KEY" \
   -N \
   -o ExitOnForwardFailure=yes \
+  -o IdentitiesOnly=yes \
   -L "${LOCAL_PORT}:${PRIVATE_IP}:22" \
   -p 22 \
-  "$SESSION_ID@$BASTION_HOST" &
+  "$SESSION_ID@$BASTION_HOST" 2>"$TUNNEL_LOG" &
 
 TUNNEL_PID="$!"
 
 cleanup() {
+  rm -f "$TUNNEL_LOG"
   if kill -0 "$TUNNEL_PID" >/dev/null 2>&1; then
     kill "$TUNNEL_PID" >/dev/null 2>&1 || true
   fi
@@ -202,6 +251,16 @@ sleep 3
 
 if ! kill -0 "$TUNNEL_PID" >/dev/null 2>&1; then
   echo "Bastion SSH tunnel failed to start on localhost:$LOCAL_PORT." >&2
+  if [[ -s "$TUNNEL_LOG" ]]; then
+    cat "$TUNNEL_LOG" >&2
+  fi
+  cat >&2 <<EOF
+
+If this looks like a stale or bad Bastion session, clear active sessions and retry:
+
+  bash bin/oci_bastion_ssh.sh --cleanup-sessions
+  bash bin/oci_bastion_ssh.sh --no-ssh --new-session
+EOF
   exit 1
 fi
 
