@@ -12,3 +12,10 @@ full design doc.
 
 ## Implementation Notes
 - Always mark shell scripts as executable.
+
+## Security Follow-Ups
+- Transport security is now handled at nginx for production HTTPS, but the API
+  and server-side REST behavior still need application-level security review.
+  Before user-specific features or private data are added, define the auth,
+  authorization, CSRF/session, CORS, request validation, and rate-limit rules
+  for `/api/v1/` endpoints.

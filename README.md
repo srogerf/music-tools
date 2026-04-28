@@ -51,6 +51,19 @@ bash bin/localhost_bootstrap_env.sh
 bash bin/oci_prepare_host_repos.sh
 ```
 
+Issue a staging Let's Encrypt certificate with DNS-01 after adding private
+certificate env files under `.private/certificates/`:
+
+```bash
+bash bin/certificate_issue.sh
+```
+
+Copy issued certificate material to production over Bastion with:
+
+```bash
+bash bin/production_certificate_deploy.sh
+```
+
 For production DB access through Bastion:
 
 ```bash

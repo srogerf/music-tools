@@ -150,8 +150,8 @@ scp -i "$INSTANCE_SSH_KEY" -P "$LOCAL_PORT" \
   "$REMOTE_USER@localhost:$REMOTE_STAGE_DIR/nginx.production.conf"
 
 scp -i "$INSTANCE_SSH_KEY" -P "$LOCAL_PORT" \
-  "$ROOT_DIR/deploy/container/docker/nginx/favicon.svg" \
-  "$REMOTE_USER@localhost:$REMOTE_STAGE_DIR/favicon.svg"
+  "$ROOT_DIR/deploy/container/docker/nginx/favicon.ico" \
+  "$REMOTE_USER@localhost:$REMOTE_STAGE_DIR/favicon.ico"
 
 scp -i "$INSTANCE_SSH_KEY" -P "$LOCAL_PORT" \
   "$TEMP_COMPOSE_ENV" \
@@ -172,7 +172,7 @@ sudo mkdir -p "$REMOTE_RUNTIME_PATH/nginx"
 sudo mv "$REMOTE_STAGE_DIR/docker-compose.yml" "$REMOTE_COMPOSE_FILE"
 sudo mv "$REMOTE_STAGE_DIR/nginx.conf" "$REMOTE_RUNTIME_PATH/nginx/nginx.conf"
 sudo mv "$REMOTE_STAGE_DIR/nginx.production.conf" "$REMOTE_RUNTIME_PATH/nginx/production.conf"
-sudo mv "$REMOTE_STAGE_DIR/favicon.svg" "$REMOTE_RUNTIME_PATH/nginx/favicon.svg"
+sudo mv "$REMOTE_STAGE_DIR/favicon.ico" "$REMOTE_RUNTIME_PATH/nginx/favicon.ico"
 sudo mv "$REMOTE_STAGE_DIR/compose.env" "$REMOTE_COMPOSE_ENV_FILE"
 
 sudo mkdir -p /etc/docker

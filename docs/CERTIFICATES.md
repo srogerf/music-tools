@@ -153,6 +153,107 @@ Expected private environment variables:
 
 - `GODADDY_API_KEY`
 - `GODADDY_API_SECRET`
+- `LETSENCRYPT_EMAIL`
+
+Expected private local files:
+
+- `.private/certificates/godaddy.env`
+- `.private/certificates/letsencrypt.env`
+
+`godaddy.env` should contain:
+
+```bash
+GODADDY_API_KEY=...
+GODADDY_API_SECRET=...
+```
+
+`letsencrypt.env` should contain:
+
+```bash
+LETSENCRYPT_EMAIL=operator@example.com
+```
+
+The repo wrapper for certificate issue and renewal is:
+
+```bash
+bash bin/certificate_issue.sh
+```
+
+Install local operator tooling, including `lego`, with:
+
+```bash
+bash bin/localhost_bootstrap_env.sh
+```
+
+The bootstrap script installs `lego` into `~/.local/bin` using `go install`.
+Make sure that directory is on `PATH` before running certificate commands.
+
+If `lego` is installed with snap, the wrapper detects `/snap/bin/lego` and
+uses the snap-friendly output path:
+
+```text
+~/snap/lego/common/.lego
+```
+
+Set `LEGO_PATH` explicitly if you need a different path that the snap package
+can write to.
+
+It uses Let’s Encrypt staging by default. After staging issuance succeeds, use:
+
+```bash
+bash bin/certificate_issue.sh --production
+```
+
+Renewal uses the same private state path:
+
+```bash
+bash bin/certificate_issue.sh --renew
+bash bin/certificate_issue.sh --production --renew
+```
+
+Certificate output stays under:
+
+```text
+.private/certificates/lego/
+```
+
+When using snap-installed `lego`, certificate output stays under:
+
+```text
+~/snap/lego/common/.lego
+```
+
+Deploy issued certificate material to the production host with:
+
+```bash
+bash bin/production_certificate_deploy.sh
+```
+
+The deploy wrapper copies the lego output over the existing Bastion SSH tunnel
+and installs:
+
+```text
+/srv/rifferone/certs/fullchain.pem
+/srv/rifferone/certs/privkey.pem
+```
+
+It expects the Bastion SSH tunnel to already be active:
+
+```bash
+bash bin/oci_bastion_ssh.sh --no-ssh
+```
+
+The production Compose runtime mounts that host path into nginx with:
+
+```text
+NGINX_CERTS_PATH=/srv/rifferone/certs
+```
+
+and publishes:
+
+```text
+RIFFERONE_HTTPS_PORT=443
+```
 
 The existing `../dynamic-ip-updater/src/godaddy.go` implementation is the
 reference for any custom DNS helper we decide to write later. It already has

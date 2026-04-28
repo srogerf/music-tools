@@ -4,6 +4,7 @@ set -euo pipefail
 INSTALL_DOCKER="true"
 INSTALL_TERRAFORM="true"
 INSTALL_OCI_CLI="true"
+INSTALL_LEGO="true"
 ENABLE_SERVICES="true"
 ASSUME_YES="false"
 
@@ -19,6 +20,7 @@ Options:
   --no-docker           Skip Docker Engine and Compose plugin setup.
   --no-terraform        Skip HashiCorp Terraform setup.
   --no-oci-cli          Skip OCI CLI setup through pipx.
+  --no-lego             Skip lego ACME client setup.
   --no-enable-services  Install packages but do not enable local services.
   --help                Show this help.
 
@@ -31,6 +33,7 @@ Installs/checks:
   Docker Engine and Docker Compose plugin
   Terraform
   OCI CLI
+  lego ACME client for Let's Encrypt DNS-01 certificate issuance
 EOF
 }
 
@@ -50,6 +53,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --no-oci-cli)
       INSTALL_OCI_CLI="false"
+      shift
+      ;;
+    --no-lego)
+      INSTALL_LEGO="false"
       shift
       ;;
     --no-enable-services)
@@ -192,6 +199,12 @@ if [[ "$INSTALL_OCI_CLI" == "true" ]]; then
   fi
 fi
 
+if [[ "$INSTALL_LEGO" == "true" ]]; then
+  echo "Installing lego ACME client with go install..."
+  mkdir -p "$HOME/.local/bin"
+  GOBIN="$HOME/.local/bin" go install github.com/go-acme/lego/v4/cmd/lego@latest
+fi
+
 if [[ "$ENABLE_SERVICES" == "true" ]]; then
   echo "Enabling local services used by this project..."
   sudo systemctl enable --now postgresql
@@ -206,3 +219,7 @@ echo "  bash bin/localhost_init_envs.sh"
 echo "  bash bin/localhost_init_postgres.sh .private/env/dev/postgres.env"
 echo "  bash bin/dev_seed.sh"
 echo "  bash bin/dev_start.sh"
+echo
+echo "For certificate work, make sure ~/.local/bin is on PATH, then run:"
+echo "  lego --version"
+echo "  bash bin/certificate_issue.sh"

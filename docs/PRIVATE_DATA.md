@@ -30,6 +30,10 @@ configuration. The entire directory is ignored by Git.
 - `.private/env/test/runtime.env`
 - `.private/deploy/production.env`
 - `.private/deploy/production.compose.env`
+- `.private/certificates/godaddy.env`
+- `.private/certificates/letsencrypt.env`
+- `.private/certificates/lego/`
+  - local lego account and certificate output when not using snap
 - `.private/container/compose.env`
 - `.private/container/local-integration/postgres-data/`
 - `.private/keys/`

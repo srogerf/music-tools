@@ -8,8 +8,24 @@ repo_root_from_script() {
 env_file_value() {
   local env_file="$1"
   local key="$2"
+  local line value
 
-  grep -E "^[[:space:]]*${key}[[:space:]]*=" "$env_file" | tail -n 1 | cut -d= -f2- || true
+  line="$(grep -E "^[[:space:]]*${key}[[:space:]]*=" "$env_file" | tail -n 1 || true)"
+  if [[ -z "$line" ]]; then
+    return 0
+  fi
+
+  value="${line#*=}"
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+
+  if [[ "$value" == \"*\" && "$value" == *\" ]]; then
+    value="${value:1:${#value}-2}"
+  elif [[ "$value" == \'*\' && "$value" == *\' ]]; then
+    value="${value:1:${#value}-2}"
+  fi
+
+  printf '%s\n' "$value"
 }
 
 resolve_path_from_dir() {

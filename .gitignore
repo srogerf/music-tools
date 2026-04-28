@@ -14,6 +14,7 @@ yarn-error.log*
 !/bin/build_artifacts.sh
 !/bin/build_frontend.sh
 !/bin/build_server.sh
+!/bin/certificate_issue.sh
 !/bin/dev_seed.sh
 !/bin/dev_start.sh
 !/bin/localhost_init_envs.sh
@@ -31,6 +32,7 @@ yarn-error.log*
 !/bin/production_db_rebuild.sh
 !/bin/production_db_seed.sh
 !/bin/production_db_upgrade_scale_intervals.sh
+!/bin/production_certificate_deploy.sh
 !/bin/production_goaccess.sh
 !/bin/production_image_build.sh
 !/bin/production_image_push.sh

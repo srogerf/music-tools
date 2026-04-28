@@ -39,7 +39,7 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/local-integration.conf:/etc/nginx/conf.d/default.conf:ro
-      - ../../../frontend/app/favicon.svg:/etc/nginx/assets/favicon.svg:ro
+      - ../../../frontend/app/favicon.ico:/etc/nginx/assets/favicon.ico:ro
       - "${NGINX_LOG_PATH:-../../../.private/container/local-integration/logs/nginx}:/var/log/nginx"
 
   goaccess:

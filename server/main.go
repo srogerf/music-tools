@@ -33,7 +33,7 @@ func main() {
 		return
 	}
 
-	store, err := postgresdb.Open(ctx, databaseURL)
+	store, err := openStoreWithRetry(ctx, databaseURL, 30, 2*time.Second)
 	if err != nil {
 		log.Printf("connect postgres: %v", err)
 		handler := api.NewUnavailableRouter(staticConfig, "database unavailable: could not connect to postgres")
@@ -48,6 +48,22 @@ func main() {
 	handler := api.NewRouter(scaleService, layoutService, tuningService, staticConfig)
 
 	startServer(*addr, handler)
+}
+
+func openStoreWithRetry(ctx context.Context, databaseURL string, attempts int, delay time.Duration) (*postgresdb.Store, error) {
+	var lastErr error
+	for attempt := 1; attempt <= attempts; attempt++ {
+		store, err := postgresdb.Open(ctx, databaseURL)
+		if err == nil {
+			return store, nil
+		}
+		lastErr = err
+		log.Printf("connect postgres attempt=%d/%d: %v", attempt, attempts, err)
+		if attempt < attempts {
+			time.Sleep(delay)
+		}
+	}
+	return nil, lastErr
 }
 
 func startServer(addr string, handler http.Handler) {
