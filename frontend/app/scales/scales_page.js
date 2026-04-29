@@ -15,6 +15,90 @@ const NOTE_GROUPS = [
   { key: "twoFourSix", label: "2/4/6", degreeClasses: [2, 4, 6] },
 ];
 
+const LEARNING_SCALE_GROUPS = {
+  majorMinor: {
+    label: "Major / minor",
+    names: ["Major", "Natural Minor", "Harmonic Minor", "Melodic Minor"],
+  },
+  modes: {
+    label: "Modes",
+    names: ["Dorian", "Phrygian", "Lydian", "Mixolydian", "Locrian"],
+  },
+  pentatonic: {
+    label: "Pentatonic",
+    names: ["Major Pentatonic", "Minor Pentatonic"],
+  },
+};
+
+const MAJOR_KEY_SIGNATURES = {
+  C: 0,
+  G: 1,
+  D: 2,
+  A: 3,
+  E: 4,
+  B: 5,
+  "F#": 6,
+  "C#": 7,
+  F: -1,
+  Bb: -2,
+  Eb: -3,
+  Ab: -4,
+  Db: -5,
+  Gb: -6,
+  Cb: -7,
+};
+
+const MODE_PARENT_MAJOR_OFFSETS = {
+  Major: 0,
+  Ionian: 0,
+  Dorian: 2,
+  Phrygian: 4,
+  Lydian: 5,
+  Mixolydian: 7,
+  "Natural Minor": 9,
+  Aeolian: 9,
+  Locrian: 11,
+};
+
+const KEY_TO_INDEX = {
+  C: 0,
+  "C#": 1,
+  Db: 1,
+  D: 2,
+  "D#": 3,
+  Eb: 3,
+  E: 4,
+  F: 5,
+  "F#": 6,
+  Gb: 6,
+  G: 7,
+  "G#": 8,
+  Ab: 8,
+  A: 9,
+  "A#": 10,
+  Bb: 10,
+  B: 11,
+};
+
+const INDEX_TO_MAJOR_KEY = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+const SHARP_SIGNATURE_NOTES = ["F#", "C#", "G#", "D#", "A#", "E#", "B#"];
+const FLAT_SIGNATURE_NOTES = ["Bb", "Eb", "Ab", "Db", "Gb", "Cb", "Fb"];
+const LEARNING_NOTE_GROUPS = [
+  ["C", "B#", "Dbb"],
+  ["C#", "Db", "B##"],
+  ["D", "Ebb", "C##"],
+  ["D#", "Eb", "Fbb"],
+  ["E", "Fb", "D##"],
+  ["F", "E#", "Gbb"],
+  ["F#", "Gb", "E##"],
+  ["G", "Abb", "F##"],
+  ["G#", "Ab"],
+  ["A", "Bbb", "G##"],
+  ["A#", "Bb", "Cbb"],
+  ["B", "Cb", "A##"],
+];
+const LEARNING_NOTE_CHOICE_SET = new Set(LEARNING_NOTE_GROUPS.flat());
+
 function scaleOptionLabel(scale) {
   if (!scale.common_name || scale.common_name === scale.name) {
     return scale.name;
@@ -56,6 +140,121 @@ function normalizeText(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+function randomItem(items) {
+  if (!items.length) {
+    return null;
+  }
+  return items[Math.floor(Math.random() * items.length)];
+}
+
+function usesMinorSignature(scale) {
+  const name = normalizeText(scale?.name);
+  const commonName = normalizeText(scale?.common_name);
+  return name.includes("minor") || commonName.includes("minor") || commonName.includes("aeolian");
+}
+
+function modalParentMajorKey(key, scale) {
+  const rootIndex = KEY_TO_INDEX[key];
+  const offset = MODE_PARENT_MAJOR_OFFSETS[scale?.name] ?? MODE_PARENT_MAJOR_OFFSETS[scale?.common_name];
+  if (rootIndex === undefined || offset === undefined) {
+    return key;
+  }
+  return INDEX_TO_MAJOR_KEY[(rootIndex - offset + 12) % 12];
+}
+
+function relativeMajorKey(key) {
+  const rootIndex = KEY_TO_INDEX[key];
+  if (rootIndex === undefined) {
+    return key;
+  }
+  return INDEX_TO_MAJOR_KEY[(rootIndex + 3) % 12];
+}
+
+function majorSignatureKeyForScale(key, scale) {
+  if (usesMinorSignature(scale)) {
+    return relativeMajorKey(key);
+  }
+  return modalParentMajorKey(key, scale);
+}
+
+function signedAccidentalsForScale(key, scale) {
+  if (!scale) {
+    return 0;
+  }
+  const signatureKey = majorSignatureKeyForScale(key, scale);
+  return MAJOR_KEY_SIGNATURES[signatureKey] ?? 0;
+}
+
+function signatureNotesForAccidentals(signedAccidentals) {
+  const count = Math.abs(signedAccidentals);
+  if (signedAccidentals > 0) {
+    return SHARP_SIGNATURE_NOTES.slice(0, count);
+  }
+  if (signedAccidentals < 0) {
+    return FLAT_SIGNATURE_NOTES.slice(0, count);
+  }
+  return [];
+}
+
+function keySignatureNoteSet(signedAccidentals) {
+  const notesByLetter = {
+    C: "C",
+    D: "D",
+    E: "E",
+    F: "F",
+    G: "G",
+    A: "A",
+    B: "B",
+  };
+  signatureNotesForAccidentals(signedAccidentals).forEach((note) => {
+    notesByLetter[note[0]] = note;
+  });
+  return new Set(Object.values(notesByLetter).map(normalizeNoteName));
+}
+
+function notesOutsideKeySignature(scaleNotes, signedAccidentals) {
+  const signatureNoteSet = keySignatureNoteSet(signedAccidentals);
+  return scaleNotes.filter((note) => !signatureNoteSet.has(normalizeNoteName(note)));
+}
+
+function accidentalLabel(signedAccidentals) {
+  const count = Math.abs(signedAccidentals);
+  if (count === 0) {
+    return "No sharps or flats";
+  }
+  const accidental = signedAccidentals > 0 ? "sharp" : "flat";
+  const notes = signatureNotesForAccidentals(signedAccidentals);
+  return `${count} ${accidental}${count === 1 ? "" : "s"}: ${notes.join(", ")}`;
+}
+
+function signatureSelectionMatches(count, accidentalType, signedAccidentals) {
+  const guessedCount = Number(count);
+  const expectedCount = Math.abs(signedAccidentals);
+  if (guessedCount !== expectedCount) {
+    return false;
+  }
+  if (expectedCount === 0) {
+    return true;
+  }
+  return signedAccidentals > 0 ? accidentalType === "sharp" : accidentalType === "flat";
+}
+
+function normalizeNoteName(value) {
+  return String(value || "")
+    .trim()
+    .replace(/\u266f/g, "#")
+    .replace(/\u266d/g, "b")
+    .replace(/^([a-g])/, (_, note) => note.toUpperCase());
+}
+
+function noteSelectionMatches(selectedNotes, expectedNotes) {
+  if (selectedNotes.length !== expectedNotes.length) {
+    return false;
+  }
+  const selectedNoteSet = new Set(selectedNotes.map(normalizeNoteName));
+  return expectedNotes.every((note) => selectedNoteSet.has(normalizeNoteName(note)));
+}
+
 function findScaleByRouteValue(scales, routeValue) {
   const normalized = normalizeText(routeValue);
   if (!normalized) {
@@ -93,6 +292,13 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
     twoFourSix: true,
   });
   const [useThreeNps, setUseThreeNps] = useState(Boolean(routeState?.threeNps));
+  const [learningOpen, setLearningOpen] = useState(false);
+  const [learningGroup, setLearningGroup] = useState("majorMinor");
+  const [learningChallenge, setLearningChallenge] = useState(null);
+  const [learningSignatureCount, setLearningSignatureCount] = useState(0);
+  const [learningSignatureType, setLearningSignatureType] = useState("sharp");
+  const [learningSelectedNotes, setLearningSelectedNotes] = useState([]);
+  const [learningResult, setLearningResult] = useState(null);
 
   useEffect(() => {
     fetchJSON("/api/v1/scales", "scales")
@@ -226,6 +432,8 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
     return buildScaleNotes(selectedKey, selectedScale).noteDetails;
   }, [selectedScale, selectedKey]);
 
+  const shouldBlankForLearning = learningOpen && (!learningChallenge || !learningResult);
+
   const visibleDegreeClasses = useMemo(() => {
     const values = new Set();
     NOTE_GROUPS.forEach((group) => {
@@ -251,7 +459,7 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
   );
 
   const drawScaleFretboard = useMemo(() => (fretboard, canvas) => {
-    if (!selectedScale || tuningStrings.length === 0 || !selectedLayoutInstance) {
+    if (shouldBlankForLearning || !selectedScale || tuningStrings.length === 0 || !selectedLayoutInstance) {
       fretboard.clear();
       fretboard.drawBlank(fretboard.options.hasZeroFret);
       return fretboard;
@@ -290,6 +498,7 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
     selectedPositionLayout,
     visibleDegreeClasses,
     useThreeNps,
+    shouldBlankForLearning,
   ]);
 
   function updateRouteFromSelection(overrides = {}) {
@@ -338,19 +547,336 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
     updateRouteFromSelection({ threeNps: nextThreeNps });
   }
 
+  function resetLearningDisplay() {
+    setLearningChallenge(null);
+    setLearningSignatureCount(0);
+    setLearningSignatureType("sharp");
+    setLearningSelectedNotes([]);
+    setLearningResult(null);
+  }
+
+  function handleLearningModeChange(event) {
+    resetLearningDisplay();
+    setLearningOpen(event.target.checked);
+  }
+
+  function learningScaleNames() {
+    if (learningGroup === "all") {
+      return Object.values(LEARNING_SCALE_GROUPS).flatMap((group) => group.names);
+    }
+    return LEARNING_SCALE_GROUPS[learningGroup]?.names || LEARNING_SCALE_GROUPS.majorMinor.names;
+  }
+
+  function availableLearningScales() {
+    const names = new Set(learningScaleNames().map(normalizeText));
+    return scales.filter((scale) => names.has(normalizeText(scale.name)));
+  }
+
+  function availableLearningKeys(scale) {
+    return DEFAULT_KEYS.filter((key) => {
+      const notes = buildScaleNotes(key, scale).notes;
+      if (notes.some((note) => !LEARNING_NOTE_CHOICE_SET.has(note))) {
+        return false;
+      }
+      return Math.abs(signedAccidentalsForScale(key, scale)) <= 7;
+    });
+  }
+
+  function handleRandomLearningScale() {
+    const scale = randomItem(availableLearningScales());
+    const key = randomItem(availableLearningKeys(scale));
+    const position = randomItem(CAGED_SHAPES);
+    if (!scale || !key || !position) {
+      setLearningResult({
+        signatureCorrect: false,
+        notesCorrect: false,
+        message: "No scale data is available for this learning set yet.",
+      });
+      return;
+    }
+
+    setLearningChallenge({ scale, key, position });
+    setLearningSignatureCount(0);
+    setLearningSignatureType("sharp");
+    setLearningSelectedNotes([]);
+    setLearningResult(null);
+  }
+
+  function toggleLearningNote(note) {
+    setLearningSelectedNotes((current) =>
+      current.includes(note)
+        ? current.filter((item) => item !== note)
+        : [...current, note]
+    );
+  }
+
+  function handleLearningCheck() {
+    if (!learningChallenge) {
+      return;
+    }
+    const { scale, key, position } = learningChallenge;
+    const noteDetails = buildScaleNotes(key, scale).noteDetails;
+    const notes = noteDetails.map((note) => note.note);
+    const signedAccidentals = signedAccidentalsForScale(key, scale);
+    const signatureCorrect = signatureSelectionMatches(
+      learningSignatureCount,
+      learningSignatureType,
+      signedAccidentals
+    );
+    const notesCorrect = noteSelectionMatches(learningSelectedNotes, notes);
+    const outsideKeySignatureNotes = notesOutsideKeySignature(notes, signedAccidentals);
+
+    setSelectedScaleId(scale.id);
+    setSelectedKey(key);
+    setSelectedPosition(position);
+    updateRouteFromSelection({ scaleName: scale.name, key, position });
+    setLearningResult({
+      signatureCorrect,
+      notesCorrect,
+      signedAccidentals,
+      signatureLabel: accidentalLabel(signedAccidentals),
+      notes,
+      outsideKeySignatureNotes,
+      message: signatureCorrect && notesCorrect ? "Correct" : "Check the answer",
+    });
+  }
+
   return React.createElement(
     "section",
     { className: "panel" },
     React.createElement(
       "div",
       { className: "section-intro" },
-      React.createElement("h2", { className: "section-title" }, "Scales"),
+      React.createElement(
+        "div",
+        { className: "section-title-row" },
+        React.createElement("h2", { className: "section-title" }, "Scales"),
+        React.createElement(
+          "label",
+          { className: "learning-mode-switch", htmlFor: "learning-mode-toggle" },
+          React.createElement("span", null, "Learning mode"),
+          React.createElement("input", {
+            id: "learning-mode-toggle",
+            type: "checkbox",
+            checked: learningOpen,
+            onChange: handleLearningModeChange,
+          })
+        )
+      ),
       React.createElement(
         "p",
         { className: "subhead" },
         "Select a scale and key to highlight notes across the fretboard."
       )
     ),
+    learningOpen &&
+      React.createElement(
+        "section",
+        { className: "learning-drawer" },
+        React.createElement(
+          "div",
+          { className: "learning-panel" },
+          React.createElement(
+            "p",
+            { className: "learning-summary" },
+            "Pick a scale set, generate a random scale and position, then guess the key signature and scale notes before checking the answer."
+          ),
+          React.createElement(
+            "div",
+            { className: "learning-controls" },
+            React.createElement(
+              "div",
+              null,
+              React.createElement("label", { htmlFor: "learning-set" }, "Scale set"),
+              React.createElement(
+                "select",
+                {
+                  id: "learning-set",
+                  value: learningGroup,
+                  onChange: (event) => {
+                    setLearningGroup(event.target.value);
+                    resetLearningDisplay();
+                  },
+                },
+                React.createElement("option", { value: "majorMinor" }, "Major / minor"),
+                React.createElement("option", { value: "modes" }, "Modes"),
+                React.createElement("option", { value: "pentatonic" }, "Pentatonic"),
+                React.createElement("option", { value: "all" }, "All")
+              )
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                className: "secondary-button",
+                onClick: handleRandomLearningScale,
+              },
+              "Random scale"
+            ),
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                className: "secondary-button",
+                onClick: resetLearningDisplay,
+              },
+              "Reset"
+            )
+          ),
+          learningChallenge &&
+            React.createElement(
+              "div",
+              { className: "learning-challenge" },
+              React.createElement(
+                "div",
+                { className: "learning-target" },
+                React.createElement("span", { className: "learning-target-scale" }, `${learningChallenge.key} ${learningChallenge.scale.name}`)
+              ),
+              React.createElement(
+                "div",
+                { className: "learning-guess-grid" },
+                React.createElement(
+                  "div",
+                  { className: "signature-picker" },
+                  React.createElement("span", { className: "control-label" }, "Key signature"),
+                  React.createElement(
+                    "div",
+                    { className: "signature-picker-row" },
+                    React.createElement(
+                      "div",
+                      { className: "signature-count-field" },
+                      React.createElement("label", { htmlFor: "learning-key-signature-count" }, "Accidentals"),
+                      React.createElement(
+                        "select",
+                        {
+                          id: "learning-key-signature-count",
+                          value: learningSignatureCount,
+                          onChange: (event) => setLearningSignatureCount(Number(event.target.value)),
+                        },
+                        Array.from({ length: 8 }, (_, count) =>
+                          React.createElement("option", { key: count, value: count }, `${count}`)
+                        )
+                      )
+                    ),
+                    React.createElement(
+                      "div",
+                      { className: "signature-type-field" },
+                      React.createElement("span", { className: "mini-label" }, "Type"),
+                      React.createElement(
+                        "div",
+                        { className: "signature-type-buttons", role: "radiogroup", "aria-label": "Accidental type" },
+                        React.createElement(
+                          "button",
+                          {
+                            type: "button",
+                            role: "radio",
+                            className: `signature-type-button ${
+                              learningSignatureType === "sharp" ? "signature-type-selected" : ""
+                            }`,
+                            "aria-checked": learningSignatureType === "sharp",
+                            disabled: Number(learningSignatureCount) === 0,
+                            onClick: () => setLearningSignatureType("sharp"),
+                          },
+                          "Sharps"
+                        ),
+                        React.createElement(
+                          "button",
+                          {
+                            type: "button",
+                            role: "radio",
+                            className: `signature-type-button ${
+                              learningSignatureType === "flat" ? "signature-type-selected" : ""
+                            }`,
+                            "aria-checked": learningSignatureType === "flat",
+                            disabled: Number(learningSignatureCount) === 0,
+                            onClick: () => setLearningSignatureType("flat"),
+                          },
+                          "Flats"
+                        )
+                      )
+                    )
+                  )
+                ),
+                React.createElement(
+                  "div",
+                  { className: "learning-position-inline" },
+                  React.createElement("span", { className: "mini-label" }, "Position"),
+                  React.createElement("span", { className: "learning-position-value" }, learningChallenge.position)
+                ),
+                React.createElement(
+                  "button",
+                  {
+                    type: "button",
+                    className: "primary-button learning-check-button",
+                    onClick: handleLearningCheck,
+                  },
+                  "Check"
+                )
+              ),
+              React.createElement(
+                "div",
+                { className: "learning-note-picker" },
+                React.createElement("label", { id: "learning-notes-label" }, "Scale notes"),
+                React.createElement(
+                  "div",
+                  {
+                    className: "learning-note-grid",
+                    role: "group",
+                    "aria-labelledby": "learning-notes-label",
+                  },
+                  LEARNING_NOTE_GROUPS.map((group) =>
+                    React.createElement(
+                      "div",
+                      { className: "note-choice-group", key: group.join("-") },
+                      group.map((note) =>
+                        React.createElement(
+                          "button",
+                          {
+                            key: note,
+                            type: "button",
+                            className: `note-choice ${
+                              learningSelectedNotes.includes(note) ? "note-choice-selected" : ""
+                            }`,
+                            "aria-pressed": learningSelectedNotes.includes(note),
+                            onClick: () => toggleLearningNote(note),
+                          },
+                          note
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            ),
+          learningResult &&
+            React.createElement(
+              "div",
+              { className: "learning-result" },
+              React.createElement(
+                "div",
+                {
+                  className: `learning-result-status ${
+                    learningResult.signatureCorrect && learningResult.notesCorrect ? "status-valid" : "status-invalid"
+                  }`,
+                },
+                learningResult.message
+              ),
+              learningResult.signatureLabel &&
+                React.createElement(
+                  "div",
+                  { className: "learning-answer" },
+                  React.createElement("span", null, `Key signature: ${learningResult.signatureLabel}`),
+                  React.createElement("span", null, `Notes: ${learningResult.notes.join(" ")}`),
+                  learningResult.outsideKeySignatureNotes?.length > 0 &&
+                    React.createElement(
+                      "span",
+                      null,
+                      `Outside key signature: ${learningResult.outsideKeySignatureNotes.join(" ")}`
+                    )
+                )
+            )
+        )
+      ),
     React.createElement(
       "div",
       { className: "controls" },
