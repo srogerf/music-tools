@@ -3,6 +3,7 @@ import { createRoot } from "https://esm.sh/react-dom@18/client";
 import { ScalesPage } from "scales-page";
 
 const NAV_ITEMS = ["Home", "Scales", "Chords", "Progressions"];
+const BASE_TITLE = "Rifferone";
 const EMPTY_SCALES_ROUTE = {
   scale: "",
   key: "",
@@ -10,6 +11,25 @@ const EMPTY_SCALES_ROUTE = {
   tuning: "",
   threeNps: false,
 };
+
+function setPageTitle(label = "") {
+  label = String(label || "").trim();
+  document.title = label ? `${BASE_TITLE} (${label})` : BASE_TITLE;
+}
+
+async function applyPageTitle() {
+  setPageTitle();
+  try {
+    const response = await fetch("/runtime-config.json", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const config = await response.json();
+    setPageTitle(config?.environmentLabel);
+  } catch (error) {
+    setPageTitle();
+  }
+}
 
 function normalizeSection(section) {
   const normalized = String(section || "").trim().toLowerCase();
@@ -79,6 +99,10 @@ function sameRouteState(left, right) {
 
 function App() {
   const [routeState, setRouteState] = useState(() => readRouteState());
+
+  useEffect(() => {
+    applyPageTitle();
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -153,7 +177,7 @@ function App() {
     React.createElement(
       "header",
       { className: "app-header" },
-      React.createElement("h1", null, "Rifferone"),
+      React.createElement("h1", null, BASE_TITLE),
       React.createElement(
         "nav",
         { className: "top-nav", "aria-label": "Main navigation" },

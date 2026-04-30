@@ -75,6 +75,7 @@ bash bin/production_db_psql.sh
 - [Architecture](docs/ARCHITECTURE.md)
 - [Certificates](docs/CERTIFICATES.md)
 - [Deploy Database](docs/DEPLOY_DATABASE.md)
+- [Development Workflow](docs/DEVELOPMENT_WORKFLOW.md)
 - [Scale Layouts](docs/SCALE_LAYOUTS.md)
 - [Scales Learning Mode](docs/SCALES_LEARNING_MODE.md)
 - [Deployment](docs/DEPLOYMENT.md)

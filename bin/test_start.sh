@@ -28,6 +28,7 @@ if [[ -f "$ENV_FILE" ]]; then
 fi
 
 TEST_ADDR="${TEST_ADDR:-:8081}"
+TEST_ENVIRONMENT_LABEL="${TEST_ENVIRONMENT_LABEL:-Test}"
 TEST_STATIC_DIR="${TEST_STATIC_DIR:-build/test/frontend/app}"
 TEST_FRETBOARD_DIR="${TEST_FRETBOARD_DIR:-}"
 TEST_SERVER_BINARY="${TEST_SERVER_BINARY:-build/test/server/rifferone}"
@@ -53,6 +54,7 @@ fi
 
 server_args=(
   -addr "$TEST_ADDR"
+  -environment-label "$TEST_ENVIRONMENT_LABEL"
   -postgres-config "$ROOT_DIR/$TEST_POSTGRES_CONFIG"
   -static-dir "$ROOT_DIR/$TEST_STATIC_DIR"
 )

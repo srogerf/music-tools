@@ -6,31 +6,31 @@
           "start": 3,
           "span": 5,
           "mode": "range",
-          "validated_manual": false
+          "validated_manual": true
         },
         "C": {
           "start": 0,
           "span": 5,
           "mode": "range",
-          "validated_manual": false
+          "validated_manual": true
         },
         "E": {
           "start": 8,
           "span": 4,
           "mode": "range",
-          "validated_manual": false
+          "validated_manual": true
         },
         "D": {
           "start": 10,
           "span": 5,
           "mode": "range",
-          "validated_manual": false
+          "validated_manual": true
         },
         "G": {
           "start": 5,
           "span": 5,
           "mode": "range",
-          "validated_manual": false
+          "validated_manual": true
         }
       },
       "tuning": "Standard"

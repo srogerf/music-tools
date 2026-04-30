@@ -1,0 +1,121 @@
+{
+  "terminal.integrated.profiles.linux": {
+    "Dev": {
+      "path": "/usr/bin/zsh",
+      "overrideName": true,
+      "icon": "server",
+      "color": "terminal.ansiGreen"
+    },
+    "Frontend Build": {
+      "path": "/usr/bin/zsh",
+      "overrideName": true,
+      "icon": "browser",
+      "color": "terminal.ansiBrightBlue"
+    },
+    "Test": {
+      "path": "/usr/bin/zsh",
+      "overrideName": true,
+      "icon": "beaker",
+      "color": "terminal.ansiYellow"
+    },
+    "Build Artifacts": {
+      "path": "/usr/bin/zsh",
+      "overrideName": true,
+      "icon": "package",
+      "color": "terminal.ansiBrightCyan"
+    },
+    "Local Integration": {
+      "path": "/usr/bin/zsh",
+      "overrideName": true,
+      "icon": "multiple-windows",
+      "color": "terminal.ansiCyan"
+    },
+    "Go Tests": {
+      "path": "/usr/bin/zsh",
+      "overrideName": true,
+      "icon": "check",
+      "color": "terminal.ansiBrightGreen"
+    },
+    "Bastion SSH": {
+      "path": "/usr/bin/zsh",
+      "overrideName": true,
+      "icon": "terminal",
+      "color": "terminal.ansiMagenta"
+    },
+    "Bastion Proxy": {
+      "path": "/usr/bin/zsh",
+      "overrideName": true,
+      "icon": "radio-tower",
+      "color": "terminal.ansiBrightMagenta"
+    },
+    "Production": {
+      "path": "/usr/bin/zsh",
+      "overrideName": true,
+      "icon": "shield",
+      "color": "terminal.ansiRed"
+    },
+    "Shell 1": {
+      "path": "/usr/bin/zsh",
+      "overrideName": true,
+      "icon": "terminal",
+      "color": "terminal.ansiBlue"
+    },
+    "Shell 2": {
+      "path": "/usr/bin/zsh",
+      "overrideName": true,
+      "icon": "terminal",
+      "color": "terminal.ansiBrightBlack"
+    }
+  },
+  "multiCommand.commands": [
+    {
+      "command": "multiCommand.openWorkflowTerminals",
+      "sequence": [
+        {
+          "command": "workbench.action.terminal.newWithProfile",
+          "args": { "profileName": "Dev" }
+        },
+        {
+          "command": "workbench.action.terminal.newWithProfile",
+          "args": { "profileName": "Frontend Build" }
+        },
+        {
+          "command": "workbench.action.terminal.newWithProfile",
+          "args": { "profileName": "Test" }
+        },
+        {
+          "command": "workbench.action.terminal.newWithProfile",
+          "args": { "profileName": "Build Artifacts" }
+        },
+        {
+          "command": "workbench.action.terminal.newWithProfile",
+          "args": { "profileName": "Local Integration" }
+        },
+        {
+          "command": "workbench.action.terminal.newWithProfile",
+          "args": { "profileName": "Go Tests" }
+        },
+        {
+          "command": "workbench.action.terminal.newWithProfile",
+          "args": { "profileName": "Bastion SSH" }
+        },
+        {
+          "command": "workbench.action.terminal.newWithProfile",
+          "args": { "profileName": "Bastion Proxy" }
+        },
+        {
+          "command": "workbench.action.terminal.newWithProfile",
+          "args": { "profileName": "Production" }
+        },
+        {
+          "command": "workbench.action.terminal.newWithProfile",
+          "args": { "profileName": "Shell 1" }
+        },
+        {
+          "command": "workbench.action.terminal.newWithProfile",
+          "args": { "profileName": "Shell 2" }
+        }
+      ]
+    }
+  ]
+}

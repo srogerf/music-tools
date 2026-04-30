@@ -25,6 +25,7 @@ services:
       PGUSER: ${POSTGRES_USER}
       PGPASSWORD: ${POSTGRES_PASSWORD}
       PGSSLMODE: disable
+      RIFFERONE_ENVIRONMENT_LABEL: ${RIFFERONE_ENVIRONMENT_LABEL:-Local Integration}
     expose:
       - "8080"
 

@@ -477,6 +477,13 @@ function candidateContainsRoot(candidate, openIndex, rootIndex) {
   return candidate.some((fret) => (openIndex + fret) % 12 === rootIndex);
 }
 
+function threeNpsAnchorTarget({ scaleName, positionName, stringIndex, anchorStart, anchorEnd }) {
+  if (scaleName === "Major" && positionName === "C" && stringIndex >= 4) {
+    return { start: anchorStart + 1, end: anchorEnd + 2 };
+  }
+  return { start: anchorStart, end: anchorEnd };
+}
+
 function selectThreeNpsGroups({
   anchorStarts,
   anchorEnds,
@@ -484,6 +491,7 @@ function selectThreeNpsGroups({
   pitchClassSet,
   rootIndex,
   positionName,
+  scaleName,
 }) {
   const perStringFrets = {};
   const rootStrings = new Set(ROOT_STRINGS_BY_POSITION[positionName] || []);
@@ -501,13 +509,20 @@ function selectThreeNpsGroups({
 
     const anchorStart = anchorStarts[stringIndex];
     const anchorEnd = anchorEnds[stringIndex];
+    const anchorTarget = threeNpsAnchorTarget({
+      scaleName,
+      positionName,
+      stringIndex,
+      anchorStart,
+      anchorEnd,
+    });
     let bestCandidate = null;
     let bestScore = Number.POSITIVE_INFINITY;
 
     for (const candidate of candidates) {
       let score =
-        Math.abs(candidate[0] - anchorStart) * 2 +
-        Math.abs(candidate[2] - anchorEnd);
+        Math.abs(candidate[0] - anchorTarget.start) * 2 +
+        Math.abs(candidate[2] - anchorTarget.end);
 
       if (previousStart !== null) {
         const delta = candidate[0] - previousStart;
@@ -554,6 +569,7 @@ function computeThreeNpsLayout({
   tuningStrings,
   positionLayout,
   positionName,
+  scaleName,
 }) {
   const openIndexes = tuningStrings.map((note) => indexMap[note]);
   const { startFret, fretCount, perStringRanges } = resolvePositionWindow(positionLayout, rootIndex);
@@ -575,6 +591,7 @@ function computeThreeNpsLayout({
     pitchClassSet,
     rootIndex,
     positionName,
+    scaleName,
   });
   if (!perStringFrets) {
     return null;
@@ -651,6 +668,7 @@ export function computeFretboardLayout({
       tuningStrings,
       positionLayout,
       positionName,
+      scaleName: scale.name,
     });
     if (generated) {
       return generated;

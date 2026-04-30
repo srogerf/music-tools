@@ -37,6 +37,9 @@ fi
 if ! grep -Eq '^[[:space:]]*POSTGRES_DATA_PATH[[:space:]]*=' "$ENV_FILE"; then
   printf '\nPOSTGRES_DATA_PATH=%s\n' "$DEFAULT_DATA_PATH" >>"$ENV_FILE"
 fi
+if ! grep -Eq '^[[:space:]]*RIFFERONE_ENVIRONMENT_LABEL[[:space:]]*=' "$ENV_FILE"; then
+  printf 'RIFFERONE_ENVIRONMENT_LABEL=Local Integration\n' >>"$ENV_FILE"
+fi
 if ! grep -Eq '^[[:space:]]*NGINX_LOG_PATH[[:space:]]*=' "$ENV_FILE"; then
   printf 'NGINX_LOG_PATH=%s\n' "$DEFAULT_NGINX_LOG_PATH" >>"$ENV_FILE"
 fi

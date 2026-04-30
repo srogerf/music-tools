@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"music-tools/api"
@@ -17,12 +19,14 @@ func main() {
 	postgresConfigPath := flag.String("postgres-config", "conf/postgres.env", "path to postgres env config")
 	staticDir := flag.String("static-dir", "frontend/app", "path to frontend app static assets")
 	fretboardDir := flag.String("fretboard-dir", "frontend/fretboard", "path to fretboard static assets; leave empty when bundled into static-dir")
+	environmentLabel := flag.String("environment-label", os.Getenv("RIFFERONE_ENVIRONMENT_LABEL"), "environment label shown in the browser title; leave empty for production")
 	flag.Parse()
 
 	ctx := context.Background()
 	staticConfig := api.StaticConfig{
-		AppDir:       *staticDir,
-		FretboardDir: *fretboardDir,
+		AppDir:           *staticDir,
+		FretboardDir:     *fretboardDir,
+		EnvironmentLabel: cleanEnvironmentLabel(*environmentLabel),
 	}
 
 	databaseURL, err := postgresdb.ConnectionStringFromEnvFile(*postgresConfigPath)
@@ -48,6 +52,15 @@ func main() {
 	handler := api.NewRouter(scaleService, layoutService, tuningService, staticConfig)
 
 	startServer(*addr, handler)
+}
+
+func cleanEnvironmentLabel(label string) string {
+	trimmed := strings.TrimSpace(label)
+	normalized := strings.ToLower(trimmed)
+	if normalized == "production" || normalized == "prod" {
+		return ""
+	}
+	return trimmed
 }
 
 func openStoreWithRetry(ctx context.Context, databaseURL string, attempts int, delay time.Duration) (*postgresdb.Store, error) {

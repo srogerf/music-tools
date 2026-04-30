@@ -28,6 +28,7 @@ if [[ -f "$ENV_FILE" ]]; then
 fi
 
 DEV_ADDR="${DEV_ADDR:-:8080}"
+DEV_ENVIRONMENT_LABEL="${DEV_ENVIRONMENT_LABEL:-Dev}"
 DEV_STATIC_DIR="${DEV_STATIC_DIR:-frontend/app}"
 DEV_FRETBOARD_DIR="${DEV_FRETBOARD_DIR:-frontend/fretboard}"
 DEV_POSTGRES_CONFIG="${DEV_POSTGRES_CONFIG:-.private/env/dev/postgres.env}"
@@ -40,6 +41,7 @@ fi
 
 exec go run "$ROOT_DIR/server" \
   -addr "$DEV_ADDR" \
+  -environment-label "$DEV_ENVIRONMENT_LABEL" \
   -postgres-config "$ROOT_DIR/$DEV_POSTGRES_CONFIG" \
   -static-dir "$ROOT_DIR/$DEV_STATIC_DIR" \
   -fretboard-dir "$ROOT_DIR/$DEV_FRETBOARD_DIR"

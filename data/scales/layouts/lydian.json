@@ -6,19 +6,19 @@
           "start": 2,
           "span": 5,
           "mode": "range",
-          "validated_manual": false
+          "validated_manual": true
         },
         "C": {
           "start": 11,
           "span": 5,
           "mode": "range",
-          "validated_manual": false
+          "validated_manual": true
         },
         "E": {
           "start": 7,
           "span": 4,
           "mode": "range",
-          "validated_manual": false
+          "validated_manual": true
         },
         "D": {
           "split_ranges": [
@@ -42,13 +42,13 @@
             }
           ],
           "mode": "split",
-          "validated_manual": false
+          "validated_manual": true
         },
         "G": {
           "start": 4,
           "span": 5,
           "mode": "range",
-          "validated_manual": false
+          "validated_manual": true
         }
       },
       "tuning": "Standard"
