@@ -32,6 +32,16 @@ jobs:
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
 
+      - name: Remove remote backend for validation
+        if: matrix.directory == 'deploy/infrastructure/oci/app'
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("versions.tf")
+          path.write_text(path.read_text().replace('\n  backend "oci" {}\n', '\n'))
+          PY
+
       - name: Check formatting
         run: terraform fmt -check
 
