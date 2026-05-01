@@ -208,5 +208,7 @@ ssh -i "$INSTANCE_SSH_KEY" \
   -p "$LOCAL_PORT" \
   -N \
   -o ExitOnForwardFailure=yes \
+  -o ServerAliveInterval=30 \
+  -o ServerAliveCountMax=6 \
   -R "127.0.0.1:${REMOTE_PROXY_PORT}:${LOCAL_PROXY_HOST}:${LOCAL_PROXY_PORT}" \
   "$REMOTE_USER@localhost"

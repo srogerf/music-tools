@@ -46,3 +46,14 @@
   ansible.builtin.command:
     cmd: dnf makecache --timer --disablerepo="*" --enablerepo=ol10_baseos_latest --enablerepo=ol10_appstream --enablerepo=ol10_addons --setopt=timeout=20 --setopt=retries=0
   changed_when: false
+
+- name: Disable automatic DNF metadata refresh without public egress
+  ansible.builtin.systemd:
+    name: dnf-makecache.timer
+    enabled: false
+    state: stopped
+
+- name: Clear stale DNF makecache failure
+  ansible.builtin.command:
+    cmd: systemctl reset-failed dnf-makecache.service
+  changed_when: false

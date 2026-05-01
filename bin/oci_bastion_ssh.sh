@@ -233,6 +233,8 @@ ssh -i "$BASTION_SSH_KEY" \
   -N \
   -o ExitOnForwardFailure=yes \
   -o IdentitiesOnly=yes \
+  -o ServerAliveInterval=30 \
+  -o ServerAliveCountMax=6 \
   -L "${LOCAL_PORT}:${PRIVATE_IP}:22" \
   -p 22 \
   "$SESSION_ID@$BASTION_HOST" 2>"$TUNNEL_LOG" &
@@ -270,4 +272,8 @@ if [[ "$RUN_SSH" != "true" ]]; then
   wait "$TUNNEL_PID"
 fi
 
-ssh -i "$INSTANCE_SSH_KEY" -p "$LOCAL_PORT" "$REMOTE_USER@localhost"
+ssh -i "$INSTANCE_SSH_KEY" \
+  -p "$LOCAL_PORT" \
+  -o ServerAliveInterval=30 \
+  -o ServerAliveCountMax=6 \
+  "$REMOTE_USER@localhost"
