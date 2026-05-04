@@ -18,6 +18,7 @@ their expected private env files are missing.
 `dev` is for fast iteration against source assets.
 
 - default port: `8080`
+- browser title label: `Dev`
 - frontend assets: `frontend/app`
 - fretboard assets: `frontend/fretboard`
 - database name: `music_tools_dev`
@@ -35,6 +36,7 @@ bash bin/dev_start.sh
 `test` is for pre-container artifact checks.
 
 - default port: `8081`
+- browser title label: `Test`
 - frontend assets: `build/test/frontend/app`
 - server binary: `build/test/server/rifferone`
 - database name: `music_tools_test`

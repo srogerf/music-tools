@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"music-tools/src/tuning"
@@ -14,6 +15,24 @@ import (
 var defaultScaleLayoutOrder = []string{"C", "A", "G", "E", "D"}
 
 const DefaultScaleLayoutFamilyCode = "standard"
+
+var standardScaleLayoutPositions = map[string]struct{}{
+	"C": {},
+	"A": {},
+	"G": {},
+	"E": {},
+	"D": {},
+}
+
+var threeNpsScaleLayoutPositions = map[string]struct{}{
+	"C":  {},
+	"A":  {},
+	"A2": {},
+	"G":  {},
+	"E":  {},
+	"D":  {},
+	"D2": {},
+}
 
 type ScaleLayoutSet struct {
 	Tunings []ScaleLayoutTuning `json:"tunings"`
@@ -1023,6 +1042,111 @@ func validateScaleLayoutPosition(
 		))
 	}
 
+	switch familyCode {
+	case DefaultScaleLayoutFamilyCode:
+		issues = append(issues, validateStandardScaleLayoutPosition(tuning, scaleName, familyCode, positionName)...)
+	case "3nps":
+		issues = append(issues, validateThreeNpsScaleLayoutPosition(tuning, octaves, scale, scaleName, familyCode, positionName, position)...)
+	default:
+		issues = append(issues, fmt.Sprintf("layout %s/%s/%s/%s has unsupported layout family", tuning.Name, scaleName, familyCode, positionName))
+	}
+
+	return issues
+}
+
+func validateStandardScaleLayoutPosition(
+	tuning ScaleLayoutTuning,
+	scaleName string,
+	familyCode string,
+	positionName string,
+) []string {
+	if _, ok := standardScaleLayoutPositions[positionName]; ok {
+		return nil
+	}
+	return []string{fmt.Sprintf("layout %s/%s/%s/%s standard position must be one of C, A, G, E, D", tuning.Name, scaleName, familyCode, positionName)}
+}
+
+func validateThreeNpsScaleLayoutPosition(
+	tuning ScaleLayoutTuning,
+	octaves []int,
+	scale Definition,
+	scaleName string,
+	familyCode string,
+	positionName string,
+	position ScaleLayoutPosition,
+) []string {
+	var issues []string
+	if _, ok := threeNpsScaleLayoutPositions[positionName]; !ok {
+		issues = append(issues, fmt.Sprintf("layout %s/%s/%s/%s 3nps position must be one of C, A, A2, G, E, D, D2", tuning.Name, scaleName, familyCode, positionName))
+	}
+	if scale.Type != ScaleTypeDiatonic || len(scale.Intervals) != 7 {
+		issues = append(issues, fmt.Sprintf("layout %s/%s/%s/%s 3nps requires a seven-note diatonic scale", tuning.Name, scaleName, familyCode, positionName))
+	}
+	if position.Mode != "split" {
+		issues = append(issues, fmt.Sprintf("layout %s/%s/%s/%s 3nps mode must be split", tuning.Name, scaleName, familyCode, positionName))
+	}
+	if len(position.PerStringFrets) != tuning.StringCount {
+		issues = append(issues, fmt.Sprintf("layout %s/%s/%s/%s 3nps must define per_string_frets for every string", tuning.Name, scaleName, familyCode, positionName))
+	}
+
+	noteIndex := noteIndexMap()
+	scalePitchClassDegrees := map[int]int{}
+	for index, interval := range scale.Intervals {
+		scalePitchClassDegrees[(interval.Semitones%12+12)%12] = index + 1
+	}
+
+	var previousPitch *int
+	var previousDegree int
+	for stringIndex, openNote := range tuning.Strings {
+		frets := position.PerStringFrets[fmt.Sprintf("%d", stringIndex)]
+		if len(frets) != 3 {
+			issues = append(issues, fmt.Sprintf("layout %s/%s/%s/%s 3nps string %d must have exactly 3 frets", tuning.Name, scaleName, familyCode, positionName, stringIndex+1))
+		}
+		if !sort.IntsAreSorted(frets) {
+			issues = append(issues, fmt.Sprintf("layout %s/%s/%s/%s 3nps string %d frets must be sorted ascending", tuning.Name, scaleName, familyCode, positionName, stringIndex+1))
+		}
+
+		openIndex, ok := noteIndex[openNote]
+		if !ok || stringIndex >= len(octaves) {
+			continue
+		}
+		basePitch := (octaves[stringIndex] * 12) + openIndex
+		for _, fret := range frets {
+			pitch := basePitch + fret
+			degree, ok := scalePitchClassDegrees[((pitch%12)+12)%12]
+			if !ok {
+				issues = append(issues, fmt.Sprintf("layout %s/%s/%s/%s 3nps string %d fret %d is outside the scale", tuning.Name, scaleName, familyCode, positionName, stringIndex+1, fret))
+				continue
+			}
+			if previousPitch != nil {
+				if pitch <= *previousPitch {
+					issues = append(issues, fmt.Sprintf("layout %s/%s/%s/%s 3nps pitches must ascend strictly", tuning.Name, scaleName, familyCode, positionName))
+				}
+				expectedDegree := previousDegree + 1
+				if expectedDegree > len(scale.Intervals) {
+					expectedDegree = 1
+				}
+				if degree != expectedDegree {
+					issues = append(issues, fmt.Sprintf("layout %s/%s/%s/%s 3nps degree continuity breaks: expected degree %d, got degree %d at string %d fret %d", tuning.Name, scaleName, familyCode, positionName, expectedDegree, degree, stringIndex+1, fret))
+				}
+			}
+			previousPitch = &pitch
+			previousDegree = degree
+		}
+	}
+
+	for stringIndex, frets := range position.PerStringFrets {
+		if _, err := strconv.Atoi(stringIndex); err != nil {
+			issues = append(issues, fmt.Sprintf("layout %s/%s/%s/%s 3nps has invalid string index %q", tuning.Name, scaleName, familyCode, positionName, stringIndex))
+			continue
+		}
+		for _, fret := range frets {
+			if !positionSplitRangesCoverFret(position, stringIndex, fret) {
+				issues = append(issues, fmt.Sprintf("layout %s/%s/%s/%s 3nps string %s fret %d is outside split_ranges", tuning.Name, scaleName, familyCode, positionName, stringIndex, fret))
+			}
+		}
+	}
+
 	return issues
 }
 
@@ -1040,6 +1164,29 @@ func positionRangeForString(position ScaleLayoutPosition, stringIndex int) (int,
 		}
 	}
 	return position.Start, position.Start + position.Span - 1
+}
+
+func positionSplitRangesCoverFret(position ScaleLayoutPosition, stringIndexText string, fret int) bool {
+	stringIndex, err := strconv.Atoi(stringIndexText)
+	if err != nil {
+		return false
+	}
+	for _, splitRange := range position.SplitRanges {
+		foundString := false
+		for _, idx := range splitRange.Strings {
+			if idx == stringIndex {
+				foundString = true
+				break
+			}
+		}
+		if !foundString {
+			continue
+		}
+		if fret >= splitRange.Start && fret <= splitRange.Start+splitRange.Span-1 {
+			return true
+		}
+	}
+	return false
 }
 
 func positionFretsForString(position ScaleLayoutPosition, stringIndex int) []int {

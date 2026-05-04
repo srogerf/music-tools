@@ -211,8 +211,15 @@ The current shell wrappers for this flow are:
 ```bash
 bash bin/production_image_build.sh --tag sha-<git-sha>
 bash bin/production_image_push.sh --tag sha-<git-sha>
+bash bin/production_db_upgrade_scale_layout_positions.sh
+bash bin/production_db_seed.sh
 bash bin/production_deploy.sh --tag sha-<git-sha>
 ```
+
+`production_deploy.sh` runs `production_db_assert_current.sh` before staging or
+restarting containers. If the production schema version or seed data format
+does not match `db/postgres/versions.json`, the deploy stops and prints the
+required database steps.
 
 ## Migration Strategy
 

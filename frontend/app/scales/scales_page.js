@@ -1,11 +1,16 @@
-import React, { useEffect, useMemo, useState } from "https://esm.sh/react@18";
+import React, { useEffect, useMemo, useRef, useState } from "https://esm.sh/react@18";
 import {
   buildScaleNotes,
   computeFretboardLayout,
   drawScaleLayout,
   filterLayoutByIntervalGroups,
 } from "fretboard-layout";
-import { CAGED_SHAPES } from "scales-layout";
+import {
+  CAGED_SHAPES,
+  POSITION_LABELS,
+  THREE_NPS_POSITION_LABELS,
+  THREE_NPS_SHAPES,
+} from "scales-layout";
 import { SharedFretboard } from "shared-fretboard";
 import { DEFAULT_KEYS, DEFAULT_TUNING_NAME } from "defaults";
 
@@ -26,7 +31,11 @@ const LEARNING_SCALE_GROUPS = {
   },
   pentatonic: {
     label: "Pentatonic",
-    names: ["Major Pentatonic", "Minor Pentatonic"],
+    names: ["Major Pentatonic", "Minor Pentatonic", "Major Blues", "Minor Blues"],
+  },
+  exotic: {
+    label: "Exotic",
+    names: ["Double Harmonic Major"],
   },
 };
 
@@ -98,12 +107,69 @@ const LEARNING_NOTE_GROUPS = [
   ["B", "Cb", "A##"],
 ];
 const LEARNING_NOTE_CHOICE_SET = new Set(LEARNING_NOTE_GROUPS.flat());
+const AUDIO_BASE_MIDI = 60;
+const PLAYBACK_NOTE_VALUES = [
+  { label: "1/2", beats: 2 },
+  { label: "1/4", beats: 1 },
+  { label: "1/4 trip", beats: 2 / 3 },
+  { label: "1/8", beats: 1 / 2 },
+  { label: "1/8 trip", beats: 1 / 3 },
+  { label: "1/16", beats: 1 / 4 },
+  { label: "1/16 trip", beats: 1 / 6 },
+  { label: "1/32", beats: 1 / 8 },
+  { label: "1/32 trip", beats: 1 / 12 },
+];
+const MAX_SCALE_PLAYBACK_REPEATS = 20;
+const SCALE_DROPDOWN_GROUPS = [
+  {
+    label: "Major / Minor",
+    names: ["Major", "Natural Minor", "Harmonic Minor", "Melodic Minor"],
+  },
+  {
+    label: "Modes",
+    names: ["Dorian", "Phrygian", "Lydian", "Mixolydian", "Locrian"],
+  },
+  {
+    label: "Pentatonic",
+    names: ["Major Pentatonic", "Minor Pentatonic", "Major Blues", "Minor Blues"],
+  },
+  {
+    label: "Exotic",
+    names: ["Double Harmonic Major"],
+  },
+];
+const SCALE_OPTION_LABEL_OVERRIDES = {
+  Dorian: "Dorian (minor)",
+  Phrygian: "Phrygian (minor)",
+  Lydian: "Lydian (major)",
+  Mixolydian: "Mixolydian (major)",
+  Locrian: "Locrian (diminished)",
+};
 
 function scaleOptionLabel(scale) {
+  if (SCALE_OPTION_LABEL_OVERRIDES[scale.name]) {
+    return SCALE_OPTION_LABEL_OVERRIDES[scale.name];
+  }
   if (!scale.common_name || scale.common_name === scale.name) {
     return scale.name;
   }
   return `${scale.name} (${scale.common_name})`;
+}
+
+function groupedScaleOptions(scales) {
+  const byName = new Map(scales.map((scale) => [scale.name, scale]));
+  const used = new Set();
+  const groups = SCALE_DROPDOWN_GROUPS.map((group) => {
+    const entries = group.names.map((name) => byName.get(name)).filter(Boolean);
+    entries.forEach((scale) => used.add(scale.id));
+    return { label: group.label, entries };
+  }).filter((group) => group.entries.length > 0);
+
+  const otherEntries = scales.filter((scale) => !used.has(scale.id));
+  if (otherEntries.length > 0) {
+    groups.push({ label: "Other", entries: otherEntries });
+  }
+  return groups;
 }
 
 function buildLoadError(resourceName, detail) {
@@ -275,12 +341,20 @@ function findTuningByRouteValue(tunings, routeValue) {
   return tunings.find((tuning) => normalizeText(tuning.name) === normalized) || null;
 }
 
+function positionOptionsForMode(useThreeNps) {
+  const codes = useThreeNps ? THREE_NPS_SHAPES : CAGED_SHAPES;
+  const labels = useThreeNps ? THREE_NPS_POSITION_LABELS : POSITION_LABELS;
+  return codes.map((code) => ({ code, label: labels[code] || code }));
+}
+
 export function ScalesPage({ active, routeState, onRouteChange }) {
   const [scales, setScales] = useState([]);
   const [selectedScaleId, setSelectedScaleId] = useState(1);
   const [selectedKey, setSelectedKey] = useState(routeState?.key || "C");
   const [selectedPosition, setSelectedPosition] = useState(
-    CAGED_SHAPES.includes(routeState?.position) ? routeState.position : "E"
+    [...CAGED_SHAPES, ...THREE_NPS_SHAPES].includes(routeState?.position)
+      ? routeState.position
+      : "E"
   );
   const [tunings, setTunings] = useState([]);
   const [selectedTuningId, setSelectedTuningId] = useState(1);
@@ -293,12 +367,23 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
   });
   const [useThreeNps, setUseThreeNps] = useState(Boolean(routeState?.threeNps));
   const [learningOpen, setLearningOpen] = useState(false);
-  const [learningGroup, setLearningGroup] = useState("majorMinor");
+  const [learningGroups, setLearningGroups] = useState(["majorMinor"]);
   const [learningChallenge, setLearningChallenge] = useState(null);
   const [learningSignatureCount, setLearningSignatureCount] = useState(0);
   const [learningSignatureType, setLearningSignatureType] = useState("sharp");
   const [learningSelectedNotes, setLearningSelectedNotes] = useState([]);
   const [learningResult, setLearningResult] = useState(null);
+  const [playbackBpm, setPlaybackBpm] = useState(120);
+  const [playbackVolume, setPlaybackVolume] = useState(70);
+  const [playbackNoteValueIndex, setPlaybackNoteValueIndex] = useState(3);
+  const [playbackClickEnabled, setPlaybackClickEnabled] = useState(false);
+  const [isScalePlaying, setIsScalePlaying] = useState(false);
+  const audioContextRef = useRef(null);
+  const audioOutputRef = useRef(null);
+  const playbackTimeoutsRef = useRef([]);
+  const playbackOscillatorsRef = useRef([]);
+  const playbackRunRef = useRef(null);
+  const isScalePlayingRef = useRef(false);
 
   useEffect(() => {
     fetchJSON("/api/v1/scales", "scales")
@@ -384,7 +469,10 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
   }, [routeState?.key]);
 
   useEffect(() => {
-    if (routeState?.position && CAGED_SHAPES.includes(routeState.position)) {
+    if (
+      routeState?.position &&
+      [...CAGED_SHAPES, ...THREE_NPS_SHAPES].includes(routeState.position)
+    ) {
       setSelectedPosition((current) =>
         current === routeState.position ? current : routeState.position
       );
@@ -395,6 +483,18 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
     const nextThreeNps = Boolean(routeState?.threeNps);
     setUseThreeNps((current) => (current === nextThreeNps ? current : nextThreeNps));
   }, [routeState?.threeNps]);
+
+  useEffect(() => () => stopScalePlayback(), []);
+
+  useEffect(() => {
+    isScalePlayingRef.current = isScalePlaying;
+  }, [isScalePlaying]);
+
+  useEffect(() => {
+    if (isScalePlaying) {
+      playScale();
+    }
+  }, [playbackBpm, playbackVolume, playbackNoteValueIndex, playbackClickEnabled]);
 
   const selectedTuning = useMemo(
     () => tunings.find((tuning) => tuning.id === Number(selectedTuningId)),
@@ -407,30 +507,59 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
     () => scales.find((scale) => scale.id === Number(selectedScaleId)),
     [scales, selectedScaleId]
   );
+  const scaleDropdownGroups = useMemo(() => groupedScaleOptions(scales), [scales]);
   const selectedLayoutInstance = useMemo(
     () => layoutInstances.find((entry) => entry.id === Number(selectedTuningId)),
     [layoutInstances, selectedTuningId]
   );
-  const selectedPositionLayout = useMemo(() => {
+  const selectedScaleLayout = useMemo(() => {
     if (!selectedLayoutInstance || !selectedScale) {
       return null;
     }
-    const scaleLayout = selectedLayoutInstance.scales?.find(
-      (scale) => scale.id === selectedScale.id
-    );
-    const familyCode = useThreeNps ? "3nps" : "standard";
     return (
-      scaleLayout?.layout_families?.[familyCode]?.positions?.[selectedPosition] ||
-      scaleLayout?.layout_families?.standard?.positions?.[selectedPosition] ||
-      scaleLayout?.positions?.[selectedPosition] ||
+      selectedLayoutInstance.scales?.find((scale) => scale.id === selectedScale.id) || null
+    );
+  }, [selectedLayoutInstance, selectedScale]);
+  const hasThreeNpsLayout = Boolean(
+    selectedScaleLayout?.layout_families?.["3nps"]?.positions
+  );
+  const effectiveUseThreeNps = useThreeNps && hasThreeNpsLayout;
+  const positionOptions = useMemo(
+    () => positionOptionsForMode(effectiveUseThreeNps),
+    [effectiveUseThreeNps]
+  );
+  const positionCodes = useMemo(() => positionOptions.map((option) => option.code), [positionOptions]);
+
+  useEffect(() => {
+    if (positionCodes.includes(selectedPosition)) {
+      return;
+    }
+    const nextPosition = positionCodes[0] || "E";
+    setSelectedPosition(nextPosition);
+    updateRouteFromSelection({ position: nextPosition });
+  }, [positionCodes, selectedPosition]);
+
+  const selectedPositionLayout = useMemo(() => {
+    if (!selectedScaleLayout) {
+      return null;
+    }
+    const familyCode = effectiveUseThreeNps ? "3nps" : "standard";
+    return (
+      selectedScaleLayout?.layout_families?.[familyCode]?.positions?.[selectedPosition] ||
+      selectedScaleLayout?.layout_families?.standard?.positions?.[selectedPosition] ||
+      selectedScaleLayout?.positions?.[selectedPosition] ||
       null
     );
-  }, [selectedLayoutInstance, selectedScale, selectedPosition, useThreeNps]);
+  }, [selectedScaleLayout, selectedPosition, effectiveUseThreeNps]);
 
   const scaleNoteDetails = useMemo(() => {
     if (!selectedScale) return [];
     return buildScaleNotes(selectedKey, selectedScale).noteDetails;
   }, [selectedScale, selectedKey]);
+
+  useEffect(() => {
+    stopScalePlayback();
+  }, [selectedScaleId, selectedKey]);
 
   const shouldBlankForLearning = learningOpen && (!learningChallenge || !learningResult);
 
@@ -478,7 +607,7 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
       tuningStrings,
       positionLayout,
       positionName: selectedPosition,
-      useThreeNps,
+      useThreeNps: effectiveUseThreeNps,
     });
     if (!trimmed) {
       fretboard.clear();
@@ -497,9 +626,227 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
     selectedLayoutInstance,
     selectedPositionLayout,
     visibleDegreeClasses,
-    useThreeNps,
+    effectiveUseThreeNps,
     shouldBlankForLearning,
   ]);
+
+  function stopScalePlayback() {
+    if (playbackRunRef.current) {
+      playbackRunRef.current.cancelled = true;
+      playbackRunRef.current = null;
+    }
+    playbackTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
+    playbackTimeoutsRef.current = [];
+    const audioContext = audioContextRef.current;
+    playbackOscillatorsRef.current.forEach((oscillator) => {
+      try {
+        const stopTime = audioContext ? audioContext.currentTime + 0.03 : 0;
+        oscillator.stop(stopTime);
+      } catch {
+        // Oscillator may already have stopped.
+      }
+    });
+    playbackOscillatorsRef.current = [];
+    setIsScalePlaying(false);
+  }
+
+  function midiToFrequency(midi) {
+    return 440 * 2 ** ((midi - 69) / 12);
+  }
+
+  function ensureAudioContext() {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) {
+      return null;
+    }
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContextClass();
+    }
+    return audioContextRef.current;
+  }
+
+  function ensureAudioOutput(audioContext) {
+    if (!audioOutputRef.current) {
+      const filter = audioContext.createBiquadFilter();
+      const masterGain = audioContext.createGain();
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(1800, audioContext.currentTime);
+      masterGain.gain.setValueAtTime(1, audioContext.currentTime);
+      filter.connect(masterGain);
+      masterGain.connect(audioContext.destination);
+      audioOutputRef.current = { filter, masterGain };
+    }
+    return audioOutputRef.current;
+  }
+
+  function trackPlaybackOscillator(oscillator) {
+    playbackOscillatorsRef.current.push(oscillator);
+    oscillator.onended = () => {
+      playbackOscillatorsRef.current = playbackOscillatorsRef.current.filter(
+        (item) => item !== oscillator
+      );
+    };
+  }
+
+  function playTone(audioContext, output, frequency, startTime, duration) {
+    const oscillator = audioContext.createOscillator();
+    const bodyOscillator = audioContext.createOscillator();
+    const bodyGain = audioContext.createGain();
+    const noteGain = audioContext.createGain();
+    oscillator.type = "sine";
+    bodyOscillator.type = "triangle";
+    oscillator.frequency.setValueAtTime(frequency, startTime);
+    bodyOscillator.frequency.setValueAtTime(frequency * 0.5, startTime);
+    bodyGain.gain.setValueAtTime(0.38, startTime);
+    const peakGain = Math.max(0.001, (Number(playbackVolume) / 100) * 0.46);
+    const sustainGain = Math.max(0.001, peakGain * 0.82);
+    const attackEnd = startTime + Math.min(0.12, duration * 0.28);
+    const releaseStart = startTime + Math.max(0.08, duration * 0.72);
+    const noteEnd = startTime + duration;
+    noteGain.gain.setValueAtTime(0.0001, startTime);
+    noteGain.gain.exponentialRampToValueAtTime(peakGain, attackEnd);
+    noteGain.gain.setValueAtTime(sustainGain, releaseStart);
+    noteGain.gain.exponentialRampToValueAtTime(0.0001, noteEnd);
+    oscillator.connect(noteGain);
+    bodyOscillator.connect(bodyGain);
+    bodyGain.connect(noteGain);
+    noteGain.connect(output.filter);
+    oscillator.start(startTime);
+    bodyOscillator.start(startTime);
+    const stopTime = noteEnd + 0.08;
+    oscillator.stop(stopTime);
+    bodyOscillator.stop(stopTime);
+    trackPlaybackOscillator(oscillator);
+    trackPlaybackOscillator(bodyOscillator);
+  }
+
+  function playClick(audioContext, output, startTime, accented) {
+    const oscillator = audioContext.createOscillator();
+    const clickGain = audioContext.createGain();
+    oscillator.type = "square";
+    oscillator.frequency.setValueAtTime(accented ? 1200 : 850, startTime);
+    const clickLevel = Math.max(0.001, (Number(playbackVolume) / 100) * (accented ? 0.22 : 0.14));
+    clickGain.gain.setValueAtTime(0.0001, startTime);
+    clickGain.gain.exponentialRampToValueAtTime(clickLevel, startTime + 0.004);
+    clickGain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.045);
+    oscillator.connect(clickGain);
+    clickGain.connect(output.masterGain);
+    oscillator.start(startTime);
+    oscillator.stop(startTime + 0.055);
+    trackPlaybackOscillator(oscillator);
+  }
+
+  function scheduleScalePlaybackRun({
+    audioContext,
+    output,
+    run,
+    scaleNotes,
+    playbackIntervals,
+    noteSpacingSeconds,
+    noteDuration,
+  }) {
+    if (run.cancelled || run.count >= MAX_SCALE_PLAYBACK_REPEATS) {
+      stopScalePlayback();
+      return;
+    }
+
+    const runStart = run.count === 0
+      ? audioContext.currentTime + 0.04
+      : run.nextBarStart;
+    const runLengthSeconds = Math.max(
+      run.barSeconds,
+      Math.ceil((playbackIntervals.length * noteSpacingSeconds) / run.barSeconds) * run.barSeconds
+    );
+    run.nextBarStart = runStart + runLengthSeconds;
+    const rootMidi = AUDIO_BASE_MIDI + scaleNotes.rootIndex;
+    if (run.clickEnabled) {
+      const beatCount = Math.ceil(runLengthSeconds / run.beatSeconds);
+      for (let beat = 0; beat < beatCount; beat += 1) {
+        playClick(audioContext, output, runStart + beat * run.beatSeconds, beat % 4 === 0);
+      }
+    }
+    playbackIntervals.forEach((interval, index) => {
+      playTone(
+        audioContext,
+        output,
+        midiToFrequency(rootMidi + interval),
+        runStart + index * noteSpacingSeconds,
+        noteDuration
+      );
+    });
+
+    run.count += 1;
+    const delayMs = Math.max(0, (run.nextBarStart - audioContext.currentTime - 0.02) * 1000);
+    const nextTimeout = window.setTimeout(() => {
+      scheduleScalePlaybackRun({
+        audioContext,
+        output,
+        run,
+        scaleNotes,
+        playbackIntervals,
+        noteSpacingSeconds,
+        noteDuration,
+      });
+    }, delayMs);
+    playbackTimeoutsRef.current.push(nextTimeout);
+  }
+
+  async function playScale() {
+    if (!selectedScale) {
+      return;
+    }
+    const audioContext = ensureAudioContext();
+    if (!audioContext) {
+      return;
+    }
+    if (audioContext.state === "suspended") {
+      await audioContext.resume();
+    }
+    const output = ensureAudioOutput(audioContext);
+
+    stopScalePlayback();
+    const scaleNotes = buildScaleNotes(selectedKey, selectedScale);
+    const intervals = selectedScale.intervals
+      .map((interval) => (typeof interval === "number" ? interval : interval?.semitones))
+      .filter((interval) => Number.isFinite(interval));
+    if (intervals.length === 0) {
+      return;
+    }
+
+    const noteValue = PLAYBACK_NOTE_VALUES[playbackNoteValueIndex] || PLAYBACK_NOTE_VALUES[3];
+    const noteSpacingSeconds = 60 / Number(playbackBpm) * noteValue.beats;
+    const noteDuration = Math.max(0.08, noteSpacingSeconds * 0.9);
+    const playbackIntervals = [...intervals, 12];
+    const beatSeconds = 60 / Number(playbackBpm);
+    const run = {
+      cancelled: false,
+      count: 0,
+      beatSeconds,
+      barSeconds: 4 * beatSeconds,
+      clickEnabled: playbackClickEnabled,
+      nextBarStart: audioContext.currentTime + 0.04,
+    };
+    playbackRunRef.current = run;
+
+    setIsScalePlaying(true);
+    scheduleScalePlaybackRun({
+      audioContext,
+      output,
+      run,
+      scaleNotes,
+      playbackIntervals,
+      noteSpacingSeconds,
+      noteDuration,
+    });
+  }
+
+  function handleScalePlaybackToggle() {
+    if (isScalePlaying) {
+      stopScalePlayback();
+      return;
+    }
+    playScale();
+  }
 
   function updateRouteFromSelection(overrides = {}) {
     if (!onRouteChange) {
@@ -509,7 +856,7 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
     const key = overrides.key ?? selectedKey;
     const position = overrides.position ?? selectedPosition;
     const tuningName = overrides.tuningName ?? selectedTuning?.name;
-    const threeNps = overrides.threeNps ?? useThreeNps;
+    const threeNps = overrides.threeNps ?? effectiveUseThreeNps;
     if (!scaleName || !key || !position || !tuningName) {
       return;
     }
@@ -543,8 +890,31 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
 
   function handleThreeNpsChange(event) {
     const nextThreeNps = event.target.checked;
+    const nextPositionOptions = positionOptionsForMode(nextThreeNps);
+    const nextPositionCodes = nextPositionOptions.map((option) => option.code);
+    const nextPosition = nextPositionCodes.includes(selectedPosition)
+      ? selectedPosition
+      : nextPositionCodes[0] || selectedPosition;
     setUseThreeNps(nextThreeNps);
-    updateRouteFromSelection({ threeNps: nextThreeNps });
+    setSelectedPosition(nextPosition);
+    updateRouteFromSelection({ threeNps: nextThreeNps, position: nextPosition });
+  }
+
+  function handlePlaybackBpmChange(event) {
+    const nextBpm = Number(event.target.value);
+    setPlaybackBpm(nextBpm);
+  }
+
+  function handlePlaybackVolumeChange(event) {
+    setPlaybackVolume(Number(event.target.value));
+  }
+
+  function handlePlaybackNoteValueChange(event) {
+    setPlaybackNoteValueIndex(Number(event.target.value));
+  }
+
+  function handlePlaybackClickChange(event) {
+    setPlaybackClickEnabled(event.target.checked);
   }
 
   function resetLearningDisplay() {
@@ -561,10 +931,20 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
   }
 
   function learningScaleNames() {
-    if (learningGroup === "all") {
-      return Object.values(LEARNING_SCALE_GROUPS).flatMap((group) => group.names);
+    const selectedGroups = learningGroups.length > 0 ? learningGroups : ["majorMinor"];
+    return selectedGroups.flatMap((groupKey) => LEARNING_SCALE_GROUPS[groupKey]?.names || []);
+  }
+
+  function handleLearningGroupToggle(groupKey) {
+    const isSelected = learningGroups.includes(groupKey);
+    if (isSelected && learningGroups.length === 1) {
+      return;
     }
-    return LEARNING_SCALE_GROUPS[learningGroup]?.names || LEARNING_SCALE_GROUPS.majorMinor.names;
+    const nextGroups = isSelected
+      ? learningGroups.filter((item) => item !== groupKey)
+      : [...learningGroups, groupKey];
+    setLearningGroups(nextGroups);
+    resetLearningDisplay();
   }
 
   function availableLearningScales() {
@@ -686,22 +1066,24 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
             { className: "learning-controls" },
             React.createElement(
               "div",
-              null,
-              React.createElement("label", { htmlFor: "learning-set" }, "Scale set"),
+              { className: "learning-family-picker" },
+              React.createElement("span", { className: "control-label" }, "Scale set"),
               React.createElement(
-                "select",
-                {
-                  id: "learning-set",
-                  value: learningGroup,
-                  onChange: (event) => {
-                    setLearningGroup(event.target.value);
-                    resetLearningDisplay();
-                  },
-                },
-                React.createElement("option", { value: "majorMinor" }, "Major / minor"),
-                React.createElement("option", { value: "modes" }, "Modes"),
-                React.createElement("option", { value: "pentatonic" }, "Pentatonic"),
-                React.createElement("option", { value: "all" }, "All")
+                "div",
+                { className: "learning-family-list", role: "group", "aria-label": "Learning scale sets" },
+                Object.entries(LEARNING_SCALE_GROUPS).map(([groupKey, group]) =>
+                  React.createElement(
+                    "label",
+                    { key: groupKey, className: "learning-family-choice", htmlFor: `learning-family-${groupKey}` },
+                    React.createElement("input", {
+                      id: `learning-family-${groupKey}`,
+                      type: "checkbox",
+                      checked: learningGroups.includes(groupKey),
+                      onChange: () => handleLearningGroupToggle(groupKey),
+                    }),
+                    React.createElement("span", null, group.label)
+                  )
+                )
               )
             ),
             React.createElement(
@@ -891,11 +1273,17 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
             value: selectedScaleId,
             onChange: handleScaleChange,
           },
-          scales.map((scale) =>
+          scaleDropdownGroups.map((group) =>
             React.createElement(
-              "option",
-              { key: scale.id, value: scale.id },
-              scaleOptionLabel(scale)
+              "optgroup",
+              { key: group.label, label: group.label },
+              group.entries.map((scale) =>
+                React.createElement(
+                  "option",
+                  { key: scale.id, value: scale.id },
+                  scaleOptionLabel(scale)
+                )
+              )
             )
           )
         )
@@ -917,7 +1305,7 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
       React.createElement(
         "div",
         null,
-        React.createElement("label", { htmlFor: "position" }, "Position (CAGED)"),
+        React.createElement("label", { htmlFor: "position" }, effectiveUseThreeNps ? "Position (3NPS)" : "Position (CAGED)"),
         React.createElement(
           "select",
           {
@@ -925,8 +1313,8 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
             value: selectedPosition,
             onChange: handlePositionChange,
           },
-          CAGED_SHAPES.map((shape) =>
-            React.createElement("option", { key: shape, value: shape }, shape)
+          positionOptions.map((option) =>
+            React.createElement("option", { key: option.code, value: option.code }, option.label)
           )
         )
       )
@@ -942,33 +1330,115 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
       }),
       React.createElement(
         "div",
-        { className: "filter-panel" },
-        NOTE_GROUPS.map((group) =>
+        { className: "side-panel-stack" },
+        React.createElement(
+          "div",
+          { className: "filter-panel" },
+          NOTE_GROUPS.map((group) =>
+            React.createElement(
+              "label",
+              { className: "filter-row", key: group.key },
+              React.createElement("input", {
+                type: "checkbox",
+                checked: visibleGroups[group.key],
+                onChange: (event) =>
+                  setVisibleGroups((current) => ({
+                    ...current,
+                    [group.key]: event.target.checked,
+                  })),
+              }),
+              React.createElement("span", { className: "filter-label" }, group.label)
+            )
+          ),
+          React.createElement("div", { className: "filter-divider", "aria-hidden": "true" }),
           React.createElement(
             "label",
-            { className: "filter-row", key: group.key },
+            { className: "filter-row", key: "threeNps" },
             React.createElement("input", {
               type: "checkbox",
-              checked: visibleGroups[group.key],
-              onChange: (event) =>
-                setVisibleGroups((current) => ({
-                  ...current,
-                  [group.key]: event.target.checked,
-                })),
+              checked: effectiveUseThreeNps,
+              disabled: !hasThreeNpsLayout,
+              onChange: handleThreeNpsChange,
             }),
-            React.createElement("span", { className: "filter-label" }, group.label)
+            React.createElement(
+              "span",
+              { className: `filter-label ${hasThreeNpsLayout ? "" : "filter-label-disabled"}` },
+              "3NPS"
+            )
           )
         ),
-        React.createElement("div", { className: "filter-divider", "aria-hidden": "true" }),
         React.createElement(
-          "label",
-          { className: "filter-row", key: "threeNps" },
-          React.createElement("input", {
-            type: "checkbox",
-            checked: useThreeNps,
-            onChange: handleThreeNpsChange,
-          }),
-          React.createElement("span", { className: "filter-label" }, "3NPS")
+          "div",
+          { className: "playback-panel" },
+          React.createElement(
+            "div",
+            { className: "playback-command-row" },
+            React.createElement(
+              "button",
+              {
+                type: "button",
+                className: "playback-button",
+                onClick: handleScalePlaybackToggle,
+              },
+              isScalePlaying ? "Stop" : "Play"
+            ),
+            React.createElement(
+              "label",
+              { className: "playback-click", title: "Beat click" },
+              React.createElement("input", {
+                type: "checkbox",
+                checked: playbackClickEnabled,
+                onChange: handlePlaybackClickChange,
+              }),
+              React.createElement("span", { className: "metronome-icon", "aria-hidden": "true" })
+            )
+          ),
+          React.createElement(
+            "label",
+            { className: "playback-speed", htmlFor: "scale-playback-bpm" },
+            React.createElement("span", null, `Speed ${playbackBpm} BPM`),
+            React.createElement("input", {
+              id: "scale-playback-bpm",
+              type: "range",
+              min: "40",
+              max: "180",
+              step: "1",
+              value: playbackBpm,
+              onChange: handlePlaybackBpmChange,
+            })
+          ),
+          React.createElement(
+            "label",
+            { className: "playback-speed", htmlFor: "scale-playback-note-value" },
+            React.createElement(
+              "span",
+              null,
+              `Note ${PLAYBACK_NOTE_VALUES[playbackNoteValueIndex]?.label || "1/8"}`
+            ),
+            React.createElement("input", {
+              id: "scale-playback-note-value",
+              type: "range",
+              min: "0",
+              max: String(PLAYBACK_NOTE_VALUES.length - 1),
+              step: "1",
+              value: playbackNoteValueIndex,
+              onChange: handlePlaybackNoteValueChange,
+            })
+          ),
+          React.createElement(
+            "label",
+            { className: "playback-speed", htmlFor: "scale-playback-volume" },
+            React.createElement("span", null, `Volume ${playbackVolume}%`),
+            React.createElement("input", {
+              id: "scale-playback-volume",
+              type: "range",
+              min: "0",
+              max: "100",
+              step: "1",
+              value: playbackVolume,
+              onChange: handlePlaybackVolumeChange,
+            })
+          )
         )
       )
     ),
@@ -1024,14 +1494,12 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
               "td",
               {
                 className: `info-value validated-cell ${
-                  useThreeNps
-                    ? "status-generated"
-                    : selectedPositionLayout?.validated_manual
+                  selectedPositionLayout?.validated_manual
                       ? "status-valid"
                       : "status-invalid"
                 }`,
               },
-              useThreeNps ? "Generated" : `${selectedPositionLayout?.validated_manual ? "✓" : "✕"}`
+              `${selectedPositionLayout?.validated_manual ? "✓" : "✕"}`
             )
           )
         )

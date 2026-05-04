@@ -76,6 +76,27 @@
       "type": "pentatonic",
       "intervals": [{ "semitones": 0, "degree": 1 }, { "semitones": 3, "degree": 3 }, { "semitones": 5, "degree": 4 }, { "semitones": 7, "degree": 5 }, { "semitones": 10, "degree": 7 }],
       "id": 11
+    },
+    {
+      "name": "Double Harmonic Major",
+      "common_name": "Byzantine",
+      "type": "exotic",
+      "intervals": [{ "semitones": 0, "degree": 1 }, { "semitones": 1, "degree": 2 }, { "semitones": 4, "degree": 3 }, { "semitones": 5, "degree": 4 }, { "semitones": 7, "degree": 5 }, { "semitones": 8, "degree": 6 }, { "semitones": 11, "degree": 7 }],
+      "id": 12
+    },
+    {
+      "name": "Minor Blues",
+      "common_name": "Minor Blues",
+      "type": "pentatonic",
+      "intervals": [{ "semitones": 0, "degree": 1 }, { "semitones": 3, "degree": 3 }, { "semitones": 5, "degree": 4 }, { "semitones": 6, "degree": 5 }, { "semitones": 7, "degree": 5 }, { "semitones": 10, "degree": 7 }],
+      "id": 13
+    },
+    {
+      "name": "Major Blues",
+      "common_name": "Major Blues",
+      "type": "pentatonic",
+      "intervals": [{ "semitones": 0, "degree": 1 }, { "semitones": 2, "degree": 2 }, { "semitones": 3, "degree": 3 }, { "semitones": 4, "degree": 3 }, { "semitones": 7, "degree": 5 }, { "semitones": 9, "degree": 6 }],
+      "id": 14
     }
   ]
 }

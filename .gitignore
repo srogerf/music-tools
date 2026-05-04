@@ -28,10 +28,12 @@ yarn-error.log*
 !/bin/oci_*.sh
 !/bin/oci_prepare_host_repos.sh
 !/bin/production_deploy.sh
+!/bin/production_db_assert_current.sh
 !/bin/production_db_psql.sh
 !/bin/production_db_rebuild.sh
 !/bin/production_db_seed.sh
 !/bin/production_db_upgrade_scale_intervals.sh
+!/bin/production_db_upgrade_scale_layout_positions.sh
 !/bin/production_certificate_deploy.sh
 !/bin/production_goaccess.sh
 !/bin/production_image_build.sh

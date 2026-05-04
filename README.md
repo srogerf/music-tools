@@ -73,6 +73,7 @@ bash bin/production_db_psql.sh
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
+- [Bastion Troubleshooting](docs/BASTION_TROUBLESHOOTING.md)
 - [Certificates](docs/CERTIFICATES.md)
 - [Deploy Database](docs/DEPLOY_DATABASE.md)
 - [Development Workflow](docs/DEVELOPMENT_WORKFLOW.md)

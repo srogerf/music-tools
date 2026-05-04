@@ -92,6 +92,8 @@ BASTION_SSH_KEY="${BASTION_SSH_KEY:-${SSH_KEY:-}}"
 BASTION_SSH_PUB="${BASTION_SSH_PUB:-${SSH_PUB:-}}"
 INSTANCE_SSH_KEY="${INSTANCE_SSH_KEY:-${SSH_KEY:-}}"
 BASTION_HOST="${BASTION_HOST:-host.bastion.${REGION:-us-phoenix-1}.oci.oraclecloud.com}"
+BASTION_TUNNEL_START_ATTEMPTS="${BASTION_TUNNEL_START_ATTEMPTS:-12}"
+BASTION_TUNNEL_START_WAIT_SECONDS="${BASTION_TUNNEL_START_WAIT_SECONDS:-5}"
 
 required_vars=(
   BASTION_ID
@@ -134,6 +136,13 @@ if [[ ! -f "$INSTANCE_SSH_KEY" ]]; then
   echo "Missing instance SSH private key: $INSTANCE_SSH_KEY" >&2
   exit 1
 fi
+
+for integer_var in LOCAL_PORT BASTION_SESSION_TTL BASTION_TUNNEL_START_ATTEMPTS BASTION_TUNNEL_START_WAIT_SECONDS; do
+  if ! [[ "${!integer_var}" =~ ^[0-9]+$ ]]; then
+    echo "$integer_var must be an integer, got: ${!integer_var}" >&2
+    exit 1
+  fi
+done
 
 SESSION_ID=""
 
@@ -185,12 +194,22 @@ if [[ "$CLEANUP_SESSIONS" == "true" ]]; then
   exit 0
 fi
 
+if timeout 1 bash -c "</dev/tcp/127.0.0.1/$LOCAL_PORT" >/dev/null 2>&1; then
+  echo "Local port 127.0.0.1:$LOCAL_PORT is already accepting TCP connections." >&2
+  echo "If this is an existing Bastion tunnel, reuse it or stop that process before starting a new one." >&2
+  exit 1
+fi
+
 if [[ "$FORCE_NEW_SESSION" != "true" ]]; then
   echo "Looking for an active Bastion session named $BASTION_SESSION_DISPLAY_NAME..."
   SESSION_ID="$(list_active_sessions | head -n 1)"
 fi
 
 if [[ -z "$SESSION_ID" || "$SESSION_ID" == "null" ]]; then
+  if [[ "$FORCE_NEW_SESSION" == "true" ]]; then
+    delete_active_sessions
+  fi
+
   echo "Creating Bastion port-forwarding session for $PRIVATE_IP:22..."
   WORK_REQUEST_ID=$(SUPPRESS_LABEL_WARNING=True ~/bin/oci bastion session create-port-forwarding \
     --bastion-id "$BASTION_ID" \
@@ -228,28 +247,47 @@ fi
 echo "Opening local tunnel on 127.0.0.1:$LOCAL_PORT..."
 
 TUNNEL_LOG="$(mktemp)"
-
-ssh -i "$BASTION_SSH_KEY" \
-  -N \
-  -o ExitOnForwardFailure=yes \
-  -o IdentitiesOnly=yes \
-  -o ServerAliveInterval=30 \
-  -o ServerAliveCountMax=6 \
-  -L "${LOCAL_PORT}:${PRIVATE_IP}:22" \
-  -p 22 \
-  "$SESSION_ID@$BASTION_HOST" 2>"$TUNNEL_LOG" &
-
-TUNNEL_PID="$!"
+TUNNEL_PID=""
 
 cleanup() {
   rm -f "$TUNNEL_LOG"
-  if kill -0 "$TUNNEL_PID" >/dev/null 2>&1; then
+  if [[ -n "$TUNNEL_PID" ]] && kill -0 "$TUNNEL_PID" >/dev/null 2>&1; then
     kill "$TUNNEL_PID" >/dev/null 2>&1 || true
   fi
 }
 trap cleanup EXIT
 
-sleep 3
+start_tunnel() {
+  : >"$TUNNEL_LOG"
+  ssh -i "$BASTION_SSH_KEY" \
+    -N \
+    -o ExitOnForwardFailure=yes \
+    -o IdentitiesOnly=yes \
+    -o ServerAliveInterval=30 \
+    -o ServerAliveCountMax=6 \
+    -L "${LOCAL_PORT}:${PRIVATE_IP}:22" \
+    -p 22 \
+    "$SESSION_ID@$BASTION_HOST" 2>"$TUNNEL_LOG" &
+
+  TUNNEL_PID="$!"
+  sleep 3
+}
+
+for attempt in $(seq 1 "$BASTION_TUNNEL_START_ATTEMPTS"); do
+  start_tunnel
+  if kill -0 "$TUNNEL_PID" >/dev/null 2>&1; then
+    break
+  fi
+
+  if grep -q "Permission denied (publickey)" "$TUNNEL_LOG" &&
+    [[ "$attempt" -lt "$BASTION_TUNNEL_START_ATTEMPTS" ]]; then
+    echo "Bastion session is not accepting the SSH key yet; retrying tunnel start ($attempt/$BASTION_TUNNEL_START_ATTEMPTS)..." >&2
+    sleep "$BASTION_TUNNEL_START_WAIT_SECONDS"
+    continue
+  fi
+
+  break
+done
 
 if ! kill -0 "$TUNNEL_PID" >/dev/null 2>&1; then
   echo "Bastion SSH tunnel failed to start on localhost:$LOCAL_PORT." >&2

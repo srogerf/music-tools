@@ -14,6 +14,7 @@ const (
 	ScaleTypeQuadad     ScaleType = "quadad"
 	ScaleTypePentatonic ScaleType = "pentatonic"
 	ScaleTypeDiatonic   ScaleType = "diatonic"
+	ScaleTypeExotic     ScaleType = "exotic"
 )
 
 type Definition struct {

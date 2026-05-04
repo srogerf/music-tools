@@ -8,6 +8,8 @@ REMOTE_USER="${REMOTE_USER:-opc}"
 LOCAL_PROXY_HOST="${LOCAL_PROXY_HOST:-127.0.0.1}"
 LOCAL_PROXY_PORT="${LOCAL_PROXY_PORT:-8888}"
 REMOTE_PROXY_PORT="${REMOTE_PROXY_PORT:-3128}"
+BASTION_PROXY_SSH_READY_ATTEMPTS="${BASTION_PROXY_SSH_READY_ATTEMPTS:-90}"
+BASTION_PROXY_SSH_READY_WAIT_SECONDS="${BASTION_PROXY_SSH_READY_WAIT_SECONDS:-1}"
 
 usage() {
   cat >&2 <<'EOF'
@@ -105,6 +107,13 @@ if [[ -z "$INSTANCE_SSH_KEY" || ! -f "$INSTANCE_SSH_KEY" ]]; then
   exit 1
 fi
 
+for integer_var in LOCAL_PORT LOCAL_PROXY_PORT REMOTE_PROXY_PORT BASTION_PROXY_SSH_READY_ATTEMPTS BASTION_PROXY_SSH_READY_WAIT_SECONDS; do
+  if ! [[ "${!integer_var}" =~ ^[0-9]+$ ]]; then
+    echo "$integer_var must be an integer, got: ${!integer_var}" >&2
+    exit 1
+  fi
+done
+
 if ! timeout 2 bash -c "</dev/tcp/$LOCAL_PROXY_HOST/$LOCAL_PROXY_PORT" >/dev/null 2>&1; then
   echo "No local HTTP proxy is listening on $LOCAL_PROXY_HOST:$LOCAL_PROXY_PORT." >&2
   echo "Start one first, then rerun this script." >&2
@@ -157,11 +166,19 @@ else
   BASTION_TUNNEL_PID="$!"
   STARTED_BASTION_TUNNEL="true"
 
-  for _ in {1..20}; do
+  for attempt in $(seq 1 "$BASTION_PROXY_SSH_READY_ATTEMPTS"); do
     if ssh_ready; then
       break
     fi
-    sleep 1
+    if ! kill -0 "$BASTION_TUNNEL_PID" >/dev/null 2>&1; then
+      echo "OCI Bastion SSH tunnel process exited before localhost:$LOCAL_PORT became ready." >&2
+      echo "Retry with: bash bin/oci_bastion_proxy_tunnel.sh --new-session" >&2
+      exit 1
+    fi
+    if (( attempt % 10 == 0 )); then
+      echo "Waiting for OCI Bastion SSH tunnel on localhost:$LOCAL_PORT ($attempt/$BASTION_PROXY_SSH_READY_ATTEMPTS)..."
+    fi
+    sleep "$BASTION_PROXY_SSH_READY_WAIT_SECONDS"
   done
 
   if ! ssh_ready; then

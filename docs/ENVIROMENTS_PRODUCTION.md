@@ -73,6 +73,9 @@ bash bin/oci_bastion_ssh.sh --new-session --no-ssh
 bash bin/oci_bastion_proxy_tunnel.sh
 ```
 
+If Bastion authentication fails or sessions get stale, use
+[Bastion Troubleshooting](BASTION_TROUBLESHOOTING.md).
+
 Current deployment prerequisites:
 
 - OCI infrastructure applied

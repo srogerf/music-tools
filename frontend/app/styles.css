@@ -16,10 +16,12 @@ body {
   font-family: "Alegreya Sans", "Trebuchet MS", sans-serif;
   background: radial-gradient(circle at top, #fff7e9 0%, #efe3d2 55%, #e7d7c4 100%);
   color: var(--ink);
+  min-width: 1100px;
 }
 
 main {
-  max-width: 1100px;
+  width: 100%;
+  min-width: 1100px;
   margin: 0 auto;
   padding: 32px 24px 48px;
 }
@@ -191,12 +193,46 @@ button {
 }
 
 .learning-controls {
-  grid-template-columns: minmax(180px, 1fr) auto auto;
+  grid-template-columns: minmax(360px, 1fr) auto auto;
 }
 
 .learning-guess-grid {
   grid-template-columns: auto auto minmax(80px, 1fr);
   justify-content: start;
+}
+
+.learning-family-picker {
+  min-width: 0;
+}
+
+.learning-family-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.learning-family-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  margin: 0;
+  padding: 6px 9px;
+  border: 1px solid #d7c7b3;
+  border-radius: 10px;
+  background: #fffdf8;
+  color: var(--ink);
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.learning-family-choice input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--accent);
 }
 
 .signature-picker-row {
@@ -412,8 +448,12 @@ button {
   padding: 10px;
   border-radius: 12px;
   background: linear-gradient(180deg, #fffdf8 0%, #f1e5d5 100%);
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 1 1 640px;
+  min-width: 640px;
+  display: flex;
+  align-items: center;
+  padding-top: 22px;
+  padding-bottom: 10px;
 }
 
 canvas {
@@ -422,8 +462,15 @@ canvas {
 
 .diagram-row {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 16px;
+}
+
+.side-panel-stack {
+  display: grid;
+  gap: 12px;
+  flex: 0 0 150px;
+  min-width: 150px;
 }
 
 .filter-panel {
@@ -442,10 +489,45 @@ canvas {
 }
 
 .filter-panel input[type="checkbox"] {
+  appearance: none;
   margin: 0;
   width: 18px;
   height: 18px;
   align-self: center;
+  border: 2px solid #6f5f4c;
+  border-radius: 4px;
+  background: #fffdf8;
+  display: grid;
+  place-content: center;
+}
+
+.filter-panel input[type="checkbox"]::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  transform: scale(0);
+  background: #4f6f52;
+}
+
+.filter-panel input[type="checkbox"]:checked::before {
+  transform: scale(1);
+}
+
+.filter-panel input[type="checkbox"]:disabled {
+  border-color: #b7aa9b;
+  background: #e3ddd5;
+}
+
+.filter-panel input[type="checkbox"]:disabled::before {
+  content: "x";
+  width: auto;
+  height: auto;
+  transform: none;
+  background: transparent;
+  color: #8e8172;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .filter-label {
@@ -454,11 +536,103 @@ canvas {
   align-self: center;
 }
 
+.filter-label-disabled {
+  color: #928575;
+  opacity: 0.65;
+}
+
 .filter-divider {
   grid-column: 1 / -1;
   height: 1px;
   background: #d7c7b3;
   margin: 2px 0;
+}
+
+.playback-panel {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fffdf8 0%, #f1e5d5 100%);
+  display: grid;
+  gap: 10px;
+}
+
+.playback-command-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.playback-button {
+  appearance: none;
+  border: 1px solid #9f6f44;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff8ef;
+  min-height: 36px;
+  padding: 6px 10px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.playback-speed {
+  display: grid;
+  gap: 6px;
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.playback-speed input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.playback-click {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.playback-click input {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+}
+
+.metronome-icon {
+  position: relative;
+  width: 17px;
+  height: 18px;
+  border: 2px solid #5f4a32;
+  border-top-width: 1px;
+  border-radius: 3px 3px 5px 5px;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.metronome-icon::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 3px;
+  width: 2px;
+  height: 11px;
+  background: #5f4a32;
+  transform: rotate(-15deg);
+  transform-origin: bottom center;
+}
+
+.metronome-icon::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  bottom: 2px;
+  width: 7px;
+  height: 2px;
+  background: #5f4a32;
 }
 
 .note-list {

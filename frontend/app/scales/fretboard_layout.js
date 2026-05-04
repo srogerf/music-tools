@@ -655,7 +655,7 @@ export function computeFretboardLayout({
     scale
   );
   const layoutRootIndex = rootIndex;
-  if (useThreeNps) {
+  if (useThreeNps && !positionLayout.per_string_frets) {
     const generated = computeThreeNpsLayout({
       rootIndex,
       pitchClassSet,

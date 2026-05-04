@@ -28,7 +28,21 @@ copy_if_missing() {
   fi
 }
 
+append_if_missing() {
+  local target_file="$1"
+  local key="$2"
+  local value="$3"
+
+  if ! grep -Eq "^[[:space:]]*${key}[[:space:]]*=" "$target_file"; then
+    printf '%s=%s\n' "$key" "$value" >>"$target_file"
+    echo "Added $key to $target_file"
+  fi
+}
+
 copy_if_missing "$ROOT_DIR/env/dev/postgres.env.example" "$ROOT_DIR/.private/env/dev/postgres.env"
 copy_if_missing "$ROOT_DIR/env/dev/runtime.env.example" "$ROOT_DIR/.private/env/dev/runtime.env"
 copy_if_missing "$ROOT_DIR/env/test/postgres.env.example" "$ROOT_DIR/.private/env/test/postgres.env"
 copy_if_missing "$ROOT_DIR/env/test/runtime.env.example" "$ROOT_DIR/.private/env/test/runtime.env"
+
+append_if_missing "$ROOT_DIR/.private/env/dev/runtime.env" "DEV_ENVIRONMENT_LABEL" "Dev"
+append_if_missing "$ROOT_DIR/.private/env/test/runtime.env" "TEST_ENVIRONMENT_LABEL" "Test"

@@ -1,5 +1,27 @@
 export const CAGED_SHAPES = ["C", "A", "G", "E", "D"];
 
+export const THREE_NPS_SHAPES = ["C", "A", "A2", "G", "E", "D", "D2"];
+
+export const POSITION_LABELS = {
+  C: "C",
+  A: "A",
+  A2: "A-2",
+  G: "G",
+  E: "E",
+  D: "D",
+  D2: "D-2",
+};
+
+export const THREE_NPS_POSITION_LABELS = {
+  C: "C",
+  A: "A-1",
+  A2: "A-2",
+  G: "G",
+  E: "E",
+  D: "D-1",
+  D2: "D-2",
+};
+
 export const CAGED_BASE_STARTS = {
   // Base start frets for key of C (4-fret boxes).
   // Other keys transpose this start by the key interval.

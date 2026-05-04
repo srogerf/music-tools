@@ -7,7 +7,7 @@ CREATE TABLE schema_metadata (
 );
 
 INSERT INTO schema_metadata (singleton, schema_version, seed_data_format_version)
-VALUES (TRUE, 4, NULL);
+VALUES (TRUE, 5, NULL);
 
 CREATE TABLE scale_types (
     id BIGSERIAL PRIMARY KEY,
@@ -85,7 +85,7 @@ CREATE TABLE scale_layout_positions (
     fret_span SMALLINT,
     validated_manual BOOLEAN NOT NULL DEFAULT FALSE,
     UNIQUE (scale_layout_id, position_code),
-    CHECK (position_code IN ('C', 'A', 'G', 'E', 'D')),
+    CHECK (position_code IN ('C', 'A', 'A2', 'G', 'E', 'D', 'D2')),
     CHECK (mode IN ('range', 'split')),
     CHECK (
         (mode = 'range' AND start_fret IS NOT NULL AND fret_span IS NOT NULL)

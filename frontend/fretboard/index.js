@@ -114,7 +114,7 @@ export function createFretboard(canvas, optionsOverride) {
 
   function drawGuitar() {
     ctx.fillStyle = "#dedede";
-    ctx.strokeStyle = "#000000";
+    ctx.strokeStyle = "#8f8a82";
     ctx.lineWidth = 1;
     const rawPath = `M${options.origin.x} ${options.origin.y}h${size.w} v${size.h} H${options.origin.x} Z`;
     const svgPath = new Path2D(rawPath);
@@ -150,6 +150,7 @@ export function createFretboard(canvas, optionsOverride) {
   function drawString(x, y, length, weight) {
     const rawPath = `M${x} ${y} h${length}`;
     const svgPath = new Path2D(rawPath);
+    ctx.strokeStyle = "#000000";
     ctx.lineWidth = weight;
     ctx.stroke(svgPath);
   }

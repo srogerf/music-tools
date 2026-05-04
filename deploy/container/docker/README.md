@@ -149,6 +149,8 @@ The shell wrappers for this flow are:
 ```bash
 bash bin/production_image_build.sh --tag sha-<git-sha>
 bash bin/production_image_push.sh --tag sha-<git-sha>
+bash bin/production_db_upgrade_scale_layout_positions.sh
+bash bin/production_db_seed.sh
 bash bin/production_deploy.sh --tag sha-<git-sha>
 ```
 
@@ -162,5 +164,7 @@ listener is enabled in Terraform.
 
 Migrations should run separately from the always-on Compose runtime.
 
-The current repo does not yet include a migration runner container or deploy
-script. That should be added as a separate step in CI or release automation.
+The production deploy wrapper verifies the live database before changing the
+running containers. It stops unless the schema version and seed data format
+match `db/postgres/versions.json`, which keeps required migration and seed
+steps from being skipped during release.

@@ -48,6 +48,42 @@ func TestDefinitionsIncludeFunctionalIntervals(t *testing.T) {
 			t.Fatalf("minor pentatonic interval %d: expected %+v, got %+v", i, interval, scale.Intervals[i])
 		}
 	}
+
+	blues, ok := set.ByName("Minor Blues")
+	if !ok {
+		t.Fatalf("expected to find Minor Blues")
+	}
+	expected = []ScaleInterval{
+		{Semitones: 0, Degree: 1},
+		{Semitones: 3, Degree: 3},
+		{Semitones: 5, Degree: 4},
+		{Semitones: 6, Degree: 5},
+		{Semitones: 7, Degree: 5},
+		{Semitones: 10, Degree: 7},
+	}
+	for i, interval := range expected {
+		if blues.Intervals[i] != interval {
+			t.Fatalf("minor blues interval %d: expected %+v, got %+v", i, interval, blues.Intervals[i])
+		}
+	}
+
+	blues, ok = set.ByName("Major Blues")
+	if !ok {
+		t.Fatalf("expected to find Major Blues")
+	}
+	expected = []ScaleInterval{
+		{Semitones: 0, Degree: 1},
+		{Semitones: 2, Degree: 2},
+		{Semitones: 3, Degree: 3},
+		{Semitones: 4, Degree: 3},
+		{Semitones: 7, Degree: 5},
+		{Semitones: 9, Degree: 6},
+	}
+	for i, interval := range expected {
+		if blues.Intervals[i] != interval {
+			t.Fatalf("major blues interval %d: expected %+v, got %+v", i, interval, blues.Intervals[i])
+		}
+	}
 }
 
 func TestByName(t *testing.T) {

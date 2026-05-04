@@ -51,6 +51,405 @@
           "validated_manual": true
         }
       },
+      "tuning": "Standard",
+      "family_code": "standard"
+    },
+    {
+      "family_code": "3nps",
+      "positions": {
+        "D": {
+          "mode": "split",
+          "split_ranges": [
+            {
+              "start": 8,
+              "span": 5,
+              "strings": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            {
+              "start": 10,
+              "span": 5,
+              "strings": [
+                4,
+                5
+              ]
+            }
+          ],
+          "per_string_frets": {
+            "0": [
+              8,
+              10,
+              12
+            ],
+            "1": [
+              9,
+              10,
+              12
+            ],
+            "2": [
+              9,
+              10,
+              12
+            ],
+            "3": [
+              9,
+              11,
+              12
+            ],
+            "4": [
+              10,
+              12,
+              13
+            ],
+            "5": [
+              10,
+              12,
+              14
+            ]
+          },
+          "validated_manual": true
+        },
+        "D2": {
+          "mode": "split",
+          "split_ranges": [
+            {
+              "start": 10,
+              "span": 5,
+              "strings": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            {
+              "start": 12,
+              "span": 4,
+              "strings": [
+                4,
+                5
+              ]
+            }
+          ],
+          "per_string_frets": {
+            "0": [
+              10,
+              12,
+              14
+            ],
+            "1": [
+              10,
+              12,
+              14
+            ],
+            "2": [
+              10,
+              12,
+              14
+            ],
+            "3": [
+              11,
+              12,
+              14
+            ],
+            "4": [
+              12,
+              13,
+              15
+            ],
+            "5": [
+              12,
+              14,
+              15
+            ]
+          },
+          "validated_manual": true
+        },
+        "C": {
+          "mode": "split",
+          "split_ranges": [
+            {
+              "start": 0,
+              "span": 5,
+              "strings": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            {
+              "start": 1,
+              "span": 5,
+              "strings": [
+                4,
+                5
+              ]
+            }
+          ],
+          "per_string_frets": {
+            "0": [
+              0,
+              2,
+              3
+            ],
+            "1": [
+              0,
+              2,
+              3
+            ],
+            "2": [
+              0,
+              2,
+              4
+            ],
+            "3": [
+              0,
+              2,
+              4
+            ],
+            "4": [
+              1,
+              3,
+              5
+            ],
+            "5": [
+              2,
+              3,
+              5
+            ]
+          },
+          "validated_manual": true
+        },
+        "A": {
+          "mode": "split",
+          "split_ranges": [
+            {
+              "start": 2,
+              "span": 4,
+              "strings": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            {
+              "start": 3,
+              "span": 5,
+              "strings": [
+                4,
+                5
+              ]
+            }
+          ],
+          "per_string_frets": {
+            "0": [
+              2,
+              3,
+              5
+            ],
+            "1": [
+              2,
+              3,
+              5
+            ],
+            "2": [
+              2,
+              4,
+              5
+            ],
+            "3": [
+              2,
+              4,
+              5
+            ],
+            "4": [
+              3,
+              5,
+              7
+            ],
+            "5": [
+              3,
+              5,
+              7
+            ]
+          },
+          "validated_manual": true
+        },
+        "A2": {
+          "mode": "split",
+          "split_ranges": [
+            {
+              "start": 3,
+              "span": 5,
+              "strings": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            {
+              "start": 5,
+              "span": 4,
+              "strings": [
+                4,
+                5
+              ]
+            }
+          ],
+          "per_string_frets": {
+            "0": [
+              3,
+              5,
+              7
+            ],
+            "1": [
+              3,
+              5,
+              7
+            ],
+            "2": [
+              4,
+              5,
+              7
+            ],
+            "3": [
+              4,
+              5,
+              7
+            ],
+            "4": [
+              5,
+              7,
+              8
+            ],
+            "5": [
+              5,
+              7,
+              8
+            ]
+          },
+          "validated_manual": true
+        },
+        "G": {
+          "mode": "split",
+          "split_ranges": [
+            {
+              "start": 5,
+              "span": 5,
+              "strings": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            {
+              "start": 7,
+              "span": 4,
+              "strings": [
+                4,
+                5
+              ]
+            }
+          ],
+          "per_string_frets": {
+            "0": [
+              5,
+              7,
+              8
+            ],
+            "1": [
+              5,
+              7,
+              9
+            ],
+            "2": [
+              5,
+              7,
+              9
+            ],
+            "3": [
+              5,
+              7,
+              9
+            ],
+            "4": [
+              7,
+              8,
+              10
+            ],
+            "5": [
+              7,
+              8,
+              10
+            ]
+          },
+          "validated_manual": true
+        },
+        "E": {
+          "mode": "split",
+          "split_ranges": [
+            {
+              "start": 7,
+              "span": 5,
+              "strings": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            {
+              "start": 8,
+              "span": 5,
+              "strings": [
+                4,
+                5
+              ]
+            }
+          ],
+          "per_string_frets": {
+            "0": [
+              7,
+              8,
+              10
+            ],
+            "1": [
+              7,
+              9,
+              10
+            ],
+            "2": [
+              7,
+              9,
+              10
+            ],
+            "3": [
+              7,
+              9,
+              11
+            ],
+            "4": [
+              8,
+              10,
+              12
+            ],
+            "5": [
+              8,
+              10,
+              12
+            ]
+          },
+          "validated_manual": true
+        }
+      },
       "tuning": "Standard"
     }
   ],

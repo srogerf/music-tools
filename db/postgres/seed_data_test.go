@@ -211,6 +211,39 @@ func TestResetAndSeedRequiresExistingSchema(t *testing.T) {
 	}
 }
 
+func TestProductionDeployRequiresCurrentDatabase(t *testing.T) {
+	root := repoRoot(t)
+	data, err := os.ReadFile(filepath.Join(root, "bin", "production_deploy.sh"))
+	if err != nil {
+		t.Fatalf("read production_deploy.sh: %v", err)
+	}
+	if !strings.Contains(string(data), "bash \"$ROOT_DIR/bin/production_db_assert_current.sh\"") {
+		t.Fatalf("expected production deploy to assert current production database before deploy")
+	}
+}
+
+func TestProductionScaleLayoutUpgradeClearsSeedVersion(t *testing.T) {
+	root := repoRoot(t)
+	data, err := os.ReadFile(filepath.Join(root, "bin", "production_db_upgrade_scale_layout_positions.sh"))
+	if err != nil {
+		t.Fatalf("read production_db_upgrade_scale_layout_positions.sh: %v", err)
+	}
+	text := string(data)
+	checks := []string{
+		"expected production schema version 4 or 5",
+		"DROP CONSTRAINT IF EXISTS scale_layout_positions_position_code_check",
+		"CHECK (position_code IN ('C', 'A', 'A2', 'G', 'E', 'D', 'D2'))",
+		"SET schema_version = 5",
+		"WHEN schema_version = 4 THEN NULL",
+		"Next required step: bash bin/production_db_seed.sh",
+	}
+	for _, needle := range checks {
+		if !strings.Contains(text, needle) {
+			t.Fatalf("expected production scale layout upgrade script to contain %q", needle)
+		}
+	}
+}
+
 func TestRebuildSchemaHasEnvironmentFailsafes(t *testing.T) {
 	root := repoRoot(t)
 	data, err := os.ReadFile(filepath.Join(root, "db", "postgres", "rebuild_schema.sh"))
