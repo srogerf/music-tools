@@ -25,6 +25,15 @@ Keep changes small, safe, and well-scoped. Prefer clarity over cleverness.
 - Summarize what changed and why
 - List files touched
 
+## Commits
+- Before creating any commit, inspect recent Git history so commit messages
+  follow the existing repo convention
+- When the user asks for a milestone commit, find the latest commit matching
+  `milestone N:` and use the next integer
+- Milestone commit message format:
+  `milestone N: short description`
+- Never create an unnumbered `milestone:` commit
+
 ## Tests
 - Only run tests when asked or when the change is risky
 - If not run, say so

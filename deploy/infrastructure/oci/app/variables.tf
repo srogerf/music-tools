@@ -157,7 +157,7 @@ variable "health_check_port" {
 }
 
 variable "enable_https_listener" {
-  description = "Whether to create the HTTPS passthrough listener/backend on port 443. Leave false until the host serves TLS on 443."
+  description = "Whether to create the HTTPS passthrough listener/backend on port 443. Enable when the host nginx runtime serves TLS on 443."
   type        = bool
   default     = false
 }

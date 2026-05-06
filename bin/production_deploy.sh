@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="${PRODUCTION_ENV_FILE:-$ROOT_DIR/.private/deploy/production.env}"
 IMAGE_TAG_OVERRIDE=""
+MANIFEST_FILE="$ROOT_DIR/build/test/artifact-manifest.json"
 
 usage() {
   cat >&2 <<'EOF'
@@ -83,7 +84,19 @@ source "$BASTION_ENV_FILE"
 
 INSTANCE_SSH_KEY="${INSTANCE_SSH_KEY:-${SSH_KEY:-}}"
 LOCAL_PORT="${LOCAL_PORT:-2222}"
-IMAGE_TAG="${IMAGE_TAG_OVERRIDE:-${IMAGE_TAG:-}}"
+
+if [[ ! -f "$MANIFEST_FILE" ]]; then
+  echo "Missing artifact manifest: $MANIFEST_FILE" >&2
+  echo "Run bash bin/build_artifacts.sh first, or build the image with --build-artifacts." >&2
+  exit 1
+fi
+
+manifest_value() {
+  local key="$1"
+  grep -E "\"$key\"[[:space:]]*:" "$MANIFEST_FILE" | head -n 1 | sed -E 's/^[^:]*:[[:space:]]*//; s/[[:space:]]*,?[[:space:]]*$//; s/^\"//; s/\"$//'
+}
+
+IMAGE_TAG="${IMAGE_TAG_OVERRIDE:-${IMAGE_TAG:-$(manifest_value artifact_id)}}"
 TEMP_COMPOSE_ENV="$(mktemp)"
 
 cleanup() {

@@ -218,9 +218,15 @@ Guidance:
 - destructive rebuild is not an acceptable production upgrade path
 - each schema version change should have a documented upgrade procedure
 
-Current schema version 3 to 4 wrapper:
+Current production schema upgrade wrappers:
 
 - `bash bin/production_db_upgrade_scale_intervals.sh`
+- `bash bin/production_db_upgrade_scale_layout_positions.sh`
+
+After a schema upgrade that changes reference-data compatibility, run:
+
+- `bash bin/production_db_seed.sh`
+- `bash bin/production_db_assert_current.sh`
 
 ## Version Contract
 

@@ -76,13 +76,31 @@ h1 {
   align-items: center;
   gap: 8px;
   margin: 0;
+  padding: 8px 10px;
+  border: 1px solid #d7c7b3;
+  border-radius: 12px;
+  background: #fff8ee;
   color: #4c4339;
   font-size: 0.95rem;
   font-weight: 800;
   white-space: nowrap;
 }
 
-.learning-mode-switch input {
+.mode-switch-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mode-switch-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.mode-switch-option input {
   width: 18px;
   height: 18px;
   margin: 0;
@@ -203,12 +221,90 @@ button {
 
 .learning-family-picker {
   min-width: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
 }
 
 .learning-family-list {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.control-label-inline {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.finder-results-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.finder-result-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.finder-result-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 7px 8px;
+  color: inherit;
+  box-shadow: none;
+  min-height: 0;
+}
+
+.finder-result-row:hover {
+  background: #fff9f0;
+  border-color: #e4d2be;
+}
+
+.finder-result-row:focus-visible {
+  outline: 2px solid #b86f3f;
+  outline-offset: 2px;
+}
+
+.finder-summary {
+  margin-bottom: -6px;
+}
+
+.finder-controls {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.finder-controls .secondary-button {
+  flex: 0 0 auto;
+  justify-self: end;
+}
+
+.finder-controls .secondary-button:first-of-type {
+  justify-self: end;
+}
+
+.finder-interval-picker {
+  min-width: 0;
+  justify-self: center;
+}
+
+.finder-interval-grid {
+  margin-left: 0;
+  gap: 4px;
 }
 
 .learning-family-choice {
@@ -388,8 +484,8 @@ button {
 
 .learning-result {
   display: grid;
-  gap: 8px;
-  padding: 12px;
+  gap: 6px;
+  padding: 10px;
   border-radius: 10px;
   background: #fff4e5;
 }

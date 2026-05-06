@@ -1,0 +1,30 @@
+[
+  {
+    "key": "C",
+    "scale": "Dorian",
+    "expected_notes": ["C", "D", "Eb", "F", "G", "A", "Bb"],
+    "expected_signature": "2 flats: Bb, Eb",
+    "expected_outside_key_signature": []
+  },
+  {
+    "key": "F#",
+    "scale": "Harmonic Minor",
+    "expected_notes": ["F#", "G#", "A", "B", "C#", "D", "E#"],
+    "expected_signature": "3 sharps: F#, C#, G#",
+    "expected_outside_key_signature": ["A", "B", "D", "E#"]
+  },
+  {
+    "key": "Eb",
+    "scale": "Melodic Minor",
+    "expected_notes": ["Eb", "F", "Gb", "Ab", "Bb", "C", "D"],
+    "expected_signature": "6 flats: Bb, Eb, Ab, Db, Gb, Cb",
+    "expected_outside_key_signature": ["C", "D"]
+  },
+  {
+    "key": "C",
+    "scale": "Double Harmonic Major",
+    "expected_notes": ["C", "Db", "E", "F", "G", "Ab", "B"],
+    "expected_signature": "No sharps or flats",
+    "expected_outside_key_signature": ["Db", "Ab"]
+  }
+]

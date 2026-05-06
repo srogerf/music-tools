@@ -16,6 +16,8 @@ Each concern now has its own more focused document.
 
 - Database deployment:
   `docs/DEPLOY_DATABASE.md`
+- Production release runbook:
+  `docs/PRODUCTION_RELEASE.md`
 - Container build and rollout direction:
   `deploy/CONTAINER_DEPLOYMENT.md`
 - Deploy directory layout:

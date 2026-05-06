@@ -62,6 +62,57 @@ function ExamplePage({ tuningLabels, trimmedLayout }) {
 - Use `frontend/fretboard/index.js` when you need the low-level canvas API directly.
 - Use `SharedFretboard` for React pages so rendering behavior stays consistent across features.
 
+## `SharedFretboardLayout`
+
+`SharedFretboardLayout` is the higher-level wrapper for trimmed fretboard
+layouts. It combines layout trimming, optional degree-class filtering, and the
+shared canvas renderer in one component.
+
+### Props
+
+- `active`
+  - When `true`, the widget draws the current board state.
+- `className`
+  - Wrapper class name. Defaults to `canvas-wrap`.
+- `canvasClassName`
+  - Optional class name for the `<canvas>` element.
+- `layout`
+  - The raw layout object to trim and draw.
+- `positionStart`
+  - The first fret number represented by the layout.
+- `fretCount`
+  - The width of the layout before trimming.
+- `visibleDegreeClasses`
+  - Optional `Set` of degree classes to keep visible.
+- `options`
+  - Base renderer options passed to `createFretboard(...)`.
+
+### Example
+
+```js
+import React, { useMemo } from "https://esm.sh/react@18";
+import { SharedFretboardLayout } from "shared-fretboard-layout-widget";
+
+function ExamplePage({ layout, tuningLabels }) {
+  const options = useMemo(
+    () => ({
+      stringCount: tuningLabels.length || 6,
+      tuningLabels,
+    }),
+    [tuningLabels]
+  );
+
+  return React.createElement(SharedFretboardLayout, {
+    active: true,
+    layout,
+    positionStart: 3,
+    fretCount: 5,
+    visibleDegreeClasses: new Set([1, 3, 5, 7]),
+    options,
+  });
+}
+```
+
 ## `shared-fretboard-layout`
 
 `shared-fretboard-layout` contains generic fretboard-view helpers that are not tied to scales,

@@ -283,14 +283,12 @@ Reasons:
 - it adds nginx challenge-path behavior that DNS-01 avoids
 - it does not support wildcard certificates if they become useful later
 
-## Next Steps
+## Current Follow-Ups
 
-- add a private local environment file for GoDaddy API credentials
-- add certificate helper code under `deploy/certificates/` if `lego` alone is
-  not enough
-- add a local/control-machine wrapper around `lego`
-- add a private local certificate output path
-- add a wrapper to copy cert files over Bastion to `/srv/rifferone/certs`
-- add nginx `443 ssl` config and cert mounts
-- enable OCI load balancer `443` passthrough after host TLS is verified
-- add renewal and nginx reload automation
+- keep private GoDaddy and Let's Encrypt environment files under
+  `.private/certificates/`
+- use `bash bin/certificate_issue.sh --production` for production issuance
+- use `bash bin/production_certificate_deploy.sh` to copy certificate material
+  to `/srv/rifferone/certs`
+- keep renewal and nginx reload automation as the next certificate lifecycle
+  hardening step

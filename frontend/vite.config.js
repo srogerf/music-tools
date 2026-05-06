@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => {
         fretboard: resolve(rootDir, "fretboard/index.js"),
         "shared-fretboard": resolve(rootDir, "app/widgets/fretboard_widget.js"),
         "shared-fretboard-layout": resolve(rootDir, "app/widgets/fretboard_layout.js"),
-        "fretboard-layout": resolve(rootDir, "app/scales/fretboard_layout.js"),
+        "fretboard-layout": resolve(rootDir, "fretboard/fretboard_layout.js"),
         "scales-layout": resolve(rootDir, "app/scales/scales_layout.js"),
         "scales-page": resolve(rootDir, "app/scales/scales_page.js")
       }

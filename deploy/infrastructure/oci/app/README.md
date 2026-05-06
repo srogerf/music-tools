@@ -106,11 +106,10 @@ intended admin path.
 
 ## Public Ports
 
-The public load balancer intentionally listens on `80`.
-
-Port `443` is optional and disabled by default in Terraform until the host is
-actually serving TLS on `443`. Do not enable the passthrough `443` listener
-until the application stack or a reverse proxy on the instance terminates TLS.
+The public load balancer listens on `80` and can pass through `443` to the
+production nginx reverse proxy. Port `80` remains useful for HTTP entry and
+redirect behavior. Port `443` depends on nginx serving TLS with deployed
+certificate material on the host.
 
 ## Important Caveat
 

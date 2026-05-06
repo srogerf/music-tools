@@ -205,16 +205,20 @@ text/code column is enough to start.
 
 ### Position Model For 3NPS
 
-3NPS positions should continue to use the existing position codes:
+3NPS positions use the CAGED anchor names plus alternate numbered positions
+where needed:
 
 - `C`
 - `A`
+- `A2`
 - `G`
 - `E`
 - `D`
+- `D2`
 
 These remain anchor names, not claims that the resulting pattern is a classic
-CAGED box. Each of these shapes should support two layout options:
+CAGED box. `A2` and `D2` capture additional 3NPS positions that map near those
+anchors. Each supported position can expose two layout options:
 
 - `standard`
 - `3nps`

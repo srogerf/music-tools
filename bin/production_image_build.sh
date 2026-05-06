@@ -4,18 +4,20 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="${PRODUCTION_ENV_FILE:-$ROOT_DIR/.private/deploy/production.env}"
 IMAGE_TAG_OVERRIDE=""
-SKIP_ARTIFACTS="false"
+BUILD_ARTIFACTS="false"
+MANIFEST_FILE="$ROOT_DIR/build/test/artifact-manifest.json"
 
 usage() {
   cat >&2 <<'EOF'
-Usage: bash bin/production_image_build.sh [--tag TAG] [--skip-artifacts]
+Usage: bash bin/production_image_build.sh [--tag TAG] [--build-artifacts]
 
 Builds the production application image for GHCR from the verified build/test
 artifacts.
 
 Defaults:
   --env-file via PRODUCTION_ENV_FILE or .private/deploy/production.env
-  tag from IMAGE_TAG or sha-<git-sha>
+  tag from IMAGE_TAG or the artifact manifest's artifact_id
+  reuse existing build/test artifacts unless --build-artifacts is provided
 EOF
 }
 
@@ -25,8 +27,8 @@ while [[ $# -gt 0 ]]; do
       IMAGE_TAG_OVERRIDE="${2:-}"
       shift 2
       ;;
-    --skip-artifacts)
-      SKIP_ARTIFACTS="true"
+    --build-artifacts)
+      BUILD_ARTIFACTS="true"
       shift
       ;;
     --help|-h)
@@ -51,16 +53,35 @@ fi
 source "$ENV_FILE"
 
 GHCR_IMAGE_REPO="${GHCR_IMAGE_REPO:-ghcr.io/srogerf/music-tools/rifferone}"
-IMAGE_TAG="${IMAGE_TAG_OVERRIDE:-${IMAGE_TAG:-sha-$(git -C "$ROOT_DIR" rev-parse --short=12 HEAD)}}"
 
 bash "$ROOT_DIR/bin/localhost_docker_access_check.sh"
 
-if [[ "$SKIP_ARTIFACTS" != "true" ]]; then
+if [[ "$BUILD_ARTIFACTS" == "true" ]]; then
   bash "$ROOT_DIR/bin/build_artifacts.sh"
 fi
 
+if [[ ! -f "$MANIFEST_FILE" ]]; then
+  echo "Missing artifact manifest: $MANIFEST_FILE" >&2
+  echo "Run bash bin/build_artifacts.sh first, or pass --build-artifacts." >&2
+  exit 1
+fi
+
+manifest_value() {
+  local key="$1"
+  grep -E "\"$key\"[[:space:]]*:" "$MANIFEST_FILE" | head -n 1 | sed -E 's/^[^:]*:[[:space:]]*//; s/[[:space:]]*,?[[:space:]]*$//; s/^\"//; s/\"$//'
+}
+
+IMAGE_TAG="${IMAGE_TAG_OVERRIDE:-${IMAGE_TAG:-$(manifest_value artifact_id)}}"
+GIT_REVISION="$(manifest_value git_commit)"
+BUILD_UTC="$(manifest_value build_utc)"
+MANIFEST_SHA256="$(sha256sum "$MANIFEST_FILE" | awk '{print $1}')"
+
 docker build \
   -t "$GHCR_IMAGE_REPO:$IMAGE_TAG" \
+  --label "org.opencontainers.image.revision=$GIT_REVISION" \
+  --label "org.opencontainers.image.created=$BUILD_UTC" \
+  --label "com.rifferone.artifact.id=$IMAGE_TAG" \
+  --label "com.rifferone.artifact.manifest-sha256=$MANIFEST_SHA256" \
   -f "$ROOT_DIR/deploy/container/docker/rifferOne/Dockerfile" \
   "$ROOT_DIR"
 

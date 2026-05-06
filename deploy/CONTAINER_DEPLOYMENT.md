@@ -163,23 +163,23 @@ Recommended flow:
    `docker compose up -d rifferone` for normal app deploys.
 8. Post-deploy smoke checks verify the app is healthy.
 
-At the moment, the production container should publish on host port `80` so it
-matches the active OCI load balancer backend. Leave the optional `443`
-passthrough path disabled until the host is configured to serve TLS on `443`.
+The production nginx container publishes host ports `80` and `443`. Port `80`
+is retained for HTTP entry and redirect behavior, while nginx terminates HTTPS
+on `443` when certificate material is deployed on the host.
 
 ## GHCR Release Shape
 
 Recommended image naming:
 
 - `ghcr.io/srogerf/music-tools/rifferone:main`
-- `ghcr.io/srogerf/music-tools/rifferone:sha-<git-sha>`
+- `ghcr.io/srogerf/music-tools/rifferone:<artifact-id>`
 - optionally `ghcr.io/srogerf/music-tools/rifferone:vX.Y.Z` for explicit releases
 
 Recommended publish model:
 
 - publish from GitHub Actions after the normal CI checks pass
 - authenticate to GHCR with the workflow `GITHUB_TOKEN`
-- push at least an immutable SHA tag
+- push at least one immutable artifact-id tag
 - optionally move `main` or release tags after a successful publish
 
 Recommended pull model on the OCI host:
@@ -209,12 +209,17 @@ write that Docker daemon proxy config.
 The current shell wrappers for this flow are:
 
 ```bash
-bash bin/production_image_build.sh --tag sha-<git-sha>
-bash bin/production_image_push.sh --tag sha-<git-sha>
+bash bin/production_image_build.sh
+bash bin/production_image_push.sh
 bash bin/production_db_upgrade_scale_layout_positions.sh
 bash bin/production_db_seed.sh
-bash bin/production_deploy.sh --tag sha-<git-sha>
+bash bin/production_deploy.sh
 ```
+
+`bin/build_artifacts.sh` produces `build/test/artifact-manifest.json`, which
+is the release identity used by the production image build.
+
+For the full operator runbook, use `docs/PRODUCTION_RELEASE.md`.
 
 `production_deploy.sh` runs `production_db_assert_current.sh` before staging or
 restarting containers. If the production schema version or seed data format

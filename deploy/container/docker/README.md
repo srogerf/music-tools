@@ -53,6 +53,10 @@ bundle. The Dockerfile expects these files:
 
 - `build/test/server/rifferone`
 - `build/test/frontend/app/`
+- `build/test/artifact-manifest.json`
+
+The artifact manifest records the git revision, artifact hashes, and database
+version metadata used by the release image.
 
 ## Local Integration Environment
 
@@ -147,18 +151,21 @@ variables alone are not enough for `docker login`, `docker pull`, or
 The shell wrappers for this flow are:
 
 ```bash
-bash bin/production_image_build.sh --tag sha-<git-sha>
-bash bin/production_image_push.sh --tag sha-<git-sha>
+bash bin/production_image_build.sh
+bash bin/production_image_push.sh
 bash bin/production_db_upgrade_scale_layout_positions.sh
 bash bin/production_db_seed.sh
-bash bin/production_deploy.sh --tag sha-<git-sha>
+bash bin/production_deploy.sh
 ```
 
-For the current OCI load balancer setup, the production host should publish the
-nginx reverse proxy on host port `80`, with the application reachable only on
-the internal Compose network at `rifferone:8080`. Do not rely on port `443`
-until TLS handling is added on the instance and the optional HTTPS passthrough
-listener is enabled in Terraform.
+For the full production release sequence, use
+`docs/PRODUCTION_RELEASE.md`.
+
+For the current OCI load balancer setup, the production host publishes the
+nginx reverse proxy on host ports `80` and `443`, with the application
+reachable only on the internal Compose network at `rifferone:8080`. Port `443`
+depends on the production certificate files being present at the configured
+host certificate path.
 
 ## Migration Note
 

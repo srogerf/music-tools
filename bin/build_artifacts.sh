@@ -20,5 +20,6 @@ fi
 
 bash "$ROOT_DIR/bin/build_frontend.sh"
 bash "$ROOT_DIR/bin/build_server.sh"
+bash "$ROOT_DIR/bin/build_artifact_manifest.sh"
 
 echo "Test artifacts are ready under $ROOT_DIR/build/test"

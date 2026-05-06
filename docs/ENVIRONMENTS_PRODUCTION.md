@@ -54,11 +54,20 @@ This document describes the current production deployment model.
 Typical release wrappers:
 
 ```bash
-bash bin/production_db_upgrade_scale_intervals.sh
-bash bin/production_image_build.sh --tag sha-<git-sha>
-bash bin/production_image_push.sh --tag sha-<git-sha>
-bash bin/production_deploy.sh --tag sha-<git-sha>
+bash bin/production_db_upgrade_scale_layout_positions.sh
+bash bin/production_db_seed.sh
+bash bin/production_db_assert_current.sh
+bash bin/production_image_build.sh
+bash bin/production_image_push.sh
+bash bin/production_deploy.sh
 ```
+
+`bin/build_artifacts.sh` now writes `build/test/artifact-manifest.json`, and
+the production image build uses that manifest's `artifact_id` as the default
+image tag.
+
+For the full production release sequence, use
+[Production Release](PRODUCTION_RELEASE.md).
 
 Generate and copy back a private GoAccess report:
 
@@ -91,10 +100,15 @@ Current deployment prerequisites:
 - image pulls currently depend on a Bastion-assisted proxy path because the host
   does not have general NAT egress
 - the runtime is intentionally Docker Compose rather than a larger orchestrator
-- database migrations are a separate concern and are not yet fully wired into
-  the release flow
+- database migrations and reference-data seeding are explicit release steps
+- keeping production static paths as narrow as possible may help reduce the
+  exposed surface area for unexpected file access
+- `production_deploy.sh` verifies the live database with
+  `production_db_assert_current.sh` before changing containers
 - nginx has a separate root config so `http`-level rate-limit zones can be
   shared by the production server config
+- nginx terminates HTTPS on host port `443` when certificate material has been
+  deployed to the configured production certificate path
 - GoAccess is available as an operator report against nginx access logs; it is
   not exposed publicly by default
 
@@ -113,8 +127,10 @@ Current deployment prerequisites:
 
 ## Debugging Checklist
 
-- confirm the load balancer and host port mapping still agree on port `80`
-- confirm `rifferone-nginx` is the container publishing host port `80`
+- confirm the load balancer and host port mappings still agree on ports `80`
+  and `443`
+- confirm `rifferone-nginx` is the container publishing host ports `80` and
+  `443`
 - confirm the Bastion SSH tunnel is active before deployment
 - confirm the reverse proxy tunnel is active before deployment
 - confirm the remote host can `curl https://ghcr.io/v2/` when proxy variables
@@ -128,6 +144,6 @@ Current deployment prerequisites:
 
 - keep pull and push tokens separate where practical
 - rotate tokens immediately if they appear in terminal traces
-- avoid relying on port `443` until the TLS path is intentionally implemented
+- confirm certificate files are present before relying on port `443`
 - prefer generic design notes in shared docs; keep real IPs, tokens, and host
   specifics under `.private/`

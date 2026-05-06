@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="${PRODUCTION_ENV_FILE:-$ROOT_DIR/.private/deploy/production.env}"
 IMAGE_TAG_OVERRIDE=""
+MANIFEST_FILE="$ROOT_DIR/build/test/artifact-manifest.json"
 
 usage() {
   cat >&2 <<'EOF'
@@ -13,7 +14,7 @@ Pushes a previously built production image to GHCR.
 
 Defaults:
   --env-file via PRODUCTION_ENV_FILE or .private/deploy/production.env
-  tag from IMAGE_TAG or sha-<git-sha>
+  tag from IMAGE_TAG or the artifact manifest's artifact_id
 EOF
 }
 
@@ -47,7 +48,19 @@ source "$ENV_FILE"
 GHCR_IMAGE_REPO="${GHCR_IMAGE_REPO:-ghcr.io/srogerf/music-tools/rifferone}"
 GHCR_USER="${GHCR_USER:-}"
 GHCR_PUSH_TOKEN="${GHCR_PUSH_TOKEN:-${GHCR_TOKEN:-}}"
-IMAGE_TAG="${IMAGE_TAG_OVERRIDE:-${IMAGE_TAG:-sha-$(git -C "$ROOT_DIR" rev-parse --short=12 HEAD)}}"
+
+if [[ ! -f "$MANIFEST_FILE" ]]; then
+  echo "Missing artifact manifest: $MANIFEST_FILE" >&2
+  echo "Run bash bin/build_artifacts.sh first, or build the image with --build-artifacts." >&2
+  exit 1
+fi
+
+manifest_value() {
+  local key="$1"
+  grep -E "\"$key\"[[:space:]]*:" "$MANIFEST_FILE" | head -n 1 | sed -E 's/^[^:]*:[[:space:]]*//; s/[[:space:]]*,?[[:space:]]*$//; s/^\"//; s/\"$//'
+}
+
+IMAGE_TAG="${IMAGE_TAG_OVERRIDE:-${IMAGE_TAG:-$(manifest_value artifact_id)}}"
 
 if [[ -z "$GHCR_USER" || -z "$GHCR_PUSH_TOKEN" ]]; then
   echo "Set GHCR_USER and GHCR_PUSH_TOKEN in $ENV_FILE before pushing." >&2
