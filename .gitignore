@@ -80,6 +80,7 @@ env/**/*.env
 deploy/container/docker/*.env
 !deploy/container/docker/*.env.example
 docs/FEATURES.local.md
+docs/PROGRESSIONS.local.md
 
 # Terraform local files
 *.tfstate

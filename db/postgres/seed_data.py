@@ -4,7 +4,7 @@ import glob
 import json
 import os
 import sys
-from typing import Any
+from typing import Any, Optional
 
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -90,6 +90,17 @@ def split_ranges_for_position(position: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
+def parent_mode_label(parent_family: Any, parent_mode_number: Any) -> Optional[str]:
+    family = str(parent_family or "").strip()
+    try:
+        number = int(parent_mode_number or 0)
+    except (TypeError, ValueError):
+        number = 0
+    if not family or number < 1:
+        return None
+    return f"{family} Mode {number}"
+
+
 def main() -> None:
     versions = read_versions()
     schema_version = int(versions["schema_version"])
@@ -99,7 +110,9 @@ def main() -> None:
     ]
 
     scales = read_json("data", "scales", "DEFINITIONS.json")["scales"]
-    scale_metadata = read_json("data", "scales", "METADATA.json")["scales"]
+    scale_metadata_file = read_json("data", "scales", "METADATA.json")
+    scale_metadata = scale_metadata_file["scales"]
+    catalog_groups = scale_metadata_file["catalog_groups"]
     scale_descriptions = read_json("data", "scales", "DESCRIPTIONS.json")["descriptions"]
     key_signatures = read_json("data", "scales", "KEY_SIGNATURES.json")
     tunings = read_json("data", "tunings", "DEFINITIONS.json")["tunings"]
@@ -127,6 +140,24 @@ def main() -> None:
     if unknown_descriptions:
         raise SystemExit(
             "Descriptions exist for unknown scales: " + ", ".join(unknown_descriptions)
+        )
+    missing_catalog_groups = sorted(
+        scale["name"] for scale in scales if not scale_metadata[scale["name"]].get("catalog_group_code")
+    )
+    unknown_catalog_group_codes = sorted(
+        {
+            scale_metadata[name]["catalog_group_code"]
+            for name in metadata_names
+            if scale_metadata[name].get("catalog_group_code") and scale_metadata[name]["catalog_group_code"] not in catalog_groups
+        }
+    )
+    if missing_catalog_groups:
+        raise SystemExit(
+            "Missing catalog_group_code for scales: " + ", ".join(missing_catalog_groups)
+        )
+    if unknown_catalog_group_codes:
+        raise SystemExit(
+            "Metadata references unknown catalog groups: " + ", ".join(unknown_catalog_group_codes)
         )
 
     print("BEGIN;")
@@ -171,14 +202,23 @@ $seed$;"""
     progress("seeding scales and intervals")
     for scale in scales:
         metadata = scale_metadata[scale["name"]]
+        catalog_group_code = metadata["catalog_group_code"]
+        catalog_group = catalog_groups[catalog_group_code]
+        parent_family = metadata.get("parent_family")
+        parent_mode_number = metadata.get("parent_mode_number")
+        parent_mode = parent_mode_label(parent_family, parent_mode_number)
         print_insert(
-            "INSERT INTO scales (external_id, name, common_name, musical_name, description, aliases, parent_family, parent_mode_number, latent, scale_type_id) "
+            "INSERT INTO scales (external_id, name, common_name, musical_name, description, aliases, parent_family, parent_mode_number, parent_mode_label, catalog_group_code, catalog_group_label, catalog_group_order, latent, scale_type_id) "
             f"VALUES ({scale['id']}, {sql_literal(scale['name'])}, {sql_literal(metadata.get('common_name') or scale['common_name'])}, "
             f"{sql_literal(metadata.get('musical_name'))}, "
             f"{sql_literal(scale_descriptions[scale['name']])}, "
             f"{sql_literal(json.dumps(metadata.get('aliases', [])))}::jsonb, "
-            f"{sql_literal(metadata.get('parent_family'))}, "
-            f"{sql_literal(metadata.get('parent_mode_number'))}, "
+            f"{sql_literal(parent_family)}, "
+            f"{sql_literal(parent_mode_number)}, "
+            f"{sql_literal(parent_mode)}, "
+            f"{sql_literal(catalog_group_code)}, "
+            f"{sql_literal(catalog_group['label'])}, "
+            f"{sql_literal(catalog_group['order'])}, "
             f"{sql_literal(bool(metadata.get('latent', False)))}, "
             f"(SELECT id FROM scale_types WHERE code = {sql_literal(scale['type'])}))"
         )

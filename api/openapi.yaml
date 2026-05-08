@@ -44,6 +44,41 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/scales/{id}/context:
+    get:
+      summary: Get computed scale context for a key
+      description: Returns key-dependent note, signature, and parent-scale context for a scale.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: key
+          in: query
+          description: Root key for the selected scale.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Scale context
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScaleContext"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Scale not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /api/v1/scales/random:
     get:
       summary: Get a random scale
@@ -197,6 +232,18 @@ components:
         parent_mode_number:
           type: integer
           description: Optional mode number within the parent family.
+        parent_mode_label:
+          type: string
+          description: Precomputed modal-parent label such as `Major Mode 2`.
+        catalog_group_code:
+          type: string
+          description: Stable scale-group code used for picker and learning grouping.
+        catalog_group_label:
+          type: string
+          description: User-facing group label used for picker and learning grouping.
+        catalog_group_order:
+          type: integer
+          description: Sort order for scale grouping in the UI.
         latent:
           type: boolean
           description: Hidden from the main picker by default but still available in the catalog.
@@ -252,6 +299,72 @@ components:
       properties:
         error:
           type: string
+    ScaleSignatureContext:
+      type: object
+      required:
+        - key
+        - signed_accidentals
+        - notes
+        - label
+      properties:
+        key:
+          type: string
+        signed_accidentals:
+          type: integer
+        notes:
+          type: array
+          items:
+            type: string
+        label:
+          type: string
+    ScaleParentContext:
+      type: object
+      required:
+        - family
+        - mode_number
+        - mode_label
+        - parent_root
+        - parent_scale_name
+      properties:
+        family:
+          type: string
+        mode_number:
+          type: integer
+        mode_label:
+          type: string
+        parent_root:
+          type: string
+        parent_scale_name:
+          type: string
+    ScaleContext:
+      type: object
+      required:
+        - scale_id
+        - scale_name
+        - key
+        - notes
+        - signature
+        - parent
+        - outside_key_signature_notes
+      properties:
+        scale_id:
+          type: integer
+        scale_name:
+          type: string
+        key:
+          type: string
+        notes:
+          type: array
+          items:
+            type: string
+        signature:
+          $ref: "#/components/schemas/ScaleSignatureContext"
+        parent:
+          $ref: "#/components/schemas/ScaleParentContext"
+        outside_key_signature_notes:
+          type: array
+          items:
+            type: string
     FretRange:
       type: object
       required:

@@ -3,6 +3,7 @@ import { buildScaleNotes } from "fretboard-layout";
 
 const AUDIO_BASE_MIDI = 60;
 const MAX_SCALE_PLAYBACK_REPEATS = 20;
+const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
 export const PLAYBACK_NOTE_VALUES = [
   { label: "1/2", beats: 2 },
@@ -18,6 +19,13 @@ export const PLAYBACK_NOTE_VALUES = [
 
 function midiToFrequency(midi) {
   return 440 * 2 ** ((midi - 69) / 12);
+}
+
+function midiToNoteName(midi) {
+  const rounded = Math.round(midi);
+  const pitchClass = ((rounded % 12) + 12) % 12;
+  const octave = Math.floor(rounded / 12) - 1;
+  return `${NOTE_NAMES[pitchClass]}${octave}`;
 }
 
 export function useScalePlayback({ selectedScale, selectedKey }) {
@@ -160,13 +168,8 @@ export function useScalePlayback({ selectedScale, selectedKey }) {
       }
     }
     playbackIntervals.forEach((interval, index) => {
-      playTone(
-        audioContext,
-        output,
-        midiToFrequency(rootMidi + interval),
-        runStart + index * noteSpacingSeconds,
-        noteDuration
-      );
+      const noteStart = runStart + index * noteSpacingSeconds;
+      playTone(audioContext, output, midiToFrequency(rootMidi + interval), noteStart, noteDuration);
     });
 
     run.count += 1;
@@ -196,9 +199,8 @@ export function useScalePlayback({ selectedScale, selectedKey }) {
     if (audioContext.state === "suspended") {
       await audioContext.resume();
     }
-    const output = ensureAudioOutput(audioContext);
-
     stop();
+    const output = ensureAudioOutput(audioContext);
     const scaleNotes = buildScaleNotes(selectedKey, selectedScale);
     const intervals = selectedScale.intervals
       .map((interval) => (typeof interval === "number" ? interval : interval?.semitones))

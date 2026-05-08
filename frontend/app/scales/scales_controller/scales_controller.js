@@ -14,22 +14,20 @@ import {
 import { DEFAULT_KEYS, DEFAULT_TUNING_NAME } from "defaults";
 import {
   LEARNING_NOTE_CHOICE_SET,
-  LEARNING_SCALE_GROUPS,
-} from "../learning_mode/learning_mode.js";
+} from "../learning_mode/learning_mode_panel.js";
 import { useScalePlayback } from "../../playback/scale_playback.js";
 import {
   NOTE_GROUPS,
   accidentalLabel,
   findScaleByRouteValue,
   findTuningByRouteValue,
+  groupedLearningOptions,
   groupedScaleOptions,
   noteSelectionMatches,
-  notesOutsideKeySignature,
   positionOptionsForMode,
   randomItem,
   normalizeText,
   signatureSelectionMatches,
-  signedAccidentalsForScale,
 } from "./scales_controller_helpers.js";
 
 function buildLoadError(resourceName, detail) {
@@ -60,6 +58,10 @@ async function fetchJSON(url, resourceName) {
   return data;
 }
 
+function scaleContextCacheKey(scaleId, key) {
+  return `${scaleId}:${key}`;
+}
+
 export function useScalesController({ routeState, onRouteChange }) {
   const [scales, setScales] = useState([]);
   const [selectedScaleId, setSelectedScaleId] = useState(1);
@@ -87,6 +89,8 @@ export function useScalesController({ routeState, onRouteChange }) {
   const [finderSelectedIntervals, setFinderSelectedIntervals] = useState([]);
   const [finderSearchIntervals, setFinderSearchIntervals] = useState([]);
   const [finderSearchRequested, setFinderSearchRequested] = useState(false);
+  const [finderComprehensive, setFinderComprehensive] = useState(false);
+  const [scaleContexts, setScaleContexts] = useState({});
 
   useEffect(() => {
     fetchJSON("/api/v1/scales", "scales")
@@ -178,6 +182,7 @@ export function useScalesController({ routeState, onRouteChange }) {
     [scales, selectedScaleId]
   );
   const scaleDropdownGroups = useMemo(() => groupedScaleOptions(scales), [scales]);
+  const learningScaleGroups = useMemo(() => groupedLearningOptions(scales), [scales]);
   const selectedLayoutInstance = useMemo(
     () => layoutInstances.find((entry) => entry.id === Number(selectedTuningId)),
     [layoutInstances, selectedTuningId]
@@ -224,6 +229,11 @@ export function useScalesController({ routeState, onRouteChange }) {
     if (!selectedScale) return [];
     return buildScaleNotes(selectedKey, selectedScale).noteDetails;
   }, [selectedScale, selectedKey]);
+
+  const selectedScaleContext = useMemo(() => {
+    if (!selectedScale?.id || !selectedKey) return null;
+    return scaleContexts[`${selectedScale.id}:${selectedKey}`] || null;
+  }, [scaleContexts, selectedScale, selectedKey]);
 
   const playback = useScalePlayback({ selectedScale, selectedKey });
   const learningOpen = activeMode === "learning";
@@ -273,8 +283,6 @@ export function useScalesController({ routeState, onRouteChange }) {
         key: selectedKey,
         tuningStrings,
         positionLayout: selectedPositionLayout,
-        positionName: selectedPosition,
-        useThreeNps: effectiveUseThreeNps,
       });
       if (!trimmed) {
         fretboard.clear();
@@ -314,6 +322,24 @@ export function useScalesController({ routeState, onRouteChange }) {
       tuning: tuningName,
       threeNps,
     });
+  }
+
+  async function fetchScaleContext(scaleId, key) {
+    if (!scaleId || !key) {
+      return null;
+    }
+
+    const cacheKey = scaleContextCacheKey(scaleId, key);
+    if (scaleContexts[cacheKey]) {
+      return scaleContexts[cacheKey];
+    }
+
+    const context = await fetchJSON(
+      `/api/v1/scales/${scaleId}/context?key=${encodeURIComponent(key)}`,
+      "scale context"
+    );
+    setScaleContexts((current) => ({ ...current, [cacheKey]: context }));
+    return context;
   }
 
   function handleScaleChange(event) {
@@ -393,9 +419,27 @@ export function useScalesController({ routeState, onRouteChange }) {
     setActiveMode("");
   }
 
+  useEffect(() => {
+    if (!selectedScale?.id || !selectedKey) return;
+    fetchScaleContext(selectedScale.id, selectedKey).catch(() => {});
+  }, [selectedScale?.id, selectedKey]);
+
+  useEffect(() => {
+    if (learningScaleGroups.length === 0) return;
+    setLearningGroups((current) => {
+      if (current.length > 0 && current.every((groupKey) => learningScaleGroups.some((group) => group.key === groupKey))) {
+        return current;
+      }
+      return [learningScaleGroups[0].key];
+    });
+  }, [learningScaleGroups]);
+
   function learningScaleNames() {
-    const selectedGroups = learningGroups.length > 0 ? learningGroups : ["majorMinor"];
-    return selectedGroups.flatMap((groupKey) => LEARNING_SCALE_GROUPS[groupKey]?.names || []);
+    const fallbackGroupKey = learningScaleGroups[0]?.key;
+    const selectedGroups = learningGroups.length > 0 ? learningGroups : fallbackGroupKey ? [fallbackGroupKey] : [];
+    return selectedGroups.flatMap(
+      (groupKey) => learningScaleGroups.find((group) => group.key === groupKey)?.entries.map((scale) => scale.name) || []
+    );
   }
 
   function handleLearningGroupToggle(groupKey) {
@@ -416,10 +460,7 @@ export function useScalesController({ routeState, onRouteChange }) {
   function availableLearningKeys(scale) {
     return DEFAULT_KEYS.filter((key) => {
       const notes = buildScaleNotes(key, scale).notes;
-      if (notes.some((note) => !LEARNING_NOTE_CHOICE_SET.has(note))) {
-        return false;
-      }
-      return Math.abs(signedAccidentalsForScale(key, scale)) <= 7;
+      return !notes.some((note) => !LEARNING_NOTE_CHOICE_SET.has(note));
     });
   }
 
@@ -457,16 +498,31 @@ export function useScalesController({ routeState, onRouteChange }) {
 
   const matchingFinderScales = useMemo(() => {
     if (!finderSearchRequested || finderSearchIntervals.length === 0) {
-      return [];
+      return { withLayout: [], withoutLayout: [] };
     }
-    return scales.filter((scale) => {
+    const matches = scales.filter((scale) => {
       const scaleIntervals = (scale.intervals || [])
         .map((interval) => (typeof interval === "number" ? interval : interval?.semitones))
         .filter((interval) => Number.isFinite(interval));
       const scaleSet = new Set(scaleIntervals);
       return finderSearchIntervals.every((interval) => scaleSet.has(interval));
     });
-  }, [finderSearchIntervals, finderSearchRequested, scales]);
+    const withLayout = [];
+    const withoutLayout = [];
+    matches.forEach((scale) => {
+      const hasLayout = Boolean(
+        layoutInstances
+          .find((entry) => entry.scales?.some((item) => item.id === scale.id))
+          ?.scales?.find((item) => item.id === scale.id)?.layout_families?.standard?.positions
+      );
+      if (hasLayout) {
+        withLayout.push(scale);
+      } else if (finderComprehensive) {
+        withoutLayout.push(scale);
+      }
+    });
+    return { withLayout, withoutLayout };
+  }, [finderSearchIntervals, finderSearchRequested, scales, layoutInstances, finderComprehensive]);
 
   function handleFinderSearch() {
     setFinderSearchIntervals(finderSelectedIntervals);
@@ -483,21 +539,32 @@ export function useScalesController({ routeState, onRouteChange }) {
     setFinderSelectedIntervals([]);
     setFinderSearchIntervals([]);
     setFinderSearchRequested(false);
+    setFinderComprehensive(false);
   }
 
-  function handleLearningCheck() {
+  async function handleLearningCheck() {
     if (!learningChallenge) return;
     const { scale, key, position } = learningChallenge;
     const noteDetails = buildScaleNotes(key, scale).noteDetails;
     const notes = noteDetails.map((note) => note.note);
-    const signedAccidentals = signedAccidentalsForScale(key, scale);
+    const context = await fetchScaleContext(scale.id, key);
+    if (!context) {
+      setLearningResult({
+        signatureCorrect: false,
+        notesCorrect: false,
+        message: "Couldn't load scale context for this learning challenge.",
+      });
+      return;
+    }
+
+    const signedAccidentals = Number(context.signature?.signed_accidentals || 0);
     const signatureCorrect = signatureSelectionMatches(
       learningSignatureCount,
       learningSignatureType,
       signedAccidentals
     );
     const notesCorrect = noteSelectionMatches(learningSelectedNotes, notes);
-    const outsideKeySignatureNotes = notesOutsideKeySignature(notes, signedAccidentals);
+    const outsideKeySignatureNotes = context.outside_key_signature_notes || [];
 
     setSelectedScaleId(scale.id);
     setSelectedKey(key);
@@ -507,7 +574,7 @@ export function useScalesController({ routeState, onRouteChange }) {
       signatureCorrect,
       notesCorrect,
       signedAccidentals,
-      signatureLabel: accidentalLabel(signedAccidentals),
+      signatureLabel: context.signature?.label || accidentalLabel(signedAccidentals),
       notes,
       outsideKeySignatureNotes,
       message: signatureCorrect && notesCorrect ? "Correct" : "Check the answer",
@@ -540,10 +607,12 @@ export function useScalesController({ routeState, onRouteChange }) {
     visibleGroups,
     setVisibleGroups,
     scaleNoteDetails,
+    selectedScaleContext,
     playback,
     fretboardOptions,
     drawScaleFretboard,
     learningOpen,
+    learningScaleGroups,
     learningGroups,
     learningChallenge,
     learningSignatureCount,
@@ -555,6 +624,7 @@ export function useScalesController({ routeState, onRouteChange }) {
     finderSelectedIntervals,
     finderSearchRequested,
     matchingFinderScales,
+    finderComprehensive,
     handleScaleChange,
     handleKeyChange,
     handlePositionChange,
@@ -570,6 +640,7 @@ export function useScalesController({ routeState, onRouteChange }) {
     handleLearningCheck,
     toggleLearningNote,
     toggleFinderInterval,
+    setFinderComprehensive,
     setLearningSignatureCount,
     setLearningSignatureType,
     setSelectedScaleId,

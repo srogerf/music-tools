@@ -9,7 +9,7 @@ usage() {
   cat >&2 <<'EOF'
 Usage: bash bin/production_db_upgrade_scale_catalog.sh
 
-Forward-upgrade the live production database to schema version 8 by
+Forward-upgrade the live production database to schema version 9 by
 adding scale catalog naming columns and synchronizing scale reference
 rows from the repo's scale definitions, metadata, and descriptions.
 
@@ -52,7 +52,7 @@ current_schema_version="$(
 )"
 
 case "$current_schema_version" in
-  7|8)
+  6|7|8|9)
     ;;
   *)
     echo "Unexpected production schema version: $current_schema_version" >&2
@@ -75,7 +75,9 @@ definitions_path, metadata_path, descriptions_path = sys.argv[1:4]
 with open(definitions_path, "r", encoding="utf-8") as handle:
     scales = json.load(handle)["scales"]
 with open(metadata_path, "r", encoding="utf-8") as handle:
-    metadata = json.load(handle)["scales"]
+    metadata_file = json.load(handle)
+    metadata = metadata_file["scales"]
+    catalog_groups = metadata_file["catalog_groups"]
 with open(descriptions_path, "r", encoding="utf-8") as handle:
     descriptions = json.load(handle)["descriptions"]
 
@@ -114,6 +116,17 @@ def interval_label(semitones, degree):
     return "b" * abs(offset) + str(degree)
 
 
+def parent_mode_label(parent_family, parent_mode_number):
+    family = str(parent_family or "").strip()
+    try:
+        number = int(parent_mode_number or 0)
+    except (TypeError, ValueError):
+        number = 0
+    if not family or number < 1:
+        return None
+    return f"{family} Mode {number}"
+
+
 print("BEGIN;")
 print("""
 DO $$
@@ -125,8 +138,8 @@ BEGIN
     FROM schema_metadata
     WHERE singleton = TRUE;
 
-    IF current_schema_version NOT IN (7, 8) THEN
-        RAISE EXCEPTION 'expected production schema version 7 or 8, got %',
+    IF current_schema_version NOT IN (6, 7, 8, 9) THEN
+        RAISE EXCEPTION 'expected production schema version 6, 7, 8, or 9, got %',
             current_schema_version;
     END IF;
 END
@@ -136,6 +149,10 @@ print("ALTER TABLE scales ADD COLUMN IF NOT EXISTS musical_name TEXT;")
 print("ALTER TABLE scales ADD COLUMN IF NOT EXISTS aliases JSONB NOT NULL DEFAULT '[]'::jsonb;")
 print("ALTER TABLE scales ADD COLUMN IF NOT EXISTS parent_family TEXT;")
 print("ALTER TABLE scales ADD COLUMN IF NOT EXISTS parent_mode_number SMALLINT;")
+print("ALTER TABLE scales ADD COLUMN IF NOT EXISTS parent_mode_label TEXT;")
+print("ALTER TABLE scales ADD COLUMN IF NOT EXISTS catalog_group_code TEXT;")
+print("ALTER TABLE scales ADD COLUMN IF NOT EXISTS catalog_group_label TEXT;")
+print("ALTER TABLE scales ADD COLUMN IF NOT EXISTS catalog_group_order SMALLINT;")
 print("ALTER TABLE scales ADD COLUMN IF NOT EXISTS latent BOOLEAN NOT NULL DEFAULT FALSE;")
 print("""
 DO $$
@@ -155,6 +172,38 @@ BEGIN
         ADD CONSTRAINT scales_parent_mode_number_check
         CHECK (parent_mode_number IS NULL OR parent_mode_number >= 1);
     END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'scales_parent_mode_label_check'
+    ) THEN
+        ALTER TABLE scales
+        ADD CONSTRAINT scales_parent_mode_label_check
+        CHECK (parent_mode_label IS NULL OR parent_mode_label <> '');
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'scales_catalog_group_code_check'
+    ) THEN
+        ALTER TABLE scales
+        ADD CONSTRAINT scales_catalog_group_code_check
+        CHECK (catalog_group_code IS NULL OR catalog_group_code <> '');
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'scales_catalog_group_label_check'
+    ) THEN
+        ALTER TABLE scales
+        ADD CONSTRAINT scales_catalog_group_label_check
+        CHECK (catalog_group_label IS NULL OR catalog_group_label <> '');
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'scales_catalog_group_order_check'
+    ) THEN
+        ALTER TABLE scales
+        ADD CONSTRAINT scales_catalog_group_order_check
+        CHECK (catalog_group_order IS NULL OR catalog_group_order >= 1);
+    END IF;
 END
 $$;
 """)
@@ -170,15 +219,18 @@ for scale_type in scale_types:
 for scale in scales:
     item = metadata[scale["name"]]
     description = descriptions[scale["name"]]
+    catalog_group_code = item["catalog_group_code"]
+    catalog_group = catalog_groups[catalog_group_code]
     aliases = json.dumps(item.get("aliases", []))
     common_name = item.get("common_name") or scale["common_name"]
     musical_name = item.get("musical_name")
     parent_family = item.get("parent_family")
     parent_mode_number = item.get("parent_mode_number")
+    parent_label = parent_mode_label(parent_family, parent_mode_number)
     latent = bool(item.get("latent", False))
 
     print(
-        "INSERT INTO scales (external_id, name, common_name, musical_name, description, aliases, parent_family, parent_mode_number, latent, scale_type_id) "
+        "INSERT INTO scales (external_id, name, common_name, musical_name, description, aliases, parent_family, parent_mode_number, parent_mode_label, catalog_group_code, catalog_group_label, catalog_group_order, latent, scale_type_id) "
         "VALUES ("
         f"{scale['id']}, "
         f"{literal(scale['name'])}, "
@@ -188,6 +240,10 @@ for scale in scales:
         f"{literal(aliases)}::jsonb, "
         f"{literal(parent_family)}, "
         f"{literal(parent_mode_number)}, "
+        f"{literal(parent_label)}, "
+        f"{literal(catalog_group_code)}, "
+        f"{literal(catalog_group['label'])}, "
+        f"{literal(catalog_group['order'])}, "
         f"{literal(latent)}, "
         f"(SELECT id FROM scale_types WHERE code = {literal(scale['type'])})"
         ") "
@@ -199,6 +255,10 @@ for scale in scales:
         "aliases = EXCLUDED.aliases, "
         "parent_family = EXCLUDED.parent_family, "
         "parent_mode_number = EXCLUDED.parent_mode_number, "
+        "parent_mode_label = EXCLUDED.parent_mode_label, "
+        "catalog_group_code = EXCLUDED.catalog_group_code, "
+        "catalog_group_label = EXCLUDED.catalog_group_label, "
+        "catalog_group_order = EXCLUDED.catalog_group_order, "
         "latent = EXCLUDED.latent, "
         "scale_type_id = EXCLUDED.scale_type_id;"
     )
@@ -221,16 +281,27 @@ BEGIN
     IF EXISTS (
         SELECT 1
         FROM scales
-        WHERE description IS NULL OR description = '' OR aliases IS NULL
+        WHERE description IS NULL
+           OR description = ''
+           OR aliases IS NULL
+           OR catalog_group_code IS NULL
+           OR catalog_group_code = ''
+           OR catalog_group_label IS NULL
+           OR catalog_group_label = ''
+           OR catalog_group_order IS NULL
     ) THEN
         RAISE EXCEPTION 'scale catalog upgrade left missing scale metadata';
     END IF;
 END
 $$;
 
+ALTER TABLE scales ALTER COLUMN catalog_group_code SET NOT NULL;
+ALTER TABLE scales ALTER COLUMN catalog_group_label SET NOT NULL;
+ALTER TABLE scales ALTER COLUMN catalog_group_order SET NOT NULL;
+
 UPDATE schema_metadata
-SET schema_version = 8,
-    seed_data_format_version = 5
+SET schema_version = 9,
+    seed_data_format_version = 6
 WHERE singleton = TRUE;
 
 COMMIT;

@@ -327,7 +327,14 @@ func seedMissingScaleLayouts(set *ScaleLayoutSet, definitions DefinitionSet) {
 					if !ok {
 						continue
 					}
-					family.Positions[shape] = generateScaleLayoutPosition(*tuning, definition, template)
+					position := generateScaleLayoutPosition(*tuning, definition, template)
+					if definition.Type != ScaleTypeDiatonic {
+						position.Validated = false
+					}
+					family.Positions[shape] = position
+				}
+				if definition.Type != ScaleTypeDiatonic {
+					delete(existing.LayoutFamilies, "3nps")
 				}
 				setScaleLayoutFamily(existing, DefaultScaleLayoutFamilyCode, family)
 				continue
@@ -339,17 +346,39 @@ func seedMissingScaleLayouts(set *ScaleLayoutSet, definitions DefinitionSet) {
 				if !ok {
 					continue
 				}
-				positions[shape] = generateScaleLayoutPosition(*tuning, definition, template)
+				position := generateScaleLayoutPosition(*tuning, definition, template)
+				if definition.Type != ScaleTypeDiatonic {
+					position.Validated = false
+				}
+				positions[shape] = position
 			}
 
-			tuning.Scales = append(tuning.Scales, ScaleLayoutScale{
+			scaleLayout := ScaleLayoutScale{
 				ID:   definition.ID,
 				Name: definition.Name,
 				Type: definition.Type,
 				LayoutFamilies: map[string]ScaleLayoutFamily{
 					DefaultScaleLayoutFamilyCode: {Positions: positions},
 				},
-			})
+			}
+			if definition.Type == ScaleTypeDiatonic {
+				threeNpsPositions := make(map[string]ScaleLayoutPosition, len(templatePositions))
+				for _, shape := range []string{"C", "A", "A2", "G", "E", "D", "D2"} {
+					template, ok := templatePositions[shape]
+					if !ok {
+						continue
+					}
+					position := generateScaleLayoutPosition(*tuning, definition, template)
+					if definition.Type != ScaleTypeDiatonic {
+						position.Validated = false
+					}
+					threeNpsPositions[shape] = position
+				}
+				if len(threeNpsPositions) > 0 {
+					scaleLayout.LayoutFamilies["3nps"] = ScaleLayoutFamily{Positions: threeNpsPositions}
+				}
+			}
+			tuning.Scales = append(tuning.Scales, scaleLayout)
 		}
 
 		sort.Slice(tuning.Scales, func(i, j int) bool {
@@ -374,14 +403,19 @@ func materializeGeneratedFrets(set *ScaleLayoutSet, definitions DefinitionSet) {
 			}
 			forEachScaleLayoutFamily(scale, func(_ string, family *ScaleLayoutFamily) {
 				for positionName, position := range family.Positions {
-					if position.Validated || len(position.PerStringFrets) > 0 {
-						continue
-					}
 					generated := generateScaleLayoutPosition(*tuning, definition, position)
 					if len(generated.PerStringFrets) == 0 {
 						continue
 					}
-					position.PerStringFrets = generated.PerStringFrets
+					if position.PerStringFrets == nil {
+						position.PerStringFrets = map[string][]int{}
+					}
+					for stringIndex, frets := range generated.PerStringFrets {
+						if len(position.PerStringFrets[stringIndex]) > 0 {
+							continue
+						}
+						position.PerStringFrets[stringIndex] = append([]int(nil), frets...)
+					}
 					family.Positions[positionName] = position
 				}
 			})
@@ -405,14 +439,19 @@ func MaterializeScaleLayoutFrets(set *ScaleLayoutSet, definitions DefinitionSet)
 			}
 			forEachScaleLayoutFamily(scale, func(_ string, family *ScaleLayoutFamily) {
 				for positionName, position := range family.Positions {
-					if len(position.PerStringFrets) > 0 {
-						continue
-					}
 					generated := generateScaleLayoutPosition(*tuning, definition, position)
 					if len(generated.PerStringFrets) == 0 {
 						continue
 					}
-					position.PerStringFrets = generated.PerStringFrets
+					if position.PerStringFrets == nil {
+						position.PerStringFrets = map[string][]int{}
+					}
+					for stringIndex, frets := range generated.PerStringFrets {
+						if len(position.PerStringFrets[stringIndex]) > 0 {
+							continue
+						}
+						position.PerStringFrets[stringIndex] = append([]int(nil), frets...)
+					}
 					family.Positions[positionName] = position
 				}
 			})
@@ -522,13 +561,12 @@ func generateScaleLayoutPosition(tuning ScaleLayoutTuning, definition Definition
 	}
 
 	sort.Ints(availablePitches)
-	run := longestContinuousPitchRun(availablePitches, scalePitchClasses)
-	if len(run) == 0 {
+	if len(availablePitches) == 0 {
 		return position
 	}
 
 	perStringFrets := map[string][]int{}
-	for _, pitch := range run {
+	for _, pitch := range availablePitches {
 		candidates := candidatesByPitch[pitch]
 		if len(candidates) == 0 {
 			continue

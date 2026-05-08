@@ -17,28 +17,34 @@ type StaticConfig struct {
 // NewRouter wires the API routes for the server.
 func NewRouter(scaleService *ScaleService, layoutService *ScaleLayoutService, tuningService *TuningService, staticConfig StaticConfig) http.Handler {
 	mux := http.NewServeMux()
+	if staticConfig.AppDir != "" {
+		mux.Handle("/app/", http.StripPrefix("/app/", http.FileServer(http.Dir(staticConfig.AppDir))))
+	}
 	if staticConfig.FretboardDir != "" {
 		mux.Handle("/fretboard/", http.StripPrefix("/fretboard/", http.FileServer(http.Dir(staticConfig.FretboardDir))))
 	}
 	mux.HandleFunc("/runtime-config.js", runtimeConfigHandler(staticConfig))
 	mux.HandleFunc("/runtime-config.json", runtimeConfigJSONHandler(staticConfig))
 	mux.Handle("/", staticAppHandler(staticConfig.AppDir))
-	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", newV1Router(scaleService, layoutService, tuningService)))
-	return requestLogger(mux)
+	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", withAPIMiddleware(newV1Router(scaleService, layoutService, tuningService))))
+	return requestLogger(withSecurityHeaders(mux))
 }
 
 // NewUnavailableRouter keeps the frontend reachable while the API returns a
 // startup error such as an unavailable database.
 func NewUnavailableRouter(staticConfig StaticConfig, message string) http.Handler {
 	mux := http.NewServeMux()
+	if staticConfig.AppDir != "" {
+		mux.Handle("/app/", http.StripPrefix("/app/", http.FileServer(http.Dir(staticConfig.AppDir))))
+	}
 	if staticConfig.FretboardDir != "" {
 		mux.Handle("/fretboard/", http.StripPrefix("/fretboard/", http.FileServer(http.Dir(staticConfig.FretboardDir))))
 	}
 	mux.HandleFunc("/runtime-config.js", runtimeConfigHandler(staticConfig))
 	mux.HandleFunc("/runtime-config.json", runtimeConfigJSONHandler(staticConfig))
 	mux.Handle("/", staticAppHandler(staticConfig.AppDir))
-	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", unavailableV1Router(message)))
-	return requestLogger(mux)
+	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", withAPIMiddleware(unavailableV1Router(message))))
+	return requestLogger(withSecurityHeaders(mux))
 }
 
 func runtimeConfigHandler(staticConfig StaticConfig) http.HandlerFunc {

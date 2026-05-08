@@ -7,7 +7,7 @@ CREATE TABLE schema_metadata (
 );
 
 INSERT INTO schema_metadata (singleton, schema_version, seed_data_format_version)
-VALUES (TRUE, 8, NULL);
+VALUES (TRUE, 9, NULL);
 
 CREATE TABLE scale_types (
     id BIGSERIAL PRIMARY KEY,
@@ -24,13 +24,21 @@ CREATE TABLE scales (
     aliases JSONB NOT NULL DEFAULT '[]'::jsonb,
     parent_family TEXT,
     parent_mode_number SMALLINT,
+    parent_mode_label TEXT,
+    catalog_group_code TEXT NOT NULL,
+    catalog_group_label TEXT NOT NULL,
+    catalog_group_order SMALLINT NOT NULL,
     latent BOOLEAN NOT NULL DEFAULT FALSE,
     scale_type_id BIGINT NOT NULL REFERENCES scale_types(id),
     UNIQUE (name),
     UNIQUE (common_name, scale_type_id),
     CHECK (description <> ''),
     CHECK (jsonb_typeof(aliases) = 'array'),
-    CHECK (parent_mode_number IS NULL OR parent_mode_number >= 1)
+    CHECK (parent_mode_number IS NULL OR parent_mode_number >= 1),
+    CHECK (parent_mode_label IS NULL OR parent_mode_label <> ''),
+    CHECK (catalog_group_code <> ''),
+    CHECK (catalog_group_label <> ''),
+    CHECK (catalog_group_order >= 1)
 );
 
 CREATE TABLE scale_intervals (

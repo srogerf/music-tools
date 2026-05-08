@@ -60,6 +60,7 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
     ),
     React.createElement(LearningModePanel, {
       learningOpen: controller.learningOpen,
+      learningScaleGroups: controller.learningScaleGroups,
       learningGroups: controller.learningGroups,
       learningChallenge: controller.learningChallenge,
       learningSignatureCount: controller.learningSignatureCount,
@@ -79,10 +80,12 @@ export function ScalesPage({ active, routeState, onRouteChange }) {
       finderSelectedIntervals: controller.finderSelectedIntervals,
       finderSearchRequested: controller.finderSearchRequested,
       matchingFinderScales: controller.matchingFinderScales,
+      finderComprehensive: controller.finderComprehensive,
       onToggleInterval: controller.toggleFinderInterval,
       onSearch: controller.handleFinderSearch,
       onReset: controller.resetFinderDisplay,
       onSelectScale: controller.handleFinderScaleSelect,
+      onComprehensiveChange: controller.setFinderComprehensive,
     }),
     React.createElement(ScaleSelector, {
       scaleDropdownGroups: controller.scaleDropdownGroups,

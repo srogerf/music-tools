@@ -1,4 +1,5 @@
 import React from "https://esm.sh/react@18";
+import { scaleOptionLabel } from "../scales_controller/scales_controller_helpers.js";
 
 export function ScaleSelector({
   scaleDropdownGroups,
@@ -12,6 +13,13 @@ export function ScaleSelector({
   positionOptions,
   defaultKeys,
 }) {
+  const visibleGroups = scaleDropdownGroups
+    .map((group) => ({
+      ...group,
+      entries: (group.entries || []).filter((scale) => !scale?.latent),
+    }))
+    .filter((group) => group.entries.length > 0);
+
   return React.createElement(
     "div",
     { className: "controls" },
@@ -26,7 +34,7 @@ export function ScaleSelector({
           value: selectedScaleId,
           onChange: onScaleChange,
         },
-        scaleDropdownGroups.map((group) =>
+        visibleGroups.map((group) =>
           React.createElement(
             "optgroup",
             { key: group.label, label: group.label },
@@ -34,7 +42,7 @@ export function ScaleSelector({
               React.createElement(
                 "option",
                 { key: scale.id, value: scale.id },
-                scale.name === "Major" ? "Major" : scale.name
+                scaleOptionLabel(scale)
               )
             )
           )

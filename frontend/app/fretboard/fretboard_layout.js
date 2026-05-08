@@ -8,6 +8,7 @@ import {
   degreeClassForNote,
   intervalLabelForDefinition,
   intervalLabelForNote,
+  intervalLabelForScale,
   noteNameToPitchClass,
   normalizeKey,
   shouldUseFlats,
@@ -41,6 +42,25 @@ function intervalDegree(interval, fallback) {
   return typeof interval === "object" && Number.isFinite(interval?.degree)
     ? interval.degree
     : fallback;
+}
+
+function pentatonicDegreeClasses(scale) {
+  if (!scale || scale.type !== "pentatonic" || !Array.isArray(scale.intervals) || scale.intervals.length !== 5) {
+    return null;
+  }
+
+  const signature = scale.intervals
+    .map((interval) => intervalSemitones(interval))
+    .join(",");
+
+  const signatures = {
+    "0,2,4,7,9": [1, 2, 3, 5, 6],
+    "0,2,5,7,10": [1, 2, 4, 5, 7],
+    "0,3,5,8,10": [1, 3, 4, 6, 7],
+    "0,2,5,7,9": [1, 2, 4, 5, 6],
+  };
+
+  return signatures[signature] || null;
 }
 
 function buildNotesForDegreeClasses(normalizedKey, rootIndex, scale, degreeClasses) {
@@ -102,9 +122,9 @@ export function buildScaleNotes(key, scale) {
   }
 
   let notes = null;
-  const definitionDegreeClasses = scale.intervals.map((interval, degree) =>
-    intervalDegree(interval, degree + 1)
-  );
+  const definitionDegreeClasses =
+    pentatonicDegreeClasses(scale) ||
+    scale.intervals.map((interval, degree) => intervalDegree(interval, degree + 1));
   if (scale.type === "diatonic" && Array.isArray(scale.intervals) && scale.intervals.length === 7) {
     notes = buildNotesForDegreeClasses(normalized, rootIndex, scale, definitionDegreeClasses)
       || buildDiatonicNotes(normalized, rootIndex, scale);
@@ -131,8 +151,10 @@ export function buildScaleNotes(key, scale) {
     displayNameMap.set(pitchClass, noteName);
     const degreeClass = definitionDegreeClasses[degree] ?? degreeClassForNote(normalized, noteName) ?? (degree + 1);
     degreeClassMap.set(pitchClass, degreeClass);
-    const definitionIntervalLabel = intervalLabelForDefinition(interval);
-    const intervalLabel = definitionIntervalLabel || intervalLabelForNote(normalized, noteName);
+    const intervalLabel =
+      intervalLabelForScale(interval, scale.intervals.length, degree) ||
+      intervalLabelForDefinition(interval) ||
+      intervalLabelForNote(normalized, noteName);
     intervalLabelMap.set(pitchClass, intervalLabel);
     noteDetails.push({
       note: noteName,
@@ -306,192 +328,11 @@ function resolvePositionWindow(positionLayout, layoutRootIndex) {
   return { startFret, fretCount, perStringRanges };
 }
 
-function collectScaleFretsForString(openIndex, pitchClassSet, maxFret) {
-  const frets = [];
-  for (let fret = 0; fret <= maxFret; fret += 1) {
-    const pitchClass = (openIndex + fret) % 12;
-    if (pitchClassSet.has(pitchClass)) {
-      frets.push(fret);
-    }
-  }
-  return frets;
-}
-
-function buildThreeNpsCandidates(frets) {
-  const candidates = [];
-  for (let i = 0; i <= frets.length - 3; i += 1) {
-    const group = frets.slice(i, i + 3);
-    const span = group[2] - group[0];
-    if (span <= 6) {
-      candidates.push(group);
-    }
-  }
-  return candidates;
-}
-
-function candidateContainsRoot(candidate, openIndex, rootIndex) {
-  return candidate.some((fret) => (openIndex + fret) % 12 === rootIndex);
-}
-
-function threeNpsAnchorTarget({ scaleName, positionName, stringIndex, anchorStart, anchorEnd }) {
-  if (scaleName === "Major" && positionName === "C" && stringIndex >= 4) {
-    return { start: anchorStart + 1, end: anchorEnd + 2 };
-  }
-  return { start: anchorStart, end: anchorEnd };
-}
-
-function selectThreeNpsGroups({
-  anchorStarts,
-  anchorEnds,
-  openIndexes,
-  pitchClassSet,
-  rootIndex,
-  positionName,
-  scaleName,
-}) {
-  const perStringFrets = {};
-  const rootStrings = new Set(ROOT_STRINGS_BY_POSITION[positionName] || []);
-  let previousStart = null;
-  const maxAnchorEnd = Math.max(...anchorEnds);
-  const searchMaxFret = Math.max(18, maxAnchorEnd + 8);
-
-  for (let stringIndex = 0; stringIndex < openIndexes.length; stringIndex += 1) {
-    const openIndex = openIndexes[stringIndex];
-    const scaleFrets = collectScaleFretsForString(openIndex, pitchClassSet, searchMaxFret);
-    const candidates = buildThreeNpsCandidates(scaleFrets);
-    if (candidates.length === 0) {
-      return null;
-    }
-
-    const anchorStart = anchorStarts[stringIndex];
-    const anchorEnd = anchorEnds[stringIndex];
-    const anchorTarget = threeNpsAnchorTarget({
-      scaleName,
-      positionName,
-      stringIndex,
-      anchorStart,
-      anchorEnd,
-    });
-    let bestCandidate = null;
-    let bestScore = Number.POSITIVE_INFINITY;
-
-    for (const candidate of candidates) {
-      let score =
-        Math.abs(candidate[0] - anchorTarget.start) * 2 +
-        Math.abs(candidate[2] - anchorTarget.end);
-
-      if (previousStart !== null) {
-        const delta = candidate[0] - previousStart;
-        if (delta < 0) {
-          score += 30 + Math.abs(delta) * 5;
-        } else {
-          score += delta;
-          if (delta > 5) {
-            score += (delta - 5) * 2;
-          }
-        }
-      }
-
-      if (rootStrings.has(stringIndex) && candidateContainsRoot(candidate, openIndex, rootIndex)) {
-        score -= 8;
-      }
-
-      if (score < bestScore) {
-        bestScore = score;
-        bestCandidate = candidate;
-      }
-    }
-
-    if (!bestCandidate) {
-      return null;
-    }
-
-    perStringFrets[stringIndex] = bestCandidate;
-    previousStart = bestCandidate[0];
-  }
-
-  return perStringFrets;
-}
-
-function computeThreeNpsLayout({
-  rootIndex,
-  pitchClassSet,
-  intervalMap,
-  displayNameMap,
-  degreeClassMap,
-  intervalLabelMap,
-  noteNames,
-  indexMap,
-  tuningStrings,
-  positionLayout,
-  positionName,
-  scaleName,
-}) {
-  const openIndexes = tuningStrings.map((note) => indexMap[note]);
-  const { startFret, fretCount, perStringRanges } = resolvePositionWindow(positionLayout, rootIndex);
-  const anchorStarts = [];
-  const anchorEnds = [];
-
-  for (let stringIndex = 0; stringIndex < tuningStrings.length; stringIndex += 1) {
-    const range = perStringRanges?.[stringIndex];
-    const anchorStart = range?.start ?? startFret;
-    const anchorSpan = range?.span ?? fretCount;
-    anchorStarts.push(anchorStart);
-    anchorEnds.push(anchorStart + anchorSpan - 1);
-  }
-
-  const perStringFrets = selectThreeNpsGroups({
-    anchorStarts,
-    anchorEnds,
-    openIndexes,
-    pitchClassSet,
-    rootIndex,
-    positionName,
-    scaleName,
-  });
-  if (!perStringFrets) {
-    return null;
-  }
-
-  let minFret = Number.POSITIVE_INFINITY;
-  let maxFret = Number.NEGATIVE_INFINITY;
-  Object.values(perStringFrets).forEach((frets) => {
-    frets.forEach((fret) => {
-      if (fret < minFret) minFret = fret;
-      if (fret > maxFret) maxFret = fret;
-    });
-  });
-  if (minFret === Number.POSITIVE_INFINITY || maxFret === Number.NEGATIVE_INFINITY) {
-    return null;
-  }
-
-  return trimFretboardLayout(
-    buildLayout({
-      startFret: minFret,
-      fretCount: maxFret - minFret + 1,
-      pitchClassSet,
-      intervalMap,
-      degreeClassMap,
-      intervalLabelMap,
-      noteNames,
-      indexMap,
-      displayNameMap,
-      perStringRanges: null,
-      perStringFrets,
-      tuningStrings,
-    }),
-    minFret,
-    maxFret - minFret + 1
-  );
-}
-
 export function computeFretboardLayout({
   scale,
   key,
   tuningStrings,
   positionLayout,
-  positionName,
-  useThreeNps = false,
 }) {
   if (!scale || tuningStrings.length === 0 || !positionLayout) {
     return null;
@@ -506,35 +347,9 @@ export function computeFretboardLayout({
     intervalLabelMap,
     noteNames,
     indexMap,
-  } = buildScaleNotes(
-    key,
-    scale
-  );
-  const layoutRootIndex = rootIndex;
-  if (useThreeNps && !positionLayout.per_string_frets) {
-    const generated = computeThreeNpsLayout({
-      rootIndex,
-      pitchClassSet,
-      intervalMap,
-      displayNameMap,
-      degreeClassMap,
-      intervalLabelMap,
-      noteNames,
-      indexMap,
-      tuningStrings,
-      positionLayout,
-      positionName,
-      scaleName: scale.name,
-    });
-    if (generated) {
-      return generated;
-    }
-  }
+  } = buildScaleNotes(key, scale);
 
-  const { startFret, fretCount, perStringRanges } = resolvePositionWindow(
-    positionLayout,
-    layoutRootIndex
-  );
+  const { startFret, fretCount, perStringRanges } = resolvePositionWindow(positionLayout, rootIndex);
 
   let perStringFrets = null;
   if (positionLayout.per_string_frets) {
@@ -542,7 +357,7 @@ export function computeFretboardLayout({
     let minFret = Number.POSITIVE_INFINITY;
     let maxFret = Number.NEGATIVE_INFINITY;
     Object.entries(positionLayout.per_string_frets).forEach(([stringIndex, frets]) => {
-      const shifted = frets.map((fret) => fret + layoutRootIndex);
+      const shifted = frets.map((fret) => fret + rootIndex);
       perStringFrets[Number(stringIndex)] = shifted;
       for (const fret of shifted) {
         if (fret < minFret) minFret = fret;
@@ -570,7 +385,9 @@ export function computeFretboardLayout({
         maxFret - minFret + 1
       );
     }
-  } else if (
+  }
+
+  if (
     positionLayout.mode === "split" &&
     Array.isArray(positionLayout.split_ranges) &&
     positionLayout.split_ranges.length > 0

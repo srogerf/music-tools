@@ -121,3 +121,13 @@ production_db_cleanup_forward() {
     kill "$DB_FORWARD_PID" >/dev/null 2>&1 || true
   fi
 }
+
+production_db_print_target() {
+  cat >&2 <<EOF
+Production DB target:
+  host:     $DB_FORWARD_HOST
+  port:     $DB_FORWARD_PORT
+  database: $POSTGRES_DB
+  user:     $POSTGRES_USER
+EOF
+}

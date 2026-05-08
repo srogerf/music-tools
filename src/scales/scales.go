@@ -20,17 +20,21 @@ const (
 )
 
 type Definition struct {
-	ID               int             `json:"id"`
-	Name             string          `json:"name"`
-	CommonName       string          `json:"common_name"`
-	MusicalName      string          `json:"musical_name"`
-	Description      string          `json:"description"`
-	Aliases          []string        `json:"aliases"`
-	ParentFamily     string          `json:"parent_family"`
-	ParentModeNumber int             `json:"parent_mode_number"`
-	Latent           bool            `json:"latent"`
-	Type             ScaleType       `json:"type"`
-	Intervals        []ScaleInterval `json:"intervals"`
+	ID                int             `json:"id"`
+	Name              string          `json:"name"`
+	CommonName        string          `json:"common_name"`
+	MusicalName       string          `json:"musical_name"`
+	Description       string          `json:"description"`
+	Aliases           []string        `json:"aliases"`
+	ParentFamily      string          `json:"parent_family"`
+	ParentModeNumber  int             `json:"parent_mode_number"`
+	ParentModeLabel   string          `json:"parent_mode_label"`
+	CatalogGroupCode  string          `json:"catalog_group_code"`
+	CatalogGroupLabel string          `json:"catalog_group_label"`
+	CatalogGroupOrder int             `json:"catalog_group_order"`
+	Latent            bool            `json:"latent"`
+	Type              ScaleType       `json:"type"`
+	Intervals         []ScaleInterval `json:"intervals"`
 }
 
 type ScaleInterval struct {
@@ -55,6 +59,7 @@ func LoadDefinitions(path string) (DefinitionSet, error) {
 
 	applyMetadata(path, &set)
 	applyDescriptions(path, &set)
+	EnrichDefinitions(&set)
 
 	return set, nil
 }
@@ -248,11 +253,18 @@ type metadataEntry struct {
 	Aliases          []string `json:"aliases"`
 	ParentFamily     string   `json:"parent_family"`
 	ParentModeNumber int      `json:"parent_mode_number"`
+	CatalogGroupCode string   `json:"catalog_group_code"`
 	Latent           bool     `json:"latent"`
 }
 
+type metadataCatalogGroup struct {
+	Label string `json:"label"`
+	Order int    `json:"order"`
+}
+
 type metadataFile struct {
-	Scales map[string]metadataEntry `json:"scales"`
+	CatalogGroups map[string]metadataCatalogGroup `json:"catalog_groups"`
+	Scales        map[string]metadataEntry        `json:"scales"`
 }
 
 type descriptionsFile struct {
@@ -287,6 +299,12 @@ func applyMetadata(path string, set *DefinitionSet) {
 		scale.Aliases = append([]string{}, entry.Aliases...)
 		scale.ParentFamily = entry.ParentFamily
 		scale.ParentModeNumber = entry.ParentModeNumber
+		scale.ParentModeLabel = parentModeLabel(entry.ParentFamily, entry.ParentModeNumber)
+		scale.CatalogGroupCode = entry.CatalogGroupCode
+		if group, ok := metadata.CatalogGroups[entry.CatalogGroupCode]; ok {
+			scale.CatalogGroupLabel = group.Label
+			scale.CatalogGroupOrder = group.Order
+		}
 		scale.Latent = entry.Latent
 	}
 }

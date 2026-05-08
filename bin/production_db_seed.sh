@@ -9,8 +9,10 @@ usage() {
   cat >&2 <<'EOF'
 Usage: bash bin/production_db_seed.sh
 
-Seed the live production database through the Bastion SSH tunnel using the
-deployed OCI host compose env as the source of truth for DB credentials.
+Seed the live production database only when the managed tables are empty.
+This command does not clear or reseed existing live data. Production reference
+data changes must be applied through controlled forward migrations, not
+reset-and-seed.
 EOF
   production_db_usage_common
 }
@@ -35,6 +37,39 @@ production_db_load_remote_compose_env
 trap production_db_cleanup_forward EXIT
 production_db_open_forward
 
+echo "Production seed: checking managed tables..."
+managed_row_count="$(
+  PGPASSWORD="$POSTGRES_PASSWORD" \
+  psql \
+    -h "$DB_FORWARD_HOST" \
+    -p "$DB_FORWARD_PORT" \
+    -U "$POSTGRES_USER" \
+    -d "$POSTGRES_DB" \
+    -v ON_ERROR_STOP=1 \
+    -tA \
+    -c "SELECT (
+          (SELECT count(*) FROM scales)
+        + (SELECT count(*) FROM scale_types)
+        + (SELECT count(*) FROM scale_layouts)
+        + (SELECT count(*) FROM scale_layout_positions)
+        + (SELECT count(*) FROM scale_layout_position_split_ranges)
+        + (SELECT count(*) FROM scale_layout_position_split_range_strings)
+        + (SELECT count(*) FROM scale_intervals)
+        + (SELECT count(*) FROM key_signature_groups)
+        + (SELECT count(*) FROM key_signatures)
+        + (SELECT count(*) FROM tunings)
+        + (SELECT count(*) FROM tuning_strings)
+      );"
+)"
+
+if [[ "$managed_row_count" != "0" ]]; then
+  echo "Refusing to seed production because managed tables already contain data ($managed_row_count rows)." >&2
+  echo "Production seeding is only allowed for an empty managed schema." >&2
+  exit 1
+fi
+
+echo "Production seed: streaming reference data..."
+SECONDS=0
 env -u DATABASE_URL \
   POSTGRES_CONFIG=/dev/null \
   PGHOST="$DB_FORWARD_HOST" \
@@ -42,4 +77,8 @@ env -u DATABASE_URL \
   PGDATABASE="$POSTGRES_DB" \
   PGUSER="$POSTGRES_USER" \
   PGPASSWORD="$POSTGRES_PASSWORD" \
-  bash "$ROOT_DIR/db/postgres/reset_and_seed.sh" --override-production-failsafe
+  bash -c 'python3 "$1" | PGPASSWORD="$PGPASSWORD" psql -q -v ON_ERROR_STOP=1 -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE"' _ \
+    "$ROOT_DIR/db/postgres/seed_data.py"
+
+echo "Production seed: completed in ${SECONDS}s."
+echo "Production database seeded from empty managed tables."

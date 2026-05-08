@@ -55,6 +55,9 @@ Typical release wrappers:
 
 ```bash
 bash bin/production_db_upgrade_scale_layout_positions.sh
+bash bin/production_db_upgrade_scale_intervals.sh
+bash bin/production_db_upgrade_scale_descriptions.sh
+bash bin/production_db_upgrade_scale_catalog.sh
 bash bin/production_db_seed.sh
 bash bin/production_db_assert_current.sh
 bash bin/production_image_build.sh

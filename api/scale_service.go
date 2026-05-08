@@ -85,13 +85,17 @@ func (s *ScaleService) GetScaleHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := strings.Trim(path, "/")
-	if id == "" || strings.Contains(id, "/") {
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(parts) == 2 && parts[1] == "context" {
+		s.GetScaleContextHandler(w, r, parts[0])
+		return
+	}
+	if len(parts) != 1 || parts[0] == "" {
 		http.NotFound(w, r)
 		return
 	}
 
-	idValue, err := strconv.Atoi(id)
+	idValue, err := strconv.Atoi(parts[0])
 	if err != nil || idValue <= 0 {
 		writeError(w, http.StatusBadRequest, "scale id must be a positive integer")
 		return
@@ -109,6 +113,37 @@ func (s *ScaleService) GetScaleHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, scale)
+}
+
+func (s *ScaleService) GetScaleContextHandler(w http.ResponseWriter, r *http.Request, idRaw string) {
+	idValue, err := strconv.Atoi(strings.TrimSpace(idRaw))
+	if err != nil || idValue <= 0 {
+		writeError(w, http.StatusBadRequest, "scale id must be a positive integer")
+		return
+	}
+
+	key := strings.TrimSpace(r.URL.Query().Get("key"))
+	if key == "" {
+		writeError(w, http.StatusBadRequest, "key is required")
+		return
+	}
+
+	definitions, err := s.store.LoadScaleDefinitions(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to load scales")
+		return
+	}
+	context, err := definitions.ContextForScale(idValue, key)
+	if err != nil {
+		if err.Error() == "scale not found" {
+			writeError(w, http.StatusNotFound, "scale not found")
+			return
+		}
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, context)
 }
 
 func (s *ScaleService) RandomScaleHandler(w http.ResponseWriter, r *http.Request) {

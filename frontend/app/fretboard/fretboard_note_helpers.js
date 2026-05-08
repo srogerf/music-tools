@@ -1,3 +1,12 @@
+import {
+  accidentalLabel,
+  noteSelectionMatches,
+  normalizeNoteName,
+  normalizeText,
+  signatureNotesForAccidentals,
+  signatureSelectionMatches,
+} from "../music/note_logic.js";
+
 const SHARP_SCALE = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const FLAT_SCALE = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
 const SHARP_INDEX = Object.fromEntries(SHARP_SCALE.map((note, i) => [note, i]));
@@ -90,43 +99,13 @@ function intervalLabelForNote(rootName, noteName) {
     return offset === 0 ? "root" : `${offset > 0 ? "#".repeat(offset) : "b".repeat(-offset)}1`;
   }
 
-  if (degreeClass === 4 || degreeClass === 5) {
-    if (offset === 0) {
-      return `p${degreeClass}`;
-    }
-    if (offset > 0) {
-      return `${"#".repeat(offset)}${degreeClass}`;
-    }
-    return `${"b".repeat(-offset)}${degreeClass}`;
+  if (offset === 0) {
+    return String(degreeClass);
   }
-
-  if (degreeClass === 7) {
-    if (offset === 0) {
-      return "7";
-    }
-    if (offset === -1) {
-      return "b7";
-    }
-    if (offset > 0) {
-      return `${"#".repeat(offset)}7`;
-    }
-    return `${"b".repeat(-offset)}7`;
+  if (offset > 0) {
+    return `${"#".repeat(offset)}${degreeClass}`;
   }
-
-  if (degreeClass === 2 || degreeClass === 3 || degreeClass === 6) {
-    if (offset === 0) {
-      return `M${degreeClass}`;
-    }
-    if (offset === -1) {
-      return `m${degreeClass}`;
-    }
-    if (offset > 0) {
-      return `${"#".repeat(offset)}${degreeClass}`;
-    }
-    return `${"b".repeat(-offset)}${degreeClass}`;
-  }
-
-  return String(degreeClass);
+  return `${"b".repeat(-offset)}${degreeClass}`;
 }
 
 function intervalLabelForDefinition(interval) {
@@ -159,6 +138,50 @@ function intervalLabelForDefinition(interval) {
   return `${"b".repeat(-offset)}${degreeClass}`;
 }
 
+function intervalLabelForScale(interval, scaleLength, degreeIndex = null) {
+  const semitones = typeof interval === "number" ? interval : interval?.semitones;
+  const degree = typeof interval === "object" && Number.isFinite(interval?.degree) ? interval.degree : degreeIndex;
+  if (!Number.isFinite(semitones)) {
+    return "";
+  }
+
+  if (scaleLength > 7) {
+    const labels = {
+      0: "root",
+      1: "b2",
+      2: "2",
+      3: "b3",
+      4: "3",
+      5: "4",
+      6: "#4",
+      7: "5",
+      8: "b6",
+      9: "6",
+      10: "b7",
+      11: "7",
+    };
+    return labels[semitones] || String(semitones);
+  }
+
+  if (!Number.isFinite(degree)) {
+    return String(semitones);
+  }
+  if (degree === 1) {
+    return semitones === 0 ? "root" : `${semitones > 0 ? "#".repeat(semitones) : "b".repeat(-semitones)}1`;
+  }
+
+  const base = { 1: 0, 2: 2, 3: 4, 4: 5, 5: 7, 6: 9, 7: 11 }[degree];
+  if (base === undefined) {
+    return String(degree);
+  }
+
+  let offset = semitones - base;
+  if (offset > 6) offset -= 12;
+  if (offset < -6) offset += 12;
+  if (offset === 0) return String(degree);
+  return `${offset > 0 ? "#".repeat(offset) : "b".repeat(-offset)}${degree}`;
+}
+
 export {
   SHARP_SCALE,
   FLAT_SCALE,
@@ -174,4 +197,11 @@ export {
   degreeClassForNote,
   intervalLabelForNote,
   intervalLabelForDefinition,
+  accidentalLabel,
+  noteSelectionMatches,
+  normalizeNoteName,
+  normalizeText,
+  signatureNotesForAccidentals,
+  signatureSelectionMatches,
+  intervalLabelForScale,
 };

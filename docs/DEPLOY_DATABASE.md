@@ -148,9 +148,9 @@ Expected outcome:
 
 Process:
 
-1. Confirm the production schema version is supported by the seed data format.
-2. Prefer controlled reference-data insertion rather than clear-and-seed.
-3. Apply only the intended reference data changes.
+1. Confirm the production schema version is supported by the repo.
+2. Seed only an empty managed schema.
+3. Apply only controlled forward reference-data migrations for future changes.
 4. Verify application queries against the updated data.
 
 Guidance:
@@ -197,6 +197,13 @@ Process:
 4. Verify that existing data remains usable.
 5. Run smoke checks.
 
+Preferred rehearsal environment:
+
+- use local integration when the release depends on production-like runtime
+  behavior as well as DB shape
+- do not wait until production to discover missing schema-version steps,
+  broken seed-version expectations, or incorrect upgrade ordering
+
 ### Production Process
 
 Production schema changes must be upgrade-style, not rebuild-style.
@@ -217,6 +224,8 @@ Guidance:
 - schema upgrade should preserve existing production data
 - destructive rebuild is not an acceptable production upgrade path
 - each schema version change should have a documented upgrade procedure
+- version-chain and upgrade-order validation should be completed in local
+  integration before the production release flow
 
 Current production schema upgrade wrappers:
 

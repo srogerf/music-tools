@@ -200,7 +200,10 @@ button {
 .learning-summary {
   color: var(--muted);
   margin: 0;
-  max-width: 760px;
+  max-width: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .learning-controls,
@@ -212,6 +215,10 @@ button {
 
 .learning-controls {
   grid-template-columns: minmax(360px, 1fr) auto auto;
+}
+
+.learning-controls > .secondary-button {
+  align-self: center;
 }
 
 .learning-guess-grid {
@@ -228,8 +235,8 @@ button {
 }
 
 .learning-family-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -281,15 +288,26 @@ button {
   margin-bottom: -6px;
 }
 
+.finder-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .finder-controls {
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
   align-items: center;
   gap: 6px;
 }
 
 .finder-controls .secondary-button {
   flex: 0 0 auto;
+  justify-self: end;
+}
+
+.finder-controls .secondary-button:last-of-type {
   justify-self: end;
 }
 
@@ -305,6 +323,14 @@ button {
 .finder-interval-grid {
   margin-left: 0;
   gap: 4px;
+}
+
+.finder-controls-spacer {
+  min-width: 0;
+}
+
+.finder-comprehensive-choice {
+  margin: 0;
 }
 
 .learning-family-choice {
@@ -385,14 +411,14 @@ button {
   padding: 3px;
   border: 1px solid #d7c7b3;
   border-radius: 10px;
-  background: #fffdf8;
+  background: #f6ebdd;
 }
 
 .signature-type-button {
   appearance: none;
   border: 0;
   border-radius: 7px;
-  background: #fff8ee;
+  background: #f1e1cf;
   color: var(--ink);
   min-height: 32px;
   padding: 5px 8px;
@@ -453,9 +479,14 @@ button {
 }
 
 .secondary-button {
-  background: #fff8ee;
+  background: #f3e5d5;
   color: var(--ink);
   border-color: #d7c7b3;
+}
+
+.secondary-button:hover {
+  background: #ead6bf;
+  border-color: #c8aa84;
 }
 
 .learning-challenge {

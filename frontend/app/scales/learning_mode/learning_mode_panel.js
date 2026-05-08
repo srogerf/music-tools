@@ -1,23 +1,5 @@
 import React from "https://esm.sh/react@18";
-
-export const LEARNING_SCALE_GROUPS = {
-  majorMinor: {
-    label: "Major / minor",
-    names: ["Major", "Natural Minor", "Harmonic Minor", "Melodic Minor"],
-  },
-  modes: {
-    label: "Modes",
-    names: ["Dorian", "Phrygian", "Lydian", "Mixolydian", "Locrian"],
-  },
-  pentatonic: {
-    label: "Pentatonic",
-    names: ["Major Pentatonic", "Minor Pentatonic", "Major Blues", "Minor Blues"],
-  },
-  exotic: {
-    label: "Exotic",
-    names: ["Double Harmonic Major"],
-  },
-};
+import { scaleOptionLabel } from "../scales_controller/scales_controller_helpers.js";
 
 export const LEARNING_NOTE_GROUPS = [
   ["C", "B#", "Dbb"],
@@ -38,6 +20,7 @@ export const LEARNING_NOTE_CHOICE_SET = new Set(LEARNING_NOTE_GROUPS.flat());
 
 export function LearningModePanel({
   learningOpen,
+  learningScaleGroups,
   learningGroups,
   learningChallenge,
   learningSignatureCount,
@@ -77,15 +60,15 @@ export function LearningModePanel({
           React.createElement(
             "div",
             { className: "learning-family-list", role: "group", "aria-label": "Learning scale sets" },
-            Object.entries(LEARNING_SCALE_GROUPS).map(([groupKey, group]) =>
+            learningScaleGroups.map((group) =>
               React.createElement(
                 "label",
-                { key: groupKey, className: "learning-family-choice", htmlFor: `learning-family-${groupKey}` },
+                { key: group.key, className: "learning-family-choice", htmlFor: `learning-family-${group.key}` },
                 React.createElement("input", {
-                  id: `learning-family-${groupKey}`,
+                  id: `learning-family-${group.key}`,
                   type: "checkbox",
-                  checked: learningGroups.includes(groupKey),
-                  onChange: () => onGroupToggle(groupKey),
+                  checked: learningGroups.includes(group.key),
+                  onChange: () => onGroupToggle(group.key),
                 }),
                 React.createElement("span", null, group.label)
               )
@@ -118,10 +101,10 @@ export function LearningModePanel({
           React.createElement(
             "div",
             { className: "learning-target" },
-            React.createElement(
+              React.createElement(
               "span",
               { className: "learning-target-scale" },
-              `${learningChallenge.key} ${learningChallenge.scale.name}`
+              `${learningChallenge.key} ${scaleOptionLabel(learningChallenge.scale)}`
             )
           ),
           React.createElement(

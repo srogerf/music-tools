@@ -7,10 +7,13 @@ heading.
 When enabled, the panel lets the user generate a random scale challenge from
 one or more selected scale families:
 
-- Major / minor
-- Modes
+- Major / Minor
+- Major Modes
 - Pentatonic
+- Harmonic Minor Modes
+- Melodic Minor Modes
 - Exotic
+- Synthetic
 
 The family selector is multi-select. At least one family remains selected so a
 random challenge always has a valid scale pool. Each challenge includes a

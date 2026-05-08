@@ -109,7 +109,7 @@ func firstNonEmpty(values ...string) string {
 func (s *Store) LoadScaleDefinitions(ctx context.Context) (scales.DefinitionSet, error) {
 	log.Printf("db query load_scale_definitions")
 	rows, err := s.pool.Query(ctx, `
-		SELECT s.external_id, s.name, s.common_name, s.musical_name, s.description, s.aliases, s.parent_family, s.parent_mode_number, s.latent, st.code, si.ordinal, si.semitones, si.degree_class
+		SELECT s.external_id, s.name, s.common_name, s.musical_name, s.description, s.aliases, s.parent_family, s.parent_mode_number, s.parent_mode_label, s.catalog_group_code, s.catalog_group_label, s.catalog_group_order, s.latent, st.code, si.ordinal, si.semitones, si.degree_class
 		FROM scales s
 		JOIN scale_types st ON st.id = s.scale_type_id
 		JOIN scale_intervals si ON si.scale_id = s.id
@@ -133,8 +133,11 @@ func (s *Store) LoadScaleDefinitions(ctx context.Context) (scales.DefinitionSet,
 		var aliasesJSON []byte
 		var parentFamily sql.NullString
 		var parentModeNumber sql.NullInt16
+		var parentModeLabel sql.NullString
+		var catalogGroupCode, catalogGroupLabel string
+		var catalogGroupOrder int
 		var latent bool
-		if err := rows.Scan(&id, &name, &commonName, &musicalName, &description, &aliasesJSON, &parentFamily, &parentModeNumber, &latent, &scaleType, &ordinal, &semitones, &degreeClass); err != nil {
+		if err := rows.Scan(&id, &name, &commonName, &musicalName, &description, &aliasesJSON, &parentFamily, &parentModeNumber, &parentModeLabel, &catalogGroupCode, &catalogGroupLabel, &catalogGroupOrder, &latent, &scaleType, &ordinal, &semitones, &degreeClass); err != nil {
 			return scales.DefinitionSet{}, fmt.Errorf("scan scale definitions: %w", err)
 		}
 		var aliases []string
@@ -147,17 +150,21 @@ func (s *Store) LoadScaleDefinitions(ctx context.Context) (scales.DefinitionSet,
 		if !ok {
 			item = &aggregate{
 				definition: scales.Definition{
-					ID:               id,
-					Name:             name,
-					CommonName:       commonName,
-					MusicalName:      musicalName.String,
-					Description:      description,
-					Aliases:          aliases,
-					ParentFamily:     parentFamily.String,
-					ParentModeNumber: int(parentModeNumber.Int16),
-					Latent:           latent,
-					Type:             scales.ScaleType(scaleType),
-					Intervals:        []scales.ScaleInterval{},
+					ID:                id,
+					Name:              name,
+					CommonName:        commonName,
+					MusicalName:       musicalName.String,
+					Description:       description,
+					Aliases:           aliases,
+					ParentFamily:      parentFamily.String,
+					ParentModeNumber:  int(parentModeNumber.Int16),
+					ParentModeLabel:   parentModeLabel.String,
+					CatalogGroupCode:  catalogGroupCode,
+					CatalogGroupLabel: catalogGroupLabel,
+					CatalogGroupOrder: catalogGroupOrder,
+					Latent:            latent,
+					Type:              scales.ScaleType(scaleType),
+					Intervals:         []scales.ScaleInterval{},
 				},
 			}
 			byID[id] = item

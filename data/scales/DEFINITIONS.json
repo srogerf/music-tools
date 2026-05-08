@@ -4,99 +4,1707 @@
       "name": "Major",
       "common_name": "Ionian",
       "type": "diatonic",
-      "intervals": [{ "semitones": 0, "degree": 1 }, { "semitones": 2, "degree": 2 }, { "semitones": 4, "degree": 3 }, { "semitones": 5, "degree": 4 }, { "semitones": 7, "degree": 5 }, { "semitones": 9, "degree": 6 }, { "semitones": 11, "degree": 7 }],
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 4,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 9,
+          "degree": 6
+        },
+        {
+          "semitones": 11,
+          "degree": 7
+        }
+      ],
       "id": 1
     },
     {
       "name": "Dorian",
       "common_name": "Dorian",
       "type": "diatonic",
-      "intervals": [{ "semitones": 0, "degree": 1 }, { "semitones": 2, "degree": 2 }, { "semitones": 3, "degree": 3 }, { "semitones": 5, "degree": 4 }, { "semitones": 7, "degree": 5 }, { "semitones": 9, "degree": 6 }, { "semitones": 10, "degree": 7 }],
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 9,
+          "degree": 6
+        },
+        {
+          "semitones": 10,
+          "degree": 7
+        }
+      ],
       "id": 2
     },
     {
       "name": "Phrygian",
       "common_name": "Phrygian",
       "type": "diatonic",
-      "intervals": [{ "semitones": 0, "degree": 1 }, { "semitones": 1, "degree": 2 }, { "semitones": 3, "degree": 3 }, { "semitones": 5, "degree": 4 }, { "semitones": 7, "degree": 5 }, { "semitones": 8, "degree": 6 }, { "semitones": 10, "degree": 7 }],
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 1,
+          "degree": 2
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 8,
+          "degree": 6
+        },
+        {
+          "semitones": 10,
+          "degree": 7
+        }
+      ],
       "id": 3
     },
     {
       "name": "Lydian",
       "common_name": "Lydian",
       "type": "diatonic",
-      "intervals": [{ "semitones": 0, "degree": 1 }, { "semitones": 2, "degree": 2 }, { "semitones": 4, "degree": 3 }, { "semitones": 6, "degree": 4 }, { "semitones": 7, "degree": 5 }, { "semitones": 9, "degree": 6 }, { "semitones": 11, "degree": 7 }],
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 4,
+          "degree": 3
+        },
+        {
+          "semitones": 6,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 9,
+          "degree": 6
+        },
+        {
+          "semitones": 11,
+          "degree": 7
+        }
+      ],
       "id": 4
     },
     {
       "name": "Mixolydian",
       "common_name": "Mixolydian",
       "type": "diatonic",
-      "intervals": [{ "semitones": 0, "degree": 1 }, { "semitones": 2, "degree": 2 }, { "semitones": 4, "degree": 3 }, { "semitones": 5, "degree": 4 }, { "semitones": 7, "degree": 5 }, { "semitones": 9, "degree": 6 }, { "semitones": 10, "degree": 7 }],
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 4,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 9,
+          "degree": 6
+        },
+        {
+          "semitones": 10,
+          "degree": 7
+        }
+      ],
       "id": 5
     },
     {
       "name": "Natural Minor",
       "common_name": "Aeolian",
       "type": "diatonic",
-      "intervals": [{ "semitones": 0, "degree": 1 }, { "semitones": 2, "degree": 2 }, { "semitones": 3, "degree": 3 }, { "semitones": 5, "degree": 4 }, { "semitones": 7, "degree": 5 }, { "semitones": 8, "degree": 6 }, { "semitones": 10, "degree": 7 }],
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 8,
+          "degree": 6
+        },
+        {
+          "semitones": 10,
+          "degree": 7
+        }
+      ],
       "id": 6
     },
     {
       "name": "Locrian",
       "common_name": "Locrian",
       "type": "diatonic",
-      "intervals": [{ "semitones": 0, "degree": 1 }, { "semitones": 1, "degree": 2 }, { "semitones": 3, "degree": 3 }, { "semitones": 5, "degree": 4 }, { "semitones": 6, "degree": 5 }, { "semitones": 8, "degree": 6 }, { "semitones": 10, "degree": 7 }],
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 1,
+          "degree": 2
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 6,
+          "degree": 5
+        },
+        {
+          "semitones": 8,
+          "degree": 6
+        },
+        {
+          "semitones": 10,
+          "degree": 7
+        }
+      ],
       "id": 7
     },
     {
       "name": "Harmonic Minor",
       "common_name": "Harmonic Minor",
       "type": "diatonic",
-      "intervals": [{ "semitones": 0, "degree": 1 }, { "semitones": 2, "degree": 2 }, { "semitones": 3, "degree": 3 }, { "semitones": 5, "degree": 4 }, { "semitones": 7, "degree": 5 }, { "semitones": 8, "degree": 6 }, { "semitones": 11, "degree": 7 }],
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 8,
+          "degree": 6
+        },
+        {
+          "semitones": 11,
+          "degree": 7
+        }
+      ],
       "id": 8
     },
     {
       "name": "Melodic Minor",
       "common_name": "Melodic Minor",
       "type": "diatonic",
-      "intervals": [{ "semitones": 0, "degree": 1 }, { "semitones": 2, "degree": 2 }, { "semitones": 3, "degree": 3 }, { "semitones": 5, "degree": 4 }, { "semitones": 7, "degree": 5 }, { "semitones": 9, "degree": 6 }, { "semitones": 11, "degree": 7 }],
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 9,
+          "degree": 6
+        },
+        {
+          "semitones": 11,
+          "degree": 7
+        }
+      ],
       "id": 9
     },
     {
       "name": "Major Pentatonic",
       "common_name": "Major Pentatonic",
       "type": "pentatonic",
-      "intervals": [{ "semitones": 0, "degree": 1 }, { "semitones": 2, "degree": 2 }, { "semitones": 4, "degree": 3 }, { "semitones": 7, "degree": 5 }, { "semitones": 9, "degree": 6 }],
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 4,
+          "degree": 3
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 9,
+          "degree": 6
+        }
+      ],
       "id": 10
     },
     {
       "name": "Minor Pentatonic",
       "common_name": "Minor Pentatonic",
       "type": "pentatonic",
-      "intervals": [{ "semitones": 0, "degree": 1 }, { "semitones": 3, "degree": 3 }, { "semitones": 5, "degree": 4 }, { "semitones": 7, "degree": 5 }, { "semitones": 10, "degree": 7 }],
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 10,
+          "degree": 7
+        }
+      ],
       "id": 11
     },
     {
       "name": "Double Harmonic Major",
       "common_name": "Byzantine",
       "type": "exotic",
-      "intervals": [{ "semitones": 0, "degree": 1 }, { "semitones": 1, "degree": 2 }, { "semitones": 4, "degree": 3 }, { "semitones": 5, "degree": 4 }, { "semitones": 7, "degree": 5 }, { "semitones": 8, "degree": 6 }, { "semitones": 11, "degree": 7 }],
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 1,
+          "degree": 2
+        },
+        {
+          "semitones": 4,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 8,
+          "degree": 6
+        },
+        {
+          "semitones": 11,
+          "degree": 7
+        }
+      ],
       "id": 12
     },
     {
       "name": "Minor Blues",
       "common_name": "Minor Blues",
       "type": "pentatonic",
-      "intervals": [{ "semitones": 0, "degree": 1 }, { "semitones": 3, "degree": 3 }, { "semitones": 5, "degree": 4 }, { "semitones": 6, "degree": 5 }, { "semitones": 7, "degree": 5 }, { "semitones": 10, "degree": 7 }],
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 6,
+          "degree": 5
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 10,
+          "degree": 7
+        }
+      ],
       "id": 13
     },
     {
       "name": "Major Blues",
       "common_name": "Major Blues",
       "type": "pentatonic",
-      "intervals": [{ "semitones": 0, "degree": 1 }, { "semitones": 2, "degree": 2 }, { "semitones": 3, "degree": 3 }, { "semitones": 4, "degree": 3 }, { "semitones": 7, "degree": 5 }, { "semitones": 9, "degree": 6 }],
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 4,
+          "degree": 3
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 9,
+          "degree": 6
+        }
+      ],
       "id": 14
+    },
+    {
+      "id": 15,
+      "name": "Locrian #6",
+      "common_name": "Locrian natural 6",
+      "type": "diatonic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 6,
+          "degree": 5
+        },
+        {
+          "semitones": 8,
+          "degree": 6
+        },
+        {
+          "semitones": 10,
+          "degree": 7
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "name": "Ionian #5",
+      "common_name": "Major #5",
+      "type": "diatonic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 4,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 8,
+          "degree": 5
+        },
+        {
+          "semitones": 9,
+          "degree": 6
+        },
+        {
+          "semitones": 11,
+          "degree": 7
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "name": "Dorian #4",
+      "common_name": "Dorian natural 4",
+      "type": "diatonic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 6,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 9,
+          "degree": 6
+        },
+        {
+          "semitones": 10,
+          "degree": 7
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "name": "Phrygian Dominant",
+      "common_name": "Phrygian #3",
+      "type": "diatonic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 1,
+          "degree": 2
+        },
+        {
+          "semitones": 4,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 8,
+          "degree": 6
+        },
+        {
+          "semitones": 10,
+          "degree": 7
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "name": "Lydian #2",
+      "common_name": "Lydian augmented 2",
+      "type": "diatonic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 3,
+          "degree": 2
+        },
+        {
+          "semitones": 4,
+          "degree": 3
+        },
+        {
+          "semitones": 6,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 9,
+          "degree": 6
+        },
+        {
+          "semitones": 11,
+          "degree": 7
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "name": "Ultra-Locrian",
+      "common_name": "Super Locrian bb7",
+      "type": "diatonic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 1,
+          "degree": 2
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 4,
+          "degree": 4
+        },
+        {
+          "semitones": 6,
+          "degree": 5
+        },
+        {
+          "semitones": 8,
+          "degree": 6
+        },
+        {
+          "semitones": 9,
+          "degree": 7
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "name": "Dorian b2",
+      "common_name": "Phrygian #6",
+      "type": "diatonic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 1,
+          "degree": 2
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 9,
+          "degree": 6
+        },
+        {
+          "semitones": 10,
+          "degree": 7
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "name": "Lydian Augmented",
+      "common_name": "Lydian #5",
+      "type": "diatonic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 4,
+          "degree": 3
+        },
+        {
+          "semitones": 6,
+          "degree": 4
+        },
+        {
+          "semitones": 8,
+          "degree": 5
+        },
+        {
+          "semitones": 9,
+          "degree": 6
+        },
+        {
+          "semitones": 11,
+          "degree": 7
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "name": "Lydian Dominant",
+      "common_name": "Mixolydian #4",
+      "type": "diatonic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 4,
+          "degree": 3
+        },
+        {
+          "semitones": 6,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 9,
+          "degree": 6
+        },
+        {
+          "semitones": 10,
+          "degree": 7
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "name": "Mixolydian b6",
+      "common_name": "Aeolian dominant",
+      "type": "diatonic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 4,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 8,
+          "degree": 6
+        },
+        {
+          "semitones": 10,
+          "degree": 7
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "name": "Locrian #2",
+      "common_name": "Half-diminished",
+      "type": "diatonic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 6,
+          "degree": 5
+        },
+        {
+          "semitones": 8,
+          "degree": 6
+        },
+        {
+          "semitones": 10,
+          "degree": 7
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "name": "Altered Scale",
+      "common_name": "Super Locrian",
+      "type": "diatonic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 1,
+          "degree": 2
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 4,
+          "degree": 4
+        },
+        {
+          "semitones": 6,
+          "degree": 5
+        },
+        {
+          "semitones": 8,
+          "degree": 6
+        },
+        {
+          "semitones": 10,
+          "degree": 7
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "name": "Whole Tone",
+      "common_name": "Messiaen Mode 1",
+      "type": "synthetic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 4,
+          "degree": 3
+        },
+        {
+          "semitones": 6,
+          "degree": 4
+        },
+        {
+          "semitones": 8,
+          "degree": 5
+        },
+        {
+          "semitones": 10,
+          "degree": 6
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "name": "Whole-Half Diminished Scale",
+      "common_name": "Messiaen Mode 2",
+      "type": "synthetic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 6,
+          "degree": 5
+        },
+        {
+          "semitones": 8,
+          "degree": 6
+        },
+        {
+          "semitones": 9,
+          "degree": 7
+        },
+        {
+          "semitones": 11,
+          "degree": 8
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "name": "Chromatic",
+      "common_name": "Chromatic",
+      "type": "synthetic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 1,
+          "degree": 2
+        },
+        {
+          "semitones": 2,
+          "degree": 3
+        },
+        {
+          "semitones": 3,
+          "degree": 4
+        },
+        {
+          "semitones": 4,
+          "degree": 5
+        },
+        {
+          "semitones": 5,
+          "degree": 6
+        },
+        {
+          "semitones": 6,
+          "degree": 7
+        },
+        {
+          "semitones": 7,
+          "degree": 8
+        },
+        {
+          "semitones": 8,
+          "degree": 9
+        },
+        {
+          "semitones": 9,
+          "degree": 10
+        },
+        {
+          "semitones": 10,
+          "degree": 11
+        },
+        {
+          "semitones": 11,
+          "degree": 12
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "name": "Hungarian Minor",
+      "common_name": "Gypsy Minor",
+      "type": "exotic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 6,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 8,
+          "degree": 6
+        },
+        {
+          "semitones": 11,
+          "degree": 7
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "name": "Neapolitan Major",
+      "common_name": "Neapolitan Major",
+      "type": "exotic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 1,
+          "degree": 2
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 9,
+          "degree": 6
+        },
+        {
+          "semitones": 11,
+          "degree": 7
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "name": "Neapolitan Minor",
+      "common_name": "Neapolitan Minor",
+      "type": "exotic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 1,
+          "degree": 2
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 8,
+          "degree": 6
+        },
+        {
+          "semitones": 11,
+          "degree": 7
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "name": "Suspended Pentatonic",
+      "common_name": "Pentatonic Mode 2",
+      "type": "pentatonic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 10,
+          "degree": 7
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "name": "Blues Minor",
+      "common_name": "Pentatonic Mode 3",
+      "type": "pentatonic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 8,
+          "degree": 6
+        },
+        {
+          "semitones": 10,
+          "degree": 7
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "name": "Blues Major",
+      "common_name": "Pentatonic Mode 4",
+      "type": "pentatonic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 9,
+          "degree": 6
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "name": "Harmonic Major",
+      "common_name": "Harmonic Major Mode 1",
+      "type": "exotic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 4,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 8,
+          "degree": 6
+        },
+        {
+          "semitones": 11,
+          "degree": 7
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "name": "Enigmatic",
+      "common_name": "Enigmatic",
+      "type": "exotic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 1,
+          "degree": 2
+        },
+        {
+          "semitones": 4,
+          "degree": 3
+        },
+        {
+          "semitones": 6,
+          "degree": 4
+        },
+        {
+          "semitones": 8,
+          "degree": 5
+        },
+        {
+          "semitones": 10,
+          "degree": 6
+        },
+        {
+          "semitones": 11,
+          "degree": 7
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "name": "Persian",
+      "common_name": "Persian",
+      "type": "exotic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 1,
+          "degree": 2
+        },
+        {
+          "semitones": 4,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 6,
+          "degree": 5
+        },
+        {
+          "semitones": 8,
+          "degree": 6
+        },
+        {
+          "semitones": 11,
+          "degree": 7
+        }
+      ]
+    },
+    {
+      "id": 39,
+      "name": "Half-Whole Diminished Scale",
+      "common_name": "Messiaen Mode 2 (Half-Whole)",
+      "type": "synthetic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 1,
+          "degree": 2
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 4,
+          "degree": 4
+        },
+        {
+          "semitones": 6,
+          "degree": 5
+        },
+        {
+          "semitones": 7,
+          "degree": 6
+        },
+        {
+          "semitones": 9,
+          "degree": 7
+        },
+        {
+          "semitones": 10,
+          "degree": 8
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "name": "Augmented Scale",
+      "common_name": "Augmented",
+      "type": "synthetic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 4,
+          "degree": 3
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 8,
+          "degree": 5
+        },
+        {
+          "semitones": 11,
+          "degree": 7
+        }
+      ]
+    },
+    {
+      "id": 77,
+      "name": "Messiaen Mode 3",
+      "common_name": "Tcherepnin Scale",
+      "type": "synthetic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 3,
+          "degree": 3
+        },
+        {
+          "semitones": 4,
+          "degree": 4
+        },
+        {
+          "semitones": 6,
+          "degree": 5
+        },
+        {
+          "semitones": 7,
+          "degree": 6
+        },
+        {
+          "semitones": 8,
+          "degree": 7
+        },
+        {
+          "semitones": 10,
+          "degree": 8
+        },
+        {
+          "semitones": 11,
+          "degree": 9
+        }
+      ]
+    },
+    {
+      "id": 78,
+      "name": "Messiaen Mode 4",
+      "common_name": "Messiaen Mode 4",
+      "type": "synthetic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 1,
+          "degree": 2
+        },
+        {
+          "semitones": 2,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 6,
+          "degree": 5
+        },
+        {
+          "semitones": 7,
+          "degree": 6
+        },
+        {
+          "semitones": 8,
+          "degree": 7
+        },
+        {
+          "semitones": 11,
+          "degree": 8
+        }
+      ]
+    },
+    {
+      "id": 79,
+      "name": "Messiaen Mode 5",
+      "common_name": "Messiaen Mode 5",
+      "type": "synthetic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 1,
+          "degree": 2
+        },
+        {
+          "semitones": 5,
+          "degree": 3
+        },
+        {
+          "semitones": 6,
+          "degree": 4
+        },
+        {
+          "semitones": 7,
+          "degree": 5
+        },
+        {
+          "semitones": 11,
+          "degree": 6
+        }
+      ]
+    },
+    {
+      "id": 80,
+      "name": "Messiaen Mode 6",
+      "common_name": "Messiaen Mode 6",
+      "type": "synthetic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 2,
+          "degree": 2
+        },
+        {
+          "semitones": 4,
+          "degree": 3
+        },
+        {
+          "semitones": 5,
+          "degree": 4
+        },
+        {
+          "semitones": 6,
+          "degree": 5
+        },
+        {
+          "semitones": 8,
+          "degree": 6
+        },
+        {
+          "semitones": 10,
+          "degree": 7
+        },
+        {
+          "semitones": 11,
+          "degree": 8
+        }
+      ]
+    },
+    {
+      "id": 81,
+      "name": "Messiaen Mode 7",
+      "common_name": "Messiaen Mode 7",
+      "type": "synthetic",
+      "intervals": [
+        {
+          "semitones": 0,
+          "degree": 1
+        },
+        {
+          "semitones": 1,
+          "degree": 2
+        },
+        {
+          "semitones": 2,
+          "degree": 3
+        },
+        {
+          "semitones": 3,
+          "degree": 4
+        },
+        {
+          "semitones": 5,
+          "degree": 5
+        },
+        {
+          "semitones": 6,
+          "degree": 6
+        },
+        {
+          "semitones": 7,
+          "degree": 7
+        },
+        {
+          "semitones": 8,
+          "degree": 8
+        },
+        {
+          "semitones": 9,
+          "degree": 9
+        },
+        {
+          "semitones": 11,
+          "degree": 10
+        }
+      ]
+    },
+    {
+      "id": 82,
+      "name": "Major Bebop",
+      "common_name": "Major Bebop",
+      "type": "synthetic",
+      "intervals": [
+        { "semitones": 0, "degree": 1 },
+        { "semitones": 2, "degree": 2 },
+        { "semitones": 4, "degree": 3 },
+        { "semitones": 5, "degree": 4 },
+        { "semitones": 7, "degree": 5 },
+        { "semitones": 8, "degree": 6 },
+        { "semitones": 9, "degree": 6 },
+        { "semitones": 11, "degree": 7 }
+      ]
+    },
+    {
+      "id": 83,
+      "name": "Dominant Bebop",
+      "common_name": "Dominant Bebop",
+      "type": "synthetic",
+      "intervals": [
+        { "semitones": 0, "degree": 1 },
+        { "semitones": 2, "degree": 2 },
+        { "semitones": 4, "degree": 3 },
+        { "semitones": 5, "degree": 4 },
+        { "semitones": 7, "degree": 5 },
+        { "semitones": 9, "degree": 6 },
+        { "semitones": 10, "degree": 7 },
+        { "semitones": 11, "degree": 7 }
+      ]
+    },
+    {
+      "id": 84,
+      "name": "Minor Bebop",
+      "common_name": "Minor Bebop",
+      "type": "synthetic",
+      "intervals": [
+        { "semitones": 0, "degree": 1 },
+        { "semitones": 2, "degree": 2 },
+        { "semitones": 3, "degree": 3 },
+        { "semitones": 5, "degree": 4 },
+        { "semitones": 7, "degree": 5 },
+        { "semitones": 9, "degree": 6 },
+        { "semitones": 10, "degree": 7 },
+        { "semitones": 11, "degree": 7 }
+      ]
+    },
+    {
+      "id": 85,
+      "name": "Major Hexatonic",
+      "common_name": "Major Hexatonic",
+      "type": "synthetic",
+      "intervals": [
+        { "semitones": 0, "degree": 1 },
+        { "semitones": 2, "degree": 2 },
+        { "semitones": 4, "degree": 3 },
+        { "semitones": 7, "degree": 5 },
+        { "semitones": 9, "degree": 6 },
+        { "semitones": 11, "degree": 7 }
+      ]
+    },
+    {
+      "id": 86,
+      "name": "Minor Hexatonic",
+      "common_name": "Minor Hexatonic",
+      "type": "synthetic",
+      "intervals": [
+        { "semitones": 0, "degree": 1 },
+        { "semitones": 2, "degree": 2 },
+        { "semitones": 3, "degree": 3 },
+        { "semitones": 5, "degree": 4 },
+        { "semitones": 7, "degree": 5 },
+        { "semitones": 10, "degree": 7 }
+      ]
+    },
+    {
+      "id": 87,
+      "name": "Prometheus",
+      "common_name": "Prometheus",
+      "type": "synthetic",
+      "intervals": [
+        { "semitones": 0, "degree": 1 },
+        { "semitones": 2, "degree": 2 },
+        { "semitones": 4, "degree": 3 },
+        { "semitones": 6, "degree": 4 },
+        { "semitones": 9, "degree": 6 },
+        { "semitones": 10, "degree": 7 }
+      ]
     }
   ]
 }

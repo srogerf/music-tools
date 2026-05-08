@@ -74,7 +74,7 @@ func TestSeedDataChecksSchemaVersionCompatibility(t *testing.T) {
 	checks := []string{
 		"FROM schema_metadata",
 		"seed data format version % does not support schema version %",
-		"UPDATE schema_metadata SET seed_data_format_version = 5 WHERE singleton = TRUE;",
+		"UPDATE schema_metadata SET seed_data_format_version = 6 WHERE singleton = TRUE;",
 	}
 
 	for _, needle := range checks {
@@ -145,6 +145,10 @@ func TestSchemaDefinesSplitLayoutTables(t *testing.T) {
 		"aliases JSONB NOT NULL DEFAULT '[]'::jsonb",
 		"parent_family TEXT",
 		"parent_mode_number SMALLINT",
+		"parent_mode_label TEXT",
+		"catalog_group_code TEXT NOT NULL",
+		"catalog_group_label TEXT NOT NULL",
+		"catalog_group_order SMALLINT NOT NULL",
 		"latent BOOLEAN NOT NULL DEFAULT FALSE",
 		"CREATE TABLE scale_layout_positions",
 		"degree_class SMALLINT NOT NULL",
@@ -181,12 +185,12 @@ func TestSeedDataIncludesScaleIntervalLabels(t *testing.T) {
 func TestSeedDataIncludesScaleDescriptions(t *testing.T) {
 	out := runSeedData(t)
 
-	expected := "INSERT INTO scales (external_id, name, common_name, musical_name, description, aliases, parent_family, parent_mode_number, latent, scale_type_id) VALUES (1, 'Major', 'Major', 'Ionian', 'Bright, stable, and familiar. The default language for pop, folk, classical, and most functional harmony.', '[]'::jsonb, 'Major', 1, FALSE, (SELECT id FROM scale_types WHERE code = 'diatonic'));"
+	expected := "INSERT INTO scales (external_id, name, common_name, musical_name, description, aliases, parent_family, parent_mode_number, parent_mode_label, catalog_group_code, catalog_group_label, catalog_group_order, latent, scale_type_id) VALUES (1, 'Major', 'Major', 'Ionian', 'Bright, stable, and familiar. The default language for pop, folk, classical, and most functional harmony.', '[]'::jsonb, 'Major', 1, 'Major Mode 1', 'major_minor', 'Major / Minor', 10, FALSE, (SELECT id FROM scale_types WHERE code = 'diatonic'));"
 	if !strings.Contains(out, expected) {
 		t.Fatalf("expected seed output to contain:\n%s", expected)
 	}
 
-	expected = "INSERT INTO scales (external_id, name, common_name, musical_name, description, aliases, parent_family, parent_mode_number, latent, scale_type_id) VALUES (82, 'Major Bebop', 'Major Bebop', 'Ionian Bebop', 'A major scale with an added passing tone between the 5th and 6th, commonly used for straight eighth-note bebop lines.', '[]'::jsonb, NULL, NULL, TRUE, (SELECT id FROM scale_types WHERE code = 'synthetic'));"
+	expected = "INSERT INTO scales (external_id, name, common_name, musical_name, description, aliases, parent_family, parent_mode_number, parent_mode_label, catalog_group_code, catalog_group_label, catalog_group_order, latent, scale_type_id) VALUES (82, 'Major Bebop', 'Major Bebop', 'Ionian Bebop', 'A major scale with an added passing tone between the 5th and 6th, commonly used for straight eighth-note bebop lines.', '[]'::jsonb, NULL, NULL, NULL, 'synthetic', 'Synthetic', 80, TRUE, (SELECT id FROM scale_types WHERE code = 'synthetic'));"
 	if !strings.Contains(out, expected) {
 		t.Fatalf("expected seed output to contain:\n%s", expected)
 	}
@@ -300,16 +304,20 @@ func TestProductionScaleCatalogUpgradeSetsCurrentVersions(t *testing.T) {
 	}
 	text := string(data)
 	checks := []string{
-		"expected production schema version 7 or 8",
+		"expected production schema version 6, 7, 8, or 9",
 		"ALTER TABLE scales ADD COLUMN IF NOT EXISTS musical_name TEXT;",
 		"ALTER TABLE scales ADD COLUMN IF NOT EXISTS aliases JSONB NOT NULL DEFAULT '[]'::jsonb;",
 		"ALTER TABLE scales ADD COLUMN IF NOT EXISTS parent_family TEXT;",
 		"ALTER TABLE scales ADD COLUMN IF NOT EXISTS parent_mode_number SMALLINT;",
+		"ALTER TABLE scales ADD COLUMN IF NOT EXISTS parent_mode_label TEXT;",
+		"ALTER TABLE scales ADD COLUMN IF NOT EXISTS catalog_group_code TEXT;",
+		"ALTER TABLE scales ADD COLUMN IF NOT EXISTS catalog_group_label TEXT;",
+		"ALTER TABLE scales ADD COLUMN IF NOT EXISTS catalog_group_order SMALLINT;",
 		"ALTER TABLE scales ADD COLUMN IF NOT EXISTS latent BOOLEAN NOT NULL DEFAULT FALSE;",
 		"scale catalog upgrade left missing scale metadata",
 		"DELETE FROM scale_intervals WHERE scale_id = (SELECT id FROM scales WHERE external_id =",
-		"SET schema_version = 8,",
-		"seed_data_format_version = 5",
+		"SET schema_version = 9,",
+		"seed_data_format_version = 6",
 	}
 	for _, needle := range checks {
 		if !strings.Contains(text, needle) {

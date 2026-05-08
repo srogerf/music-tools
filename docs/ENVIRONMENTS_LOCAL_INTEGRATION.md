@@ -7,6 +7,8 @@ This document describes the local Docker Compose integration environment.
 - validate the container runtime locally
 - confirm the application image works with Postgres under Compose
 - rehearse a production-like runtime before touching the remote host
+- rehearse database schema and reference-data upgrade paths before running them
+  against production
 
 ## Layout
 
@@ -58,6 +60,18 @@ Seed the database:
 bash bin/local_integration_seed.sh
 ```
 
+When a release changes database schema versions, seed-data versions, or
+production upgrade wrappers, use local integration as the rehearsal
+environment first:
+
+```bash
+bash bin/local_integration_start.sh
+bash bin/local_integration_seed.sh
+```
+
+Then verify the app comes up correctly against that upgraded data before
+touching production.
+
 Stop the environment:
 
 ```bash
@@ -84,6 +98,8 @@ bash bin/local_integration_goaccess.sh
 - Postgres data is intentionally kept under `.private/`
 - the environment is meant for integration validation, not fast frontend
   iteration
+- this is the correct place to catch schema-version and seed-version path
+  issues before production release work
 
 ## Issues We Have Seen
 
@@ -109,3 +125,5 @@ bash bin/local_integration_goaccess.sh
 - keep the private container state out of tracked files
 - if this environment works, image/runtime issues on the remote host are more
   likely to be deployment-path problems than application build problems
+- if a DB upgrade path has not been rehearsed in local integration, it is not
+  ready for production

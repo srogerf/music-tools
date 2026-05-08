@@ -9,7 +9,7 @@ usage() {
   cat >&2 <<'EOF'
 Usage: bash bin/production_db_upgrade_scale_intervals.sh
 
-Forward-upgrade the live production database from schema version 3 to 4 by
+Forward-upgrade the live production database to schema version 5 by
 adding functional scale interval metadata:
   - scale_intervals.degree_class
   - scale_intervals.interval_label
@@ -39,6 +39,27 @@ production_db_require_ssh_tunnel
 production_db_load_remote_compose_env
 trap production_db_cleanup_forward EXIT
 production_db_open_forward
+
+current_schema_version="$(
+  PGPASSWORD="$POSTGRES_PASSWORD" \
+  psql \
+    -h "$DB_FORWARD_HOST" \
+    -p "$DB_FORWARD_PORT" \
+    -U "$POSTGRES_USER" \
+    -d "$POSTGRES_DB" \
+    -v ON_ERROR_STOP=1 \
+    -tA \
+    -c "SELECT schema_version FROM schema_metadata WHERE singleton = TRUE;"
+)"
+
+case "$current_schema_version" in
+  3|4|5)
+    ;;
+  *)
+    echo "Unexpected production schema version: $current_schema_version" >&2
+    exit 1
+    ;;
+esac
 
 python3 - "$ROOT_DIR/data/scales/DEFINITIONS.json" <<'PY' | env -u DATABASE_URL \
   PGHOST="$DB_FORWARD_HOST" \
@@ -70,6 +91,8 @@ def interval_label(semitones, degree):
         6: 9,
         7: 11,
     }
+    if degree not in major_or_perfect:
+        return str(degree)
     offset = (semitones - major_or_perfect[degree] + 12) % 12
     if offset > 6:
         offset -= 12
@@ -94,8 +117,8 @@ BEGIN
     FROM schema_metadata
     WHERE singleton = TRUE;
 
-    IF current_schema_version NOT IN (3, 4) THEN
-        RAISE EXCEPTION 'expected production schema version 3 or 4, got %',
+    IF current_schema_version NOT IN (3, 4, 5) THEN
+        RAISE EXCEPTION 'expected production schema version 3, 4, or 5, got %',
             current_schema_version;
     END IF;
 END
@@ -142,7 +165,13 @@ BEGIN
     ) THEN
         ALTER TABLE scale_intervals
         ADD CONSTRAINT scale_intervals_degree_class_check
-        CHECK (degree_class BETWEEN 1 AND 7);
+        CHECK (degree_class BETWEEN 1 AND 12);
+    ELSE
+        ALTER TABLE scale_intervals
+        DROP CONSTRAINT scale_intervals_degree_class_check;
+        ALTER TABLE scale_intervals
+        ADD CONSTRAINT scale_intervals_degree_class_check
+        CHECK (degree_class BETWEEN 1 AND 12);
     END IF;
 
     IF NOT EXISTS (
@@ -157,7 +186,7 @@ END
 $$;
 
 UPDATE schema_metadata
-SET schema_version = 4,
+SET schema_version = 5,
     seed_data_format_version = 2
 WHERE singleton = TRUE;
 

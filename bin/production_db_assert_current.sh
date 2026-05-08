@@ -80,6 +80,9 @@ Actual:
 
 Run the required database steps, then retry the deploy:
   bash bin/production_db_upgrade_scale_layout_positions.sh
+  bash bin/production_db_upgrade_scale_intervals.sh
+  bash bin/production_db_upgrade_scale_descriptions.sh
+  bash bin/production_db_upgrade_scale_catalog.sh
   bash bin/production_db_seed.sh
 EOF
   exit 1
