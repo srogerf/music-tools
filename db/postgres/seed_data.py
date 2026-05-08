@@ -3,6 +3,7 @@
 import glob
 import json
 import os
+import sys
 from typing import Any
 
 
@@ -34,6 +35,10 @@ def print_insert(statement: str) -> None:
     print(statement.rstrip() + ";")
 
 
+def progress(message: str) -> None:
+    print(f"-- {message}", file=sys.stderr, flush=True)
+
+
 def interval_label(semitones: int, degree: int) -> str:
     major_or_perfect = {
         1: 0,
@@ -44,6 +49,8 @@ def interval_label(semitones: int, degree: int) -> str:
         6: 9,
         7: 11,
     }
+    if degree not in major_or_perfect:
+        return str(degree)
     offset = (semitones - major_or_perfect[degree] + 12) % 12
     if offset > 6:
         offset -= 12
@@ -92,12 +99,39 @@ def main() -> None:
     ]
 
     scales = read_json("data", "scales", "DEFINITIONS.json")["scales"]
+    scale_metadata = read_json("data", "scales", "METADATA.json")["scales"]
+    scale_descriptions = read_json("data", "scales", "DESCRIPTIONS.json")["descriptions"]
     key_signatures = read_json("data", "scales", "KEY_SIGNATURES.json")
     tunings = read_json("data", "tunings", "DEFINITIONS.json")["tunings"]
     layout_files = load_layout_files()
 
+    scale_names = {scale["name"] for scale in scales}
+    metadata_names = set(scale_metadata.keys())
+    description_names = set(scale_descriptions.keys())
+    missing_metadata = sorted(scale_names - metadata_names)
+    unknown_metadata = sorted(metadata_names - scale_names)
+    missing_descriptions = sorted(scale_names - description_names)
+    unknown_descriptions = sorted(description_names - scale_names)
+    if missing_metadata:
+        raise SystemExit(
+            "Missing metadata for scales: " + ", ".join(missing_metadata)
+        )
+    if unknown_metadata:
+        raise SystemExit(
+            "Metadata exists for unknown scales: " + ", ".join(unknown_metadata)
+        )
+    if missing_descriptions:
+        raise SystemExit(
+            "Missing descriptions for scales: " + ", ".join(missing_descriptions)
+        )
+    if unknown_descriptions:
+        raise SystemExit(
+            "Descriptions exist for unknown scales: " + ", ".join(unknown_descriptions)
+        )
+
     print("BEGIN;")
 
+    progress("seeding schema metadata")
     supported_schema_versions_sql = ", ".join(str(version) for version in supported_schema_versions)
     print(
         f"""DO $seed$
@@ -127,16 +161,25 @@ $seed$;"""
         "WHERE singleton = TRUE"
     )
 
+    progress("seeding scale types")
     scale_types = sorted({scale["type"] for scale in scales})
     for scale_type in scale_types:
         print_insert(
             f"INSERT INTO scale_types (code) VALUES ({sql_literal(scale_type)})"
         )
 
+    progress("seeding scales and intervals")
     for scale in scales:
+        metadata = scale_metadata[scale["name"]]
         print_insert(
-            "INSERT INTO scales (external_id, name, common_name, scale_type_id) "
-            f"VALUES ({scale['id']}, {sql_literal(scale['name'])}, {sql_literal(scale['common_name'])}, "
+            "INSERT INTO scales (external_id, name, common_name, musical_name, description, aliases, parent_family, parent_mode_number, latent, scale_type_id) "
+            f"VALUES ({scale['id']}, {sql_literal(scale['name'])}, {sql_literal(metadata.get('common_name') or scale['common_name'])}, "
+            f"{sql_literal(metadata.get('musical_name'))}, "
+            f"{sql_literal(scale_descriptions[scale['name']])}, "
+            f"{sql_literal(json.dumps(metadata.get('aliases', [])))}::jsonb, "
+            f"{sql_literal(metadata.get('parent_family'))}, "
+            f"{sql_literal(metadata.get('parent_mode_number'))}, "
+            f"{sql_literal(bool(metadata.get('latent', False)))}, "
             f"(SELECT id FROM scale_types WHERE code = {sql_literal(scale['type'])}))"
         )
         for ordinal, interval in enumerate(scale["intervals"], start=1):
@@ -149,6 +192,7 @@ $seed$;"""
                 f"{ordinal}, {semitones}, {degree_class}, {sql_literal(interval_label(semitones, degree_class))})"
             )
 
+    progress("seeding key signatures")
     for group_code in sorted(key_signatures.keys()):
         print_insert(
             f"INSERT INTO key_signature_groups (code) VALUES ({sql_literal(group_code)})"
@@ -160,6 +204,7 @@ $seed$;"""
                 f"{sql_literal(item['key'])}, {item['accidentals']})"
             )
 
+    progress("seeding tunings")
     tuning_ids_by_name: dict[str, int] = {}
     for tuning in tunings:
         tuning_ids_by_name[tuning["name"]] = tuning["id"]
@@ -175,6 +220,7 @@ $seed$;"""
                 f"{string_number}, {sql_literal(note_name)})"
             )
 
+    progress("seeding layouts")
     for layout_file in layout_files:
         scale_id = layout_file["id"]
         for layout in layout_file["layouts"]:

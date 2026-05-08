@@ -1,5 +1,5 @@
 {
-  "schema_version": 5,
-  "data_format_version": 2,
-  "seed_supported_schema_versions": [5]
+  "schema_version": 8,
+  "data_format_version": 5,
+  "seed_supported_schema_versions": [8]
 }

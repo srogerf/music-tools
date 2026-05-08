@@ -50,8 +50,15 @@ func (s *ScaleService) ListScalesHandler(w http.ResponseWriter, r *http.Request)
 	if nameQuery != "" {
 		matches := make([]scales.Definition, 0, 1)
 		for _, scale := range definitions.Scales {
-			if strings.EqualFold(scale.Name, nameQuery) || strings.EqualFold(scale.CommonName, nameQuery) {
+			if strings.EqualFold(scale.Name, nameQuery) || strings.EqualFold(scale.CommonName, nameQuery) || strings.EqualFold(scale.MusicalName, nameQuery) {
 				matches = append(matches, scale)
+				continue
+			}
+			for _, alias := range scale.Aliases {
+				if strings.EqualFold(alias, nameQuery) {
+					matches = append(matches, scale)
+					break
+				}
 			}
 		}
 

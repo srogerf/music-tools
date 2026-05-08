@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -15,14 +16,21 @@ const (
 	ScaleTypePentatonic ScaleType = "pentatonic"
 	ScaleTypeDiatonic   ScaleType = "diatonic"
 	ScaleTypeExotic     ScaleType = "exotic"
+	ScaleTypeSynthetic  ScaleType = "synthetic"
 )
 
 type Definition struct {
-	ID         int             `json:"id"`
-	Name       string          `json:"name"`
-	CommonName string          `json:"common_name"`
-	Type       ScaleType       `json:"type"`
-	Intervals  []ScaleInterval `json:"intervals"`
+	ID               int             `json:"id"`
+	Name             string          `json:"name"`
+	CommonName       string          `json:"common_name"`
+	MusicalName      string          `json:"musical_name"`
+	Description      string          `json:"description"`
+	Aliases          []string        `json:"aliases"`
+	ParentFamily     string          `json:"parent_family"`
+	ParentModeNumber int             `json:"parent_mode_number"`
+	Latent           bool            `json:"latent"`
+	Type             ScaleType       `json:"type"`
+	Intervals        []ScaleInterval `json:"intervals"`
 }
 
 type ScaleInterval struct {
@@ -45,12 +53,15 @@ func LoadDefinitions(path string) (DefinitionSet, error) {
 		return DefinitionSet{}, fmt.Errorf("parse definitions: %w", err)
 	}
 
+	applyMetadata(path, &set)
+	applyDescriptions(path, &set)
+
 	return set, nil
 }
 
 func (set DefinitionSet) ByName(name string) (Definition, bool) {
 	for _, scale := range set.Scales {
-		if strings.EqualFold(scale.Name, name) || strings.EqualFold(scale.CommonName, name) {
+		if matchesScaleName(scale, name) {
 			return scale, true
 		}
 	}
@@ -229,4 +240,98 @@ func shouldUseFlats(key string) bool {
 	default:
 		return false
 	}
+}
+
+type metadataEntry struct {
+	CommonName       string   `json:"common_name"`
+	MusicalName      string   `json:"musical_name"`
+	Aliases          []string `json:"aliases"`
+	ParentFamily     string   `json:"parent_family"`
+	ParentModeNumber int      `json:"parent_mode_number"`
+	Latent           bool     `json:"latent"`
+}
+
+type metadataFile struct {
+	Scales map[string]metadataEntry `json:"scales"`
+}
+
+type descriptionsFile struct {
+	Descriptions map[string]string `json:"descriptions"`
+}
+
+func applyMetadata(path string, set *DefinitionSet) {
+	if set == nil {
+		return
+	}
+	metadataPath := filepath.Join(filepath.Dir(path), "METADATA.json")
+	data, err := os.ReadFile(metadataPath)
+	if err != nil {
+		return
+	}
+
+	var metadata metadataFile
+	if err := json.Unmarshal(data, &metadata); err != nil {
+		return
+	}
+
+	for index := range set.Scales {
+		scale := &set.Scales[index]
+		entry, ok := metadata.Scales[scale.Name]
+		if !ok {
+			continue
+		}
+		if strings.TrimSpace(entry.CommonName) != "" {
+			scale.CommonName = entry.CommonName
+		}
+		scale.MusicalName = entry.MusicalName
+		scale.Aliases = append([]string{}, entry.Aliases...)
+		scale.ParentFamily = entry.ParentFamily
+		scale.ParentModeNumber = entry.ParentModeNumber
+		scale.Latent = entry.Latent
+	}
+}
+
+func matchesScaleName(scale Definition, candidate string) bool {
+	if strings.EqualFold(scale.Name, candidate) || strings.EqualFold(scale.CommonName, candidate) || strings.EqualFold(scale.MusicalName, candidate) {
+		return true
+	}
+	if strings.EqualFold(parentModeLabel(scale.ParentFamily, scale.ParentModeNumber), candidate) {
+		return true
+	}
+	for _, alias := range scale.Aliases {
+		if strings.EqualFold(alias, candidate) {
+			return true
+		}
+	}
+	return false
+}
+
+func applyDescriptions(path string, set *DefinitionSet) {
+	if set == nil {
+		return
+	}
+	descriptionsPath := filepath.Join(filepath.Dir(path), "DESCRIPTIONS.json")
+	data, err := os.ReadFile(descriptionsPath)
+	if err != nil {
+		return
+	}
+
+	var descriptions descriptionsFile
+	if err := json.Unmarshal(data, &descriptions); err != nil {
+		return
+	}
+
+	for index := range set.Scales {
+		scale := &set.Scales[index]
+		if description, ok := descriptions.Descriptions[scale.Name]; ok {
+			scale.Description = description
+		}
+	}
+}
+
+func parentModeLabel(parentFamily string, parentModeNumber int) string {
+	if strings.TrimSpace(parentFamily) == "" || parentModeNumber < 1 {
+		return ""
+	}
+	return fmt.Sprintf("%s Mode %d", parentFamily, parentModeNumber)
 }

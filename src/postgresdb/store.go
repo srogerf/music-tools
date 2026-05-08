@@ -3,6 +3,8 @@ package postgresdb
 import (
 	"bufio"
 	"context"
+	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/url"
@@ -107,7 +109,7 @@ func firstNonEmpty(values ...string) string {
 func (s *Store) LoadScaleDefinitions(ctx context.Context) (scales.DefinitionSet, error) {
 	log.Printf("db query load_scale_definitions")
 	rows, err := s.pool.Query(ctx, `
-		SELECT s.external_id, s.name, s.common_name, st.code, si.ordinal, si.semitones, si.degree_class
+		SELECT s.external_id, s.name, s.common_name, s.musical_name, s.description, s.aliases, s.parent_family, s.parent_mode_number, s.latent, st.code, si.ordinal, si.semitones, si.degree_class
 		FROM scales s
 		JOIN scale_types st ON st.id = s.scale_type_id
 		JOIN scale_intervals si ON si.scale_id = s.id
@@ -126,19 +128,36 @@ func (s *Store) LoadScaleDefinitions(ctx context.Context) (scales.DefinitionSet,
 
 	for rows.Next() {
 		var id, ordinal, semitones, degreeClass int
-		var name, commonName, scaleType string
-		if err := rows.Scan(&id, &name, &commonName, &scaleType, &ordinal, &semitones, &degreeClass); err != nil {
+		var name, commonName, description, scaleType string
+		var musicalName sql.NullString
+		var aliasesJSON []byte
+		var parentFamily sql.NullString
+		var parentModeNumber sql.NullInt16
+		var latent bool
+		if err := rows.Scan(&id, &name, &commonName, &musicalName, &description, &aliasesJSON, &parentFamily, &parentModeNumber, &latent, &scaleType, &ordinal, &semitones, &degreeClass); err != nil {
 			return scales.DefinitionSet{}, fmt.Errorf("scan scale definitions: %w", err)
+		}
+		var aliases []string
+		if len(aliasesJSON) > 0 {
+			if err := json.Unmarshal(aliasesJSON, &aliases); err != nil {
+				return scales.DefinitionSet{}, fmt.Errorf("decode scale aliases: %w", err)
+			}
 		}
 		item, ok := byID[id]
 		if !ok {
 			item = &aggregate{
 				definition: scales.Definition{
-					ID:         id,
-					Name:       name,
-					CommonName: commonName,
-					Type:       scales.ScaleType(scaleType),
-					Intervals:  []scales.ScaleInterval{},
+					ID:               id,
+					Name:             name,
+					CommonName:       commonName,
+					MusicalName:      musicalName.String,
+					Description:      description,
+					Aliases:          aliases,
+					ParentFamily:     parentFamily.String,
+					ParentModeNumber: int(parentModeNumber.Int16),
+					Latent:           latent,
+					Type:             scales.ScaleType(scaleType),
+					Intervals:        []scales.ScaleInterval{},
 				},
 			}
 			byID[id] = item

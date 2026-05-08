@@ -26,8 +26,8 @@ func TestDefinitionsIncludeFunctionalIntervals(t *testing.T) {
 
 	for _, scale := range set.Scales {
 		for i, interval := range scale.Intervals {
-			if interval.Degree < 1 || interval.Degree > 7 {
-				t.Fatalf("%s interval %d degree must be 1-7, got %d", scale.Name, i, interval.Degree)
+			if interval.Degree < 1 || interval.Degree > 12 {
+				t.Fatalf("%s interval %d degree must be 1-12, got %d", scale.Name, i, interval.Degree)
 			}
 		}
 	}
@@ -99,6 +99,33 @@ func TestByName(t *testing.T) {
 
 	if scale.Type != ScaleTypeDiatonic {
 		t.Fatalf("expected diatonic type, got %s", scale.Type)
+	}
+
+	scale, ok = set.ByName("Half-diminished")
+	if !ok {
+		t.Fatalf("expected to find Locrian #2 by alias")
+	}
+	if scale.Name != "Locrian #2" {
+		t.Fatalf("expected Locrian #2, got %s", scale.Name)
+	}
+	if scale.CommonName != "Half-diminished" {
+		t.Fatalf("expected common name Half-diminished, got %s", scale.CommonName)
+	}
+
+	scale, ok = set.ByName("Ionian")
+	if !ok {
+		t.Fatalf("expected to find Major by musical name")
+	}
+	if scale.Name != "Major" {
+		t.Fatalf("expected Major, got %s", scale.Name)
+	}
+
+	scale, ok = set.ByName("Pentatonic Mode 2")
+	if !ok {
+		t.Fatalf("expected to find Suspended Pentatonic by parent mode label")
+	}
+	if scale.Name != "Suspended Pentatonic" {
+		t.Fatalf("expected Suspended Pentatonic, got %s", scale.Name)
 	}
 }
 

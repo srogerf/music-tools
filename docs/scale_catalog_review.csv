@@ -1,0 +1,52 @@
+id,canonical_name,display_label,common_name,musical_name,aliases,mode_label,parent_family,parent_mode_number,latent
+1,Major,Major (Ionian),Major,Ionian,,Major Mode 1,Major,1,false
+2,Dorian,Dorian,Dorian,Dorian,,Major Mode 2,Major,2,false
+3,Phrygian,Phrygian,Phrygian,Phrygian,,Major Mode 3,Major,3,false
+4,Lydian,Lydian,Lydian,Lydian,,Major Mode 4,Major,4,false
+5,Mixolydian,Mixolydian,Mixolydian,Mixolydian,,Major Mode 5,Major,5,false
+6,Natural Minor,Natural Minor (Aeolian),Natural Minor,Aeolian,,Major Mode 6,Major,6,false
+7,Locrian,Locrian,Locrian,Locrian,,Major Mode 7,Major,7,false
+8,Harmonic Minor,Harmonic Minor,Harmonic Minor,Harmonic Minor,,Harmonic Minor Mode 1,Harmonic Minor,1,false
+9,Melodic Minor,Melodic Minor,Melodic Minor,Melodic Minor,,Melodic Minor Mode 1,Melodic Minor,1,false
+10,Major Pentatonic,Major Pentatonic,Major Pentatonic,Major Pentatonic,,Pentatonic Mode 1,Pentatonic,1,false
+11,Minor Pentatonic,Minor Pentatonic,Minor Pentatonic,Minor Pentatonic,,Pentatonic Mode 5,Pentatonic,5,false
+12,Double Harmonic Major,Byzantine (Double Harmonic Major),Byzantine,Double Harmonic Major,,,,,false
+13,Minor Blues,Minor Blues,Minor Blues,Minor Blues,,,,,false
+14,Major Blues,Major Blues,Major Blues,Major Blues,,,,,false
+15,Locrian #6,Locrian #6,Locrian #6,Locrian #6,Locrian natural 6,Harmonic Minor Mode 2,Harmonic Minor,2,false
+16,Ionian #5,Major #5 (Ionian #5),Major #5,Ionian #5,,Harmonic Minor Mode 3,Harmonic Minor,3,false
+17,Dorian #4,Dorian #4,Dorian #4,Dorian #4,,Harmonic Minor Mode 4,Harmonic Minor,4,false
+18,Phrygian Dominant,Phrygian Dominant,Phrygian Dominant,Phrygian Dominant,Phrygian #3; Spanish Gypsy,Harmonic Minor Mode 5,Harmonic Minor,5,false
+19,Lydian #2,Lydian #2,Lydian #2,Lydian #2,Lydian augmented 2,Harmonic Minor Mode 6,Harmonic Minor,6,false
+20,Ultra-Locrian,Ultra-Locrian,Ultra-Locrian,Ultra-Locrian,Super Locrian bb7,Harmonic Minor Mode 7,Harmonic Minor,7,false
+21,Dorian b2,Dorian b2,Dorian b2,Dorian b2,Phrygian #6,Melodic Minor Mode 2,Melodic Minor,2,false
+22,Lydian Augmented,Lydian Augmented,Lydian Augmented,Lydian Augmented,Lydian #5,Melodic Minor Mode 3,Melodic Minor,3,false
+23,Lydian Dominant,Lydian Dominant,Lydian Dominant,Lydian Dominant,Mixolydian #4,Melodic Minor Mode 4,Melodic Minor,4,false
+24,Mixolydian b6,Mixolydian b6,Mixolydian b6,Mixolydian b6,Aeolian dominant,Melodic Minor Mode 5,Melodic Minor,5,false
+25,Locrian #2,Half-diminished (Locrian #2),Half-diminished,Locrian #2,Locrian natural 2; Aeolian b5; Minor Locrian,Melodic Minor Mode 6,Melodic Minor,6,false
+26,Altered Scale,Altered Scale (Super Locrian),Altered Scale,Super Locrian,,Melodic Minor Mode 7,Melodic Minor,7,false
+27,Whole Tone,Whole Tone,Whole Tone,Whole Tone,Messiaen Mode 1,Messiaen Mode 1,Messiaen,1,false
+28,Whole-Half Diminished Scale,Whole-Half Diminished Scale,Whole-Half Diminished Scale,Whole-Half Diminished Scale,Octatonic Whole-Half; Messiaen Mode 2,Messiaen Mode 2,Messiaen,2,false
+29,Chromatic,Chromatic,Chromatic,Chromatic,,,,,false
+30,Hungarian Minor,Hungarian Minor,Hungarian Minor,Hungarian Minor,Gypsy Minor,,,,false
+31,Neapolitan Major,Neapolitan Major,Neapolitan Major,Neapolitan Major,,,,,false
+32,Neapolitan Minor,Neapolitan Minor,Neapolitan Minor,Neapolitan Minor,,,,,false
+33,Suspended Pentatonic,Suspended Pentatonic (Pentatonic Mode 2),Suspended Pentatonic,,,Pentatonic Mode 2,Pentatonic,2,false
+34,Blues Minor,Blues Minor (Pentatonic Mode 3),Blues Minor,,,Pentatonic Mode 3,Pentatonic,3,false
+35,Blues Major,Blues Major (Pentatonic Mode 4),Blues Major,,,Pentatonic Mode 4,Pentatonic,4,false
+36,Harmonic Major,Harmonic Major,Harmonic Major,Harmonic Major,,Harmonic Major Mode 1,Harmonic Major,1,false
+37,Enigmatic,Enigmatic,Enigmatic,Enigmatic,,,,,false
+38,Persian,Persian,Persian,Persian,,,,,false
+39,Half-Whole Diminished Scale,Half-Whole Diminished Scale,Half-Whole Diminished Scale,Half-Whole Diminished Scale,Octatonic Half-Whole; Messiaen Mode 2 (Half-Whole),Messiaen Mode 2,Messiaen,2,false
+40,Augmented Scale,Augmented Scale,Augmented Scale,Augmented Scale,,,,,false
+77,Messiaen Mode 3,Tcherepnin Scale (Messiaen Mode 3),Tcherepnin Scale,Messiaen Mode 3,,Messiaen Mode 3,Messiaen,3,false
+78,Messiaen Mode 4,Messiaen Mode 4,Messiaen Mode 4,Messiaen Mode 4,,Messiaen Mode 4,Messiaen,4,false
+79,Messiaen Mode 5,Messiaen Mode 5,Messiaen Mode 5,Messiaen Mode 5,,Messiaen Mode 5,Messiaen,5,false
+80,Messiaen Mode 6,Messiaen Mode 6,Messiaen Mode 6,Messiaen Mode 6,,Messiaen Mode 6,Messiaen,6,false
+81,Messiaen Mode 7,Messiaen Mode 7,Messiaen Mode 7,Messiaen Mode 7,,Messiaen Mode 7,Messiaen,7,false
+82,Major Bebop,Major Bebop (Ionian Bebop),Major Bebop,Ionian Bebop,,,,,true
+83,Dominant Bebop,Dominant Bebop (Mixolydian Bebop),Dominant Bebop,Mixolydian Bebop,,,,,true
+84,Minor Bebop,Minor Bebop (Dorian Bebop),Minor Bebop,Dorian Bebop,,,,,true
+85,Major Hexatonic,Major Hexatonic,Major Hexatonic,Major Hexatonic,,,,,true
+86,Minor Hexatonic,Minor Hexatonic,Minor Hexatonic,Minor Hexatonic,,,,,true
+87,Prometheus,Prometheus,Prometheus,Prometheus,Scriabin Scale,,,,true

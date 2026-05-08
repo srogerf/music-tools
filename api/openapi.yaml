@@ -164,6 +164,10 @@ components:
         - id
         - name
         - common_name
+        - musical_name
+        - description
+        - aliases
+        - latent
         - type
         - intervals
       properties:
@@ -176,6 +180,26 @@ components:
         common_name:
           type: string
           description: Common scale name.
+        musical_name:
+          type: string
+          description: Official or musical-theory name used in the UI label when distinct.
+        description:
+          type: string
+          description: Short practical description of the scale.
+        aliases:
+          type: array
+          items:
+            type: string
+          description: Alternate searchable names for the scale.
+        parent_family:
+          type: string
+          description: Optional modal parent family for fallback naming and catalog context.
+        parent_mode_number:
+          type: integer
+          description: Optional mode number within the parent family.
+        latent:
+          type: boolean
+          description: Hidden from the main picker by default but still available in the catalog.
         type:
           type: string
           description: Scale category.

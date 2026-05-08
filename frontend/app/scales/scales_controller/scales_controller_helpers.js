@@ -20,7 +20,7 @@ const SCALE_DROPDOWN_GROUPS = [
     names: ["Major", "Natural Minor", "Harmonic Minor", "Melodic Minor"],
   },
   {
-    label: "Modes",
+    label: "Major Modes",
     names: ["Dorian", "Phrygian", "Lydian", "Mixolydian", "Locrian"],
   },
   {
@@ -28,31 +28,59 @@ const SCALE_DROPDOWN_GROUPS = [
     names: ["Major Pentatonic", "Minor Pentatonic", "Major Blues", "Minor Blues"],
   },
   {
+    label: "Pentatonic Modes",
+    names: ["Suspended Pentatonic", "Blues Minor", "Blues Major"],
+  },
+  {
+    label: "Harmonic Minor Modes",
+    names: ["Locrian #6", "Ionian #5", "Dorian #4", "Phrygian Dominant", "Lydian #2", "Ultra-Locrian"],
+  },
+  {
+    label: "Melodic Minor Modes",
+    names: ["Dorian b2", "Lydian Augmented", "Lydian Dominant", "Mixolydian b6", "Locrian #2", "Altered Scale"],
+  },
+  {
     label: "Exotic",
-    names: ["Double Harmonic Major"],
+    names: ["Double Harmonic Major", "Hungarian Minor", "Neapolitan Major", "Neapolitan Minor", "Harmonic Major", "Enigmatic", "Persian"],
+  },
+  {
+    label: "Synthetic",
+    names: ["Whole Tone", "Whole-Half Diminished Scale", "Half-Whole Diminished Scale", "Chromatic", "Augmented Scale"],
   },
 ];
 
-const SCALE_OPTION_LABEL_OVERRIDES = {
-  Dorian: "Dorian (minor)",
-  Phrygian: "Phrygian (minor)",
-  Lydian: "Lydian (major)",
-  Mixolydian: "Mixolydian (major)",
-  Locrian: "Locrian (diminished)",
-};
-
 function scaleOptionLabel(scale) {
-  if (SCALE_OPTION_LABEL_OVERRIDES[scale.name]) {
-    return SCALE_OPTION_LABEL_OVERRIDES[scale.name];
+  if (!scale?.name && !scale?.common_name) {
+    return "";
   }
-  if (!scale.common_name || scale.common_name === scale.name) {
-    return scale.name;
+  const commonName = scale.common_name || scale.name;
+  const musicalName = scaleMusicalName(scale);
+  if (!musicalName || normalizeText(commonName) === normalizeText(musicalName)) {
+    return commonName;
   }
-  return `${scale.name} (${scale.common_name})`;
+  return `${commonName} (${musicalName})`;
+}
+
+function scaleMusicalName(scale) {
+  const directMusicalName = scale?.musical_name?.trim();
+  if (directMusicalName) {
+    return directMusicalName;
+  }
+  return scaleParentModeLabel(scale);
+}
+
+function scaleParentModeLabel(scale) {
+  const family = scale?.parent_family?.trim();
+  const number = Number(scale?.parent_mode_number || 0);
+  if (!family || number < 1) {
+    return "";
+  }
+  return `${family} Mode ${number}`;
 }
 
 function groupedScaleOptions(scales) {
-  const byName = new Map(scales.map((scale) => [scale.name, scale]));
+  const visibleScales = scales.filter((scale) => !scale.latent);
+  const byName = new Map(visibleScales.map((scale) => [scale.name, scale]));
   const used = new Set();
   const groups = SCALE_DROPDOWN_GROUPS.map((group) => {
     const entries = group.names.map((name) => byName.get(name)).filter(Boolean);
@@ -60,10 +88,6 @@ function groupedScaleOptions(scales) {
     return { label: group.label, entries };
   }).filter((group) => group.entries.length > 0);
 
-  const otherEntries = scales.filter((scale) => !used.has(scale.id));
-  if (otherEntries.length > 0) {
-    groups.push({ label: "Other", entries: otherEntries });
-  }
   return groups;
 }
 
@@ -82,6 +106,9 @@ function findScaleByRouteValue(scales, routeValue) {
   return (
     scales.find((scale) => normalizeText(scale.name) === normalized) ||
     scales.find((scale) => normalizeText(scale.common_name) === normalized) ||
+    scales.find((scale) => normalizeText(scale.musical_name) === normalized) ||
+    scales.find((scale) => normalizeText(scaleParentModeLabel(scale)) === normalized) ||
+    scales.find((scale) => (scale.aliases || []).some((alias) => normalizeText(alias) === normalized)) ||
     null
   );
 }
@@ -104,6 +131,8 @@ export {
   NOTE_GROUPS,
   SCALE_DROPDOWN_GROUPS,
   scaleOptionLabel,
+  scaleMusicalName,
+  scaleParentModeLabel,
   groupedScaleOptions,
   normalizeText,
   randomItem,

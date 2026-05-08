@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -25,11 +26,15 @@ func runSeedData(t *testing.T) string {
 	root := repoRoot(t)
 	cmd := exec.Command("python3", "db/postgres/seed_data.py")
 	cmd.Dir = root
-	out, err := cmd.CombinedOutput()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
 	if err != nil {
-		t.Fatalf("run seed_data.py: %v\n%s", err, string(out))
+		t.Fatalf("run seed_data.py: %v\nstdout:\n%s\nstderr:\n%s", err, stdout.String(), stderr.String())
 	}
-	return string(out)
+	return stdout.String()
 }
 
 func splitRangeSQL(scaleID int, positionCode string, ordinal int, startFret int, fretSpan int) string {
@@ -69,7 +74,7 @@ func TestSeedDataChecksSchemaVersionCompatibility(t *testing.T) {
 	checks := []string{
 		"FROM schema_metadata",
 		"seed data format version % does not support schema version %",
-		"UPDATE schema_metadata SET seed_data_format_version = 2 WHERE singleton = TRUE;",
+		"UPDATE schema_metadata SET seed_data_format_version = 5 WHERE singleton = TRUE;",
 	}
 
 	for _, needle := range checks {
@@ -135,8 +140,15 @@ func TestSchemaDefinesSplitLayoutTables(t *testing.T) {
 	checks := []string{
 		"CREATE TABLE schema_metadata",
 		"INSERT INTO schema_metadata (singleton, schema_version, seed_data_format_version)",
+		"musical_name TEXT",
+		"description TEXT NOT NULL",
+		"aliases JSONB NOT NULL DEFAULT '[]'::jsonb",
+		"parent_family TEXT",
+		"parent_mode_number SMALLINT",
+		"latent BOOLEAN NOT NULL DEFAULT FALSE",
 		"CREATE TABLE scale_layout_positions",
 		"degree_class SMALLINT NOT NULL",
+		"CHECK (degree_class BETWEEN 1 AND 12)",
 		"interval_label TEXT NOT NULL",
 		"CREATE TABLE scale_layout_position_split_ranges",
 		"CREATE TABLE scale_layout_position_split_range_strings",
@@ -161,6 +173,20 @@ func TestSeedDataIncludesScaleIntervalLabels(t *testing.T) {
 	}
 
 	expected = "INSERT INTO scale_intervals (scale_id, ordinal, semitones, degree_class, interval_label) VALUES ((SELECT id FROM scales WHERE external_id = 11), 5, 10, 7, 'b7');"
+	if !strings.Contains(out, expected) {
+		t.Fatalf("expected seed output to contain:\n%s", expected)
+	}
+}
+
+func TestSeedDataIncludesScaleDescriptions(t *testing.T) {
+	out := runSeedData(t)
+
+	expected := "INSERT INTO scales (external_id, name, common_name, musical_name, description, aliases, parent_family, parent_mode_number, latent, scale_type_id) VALUES (1, 'Major', 'Major', 'Ionian', 'Bright, stable, and familiar. The default language for pop, folk, classical, and most functional harmony.', '[]'::jsonb, 'Major', 1, FALSE, (SELECT id FROM scale_types WHERE code = 'diatonic'));"
+	if !strings.Contains(out, expected) {
+		t.Fatalf("expected seed output to contain:\n%s", expected)
+	}
+
+	expected = "INSERT INTO scales (external_id, name, common_name, musical_name, description, aliases, parent_family, parent_mode_number, latent, scale_type_id) VALUES (82, 'Major Bebop', 'Major Bebop', 'Ionian Bebop', 'A major scale with an added passing tone between the 5th and 6th, commonly used for straight eighth-note bebop lines.', '[]'::jsonb, NULL, NULL, TRUE, (SELECT id FROM scale_types WHERE code = 'synthetic'));"
 	if !strings.Contains(out, expected) {
 		t.Fatalf("expected seed output to contain:\n%s", expected)
 	}
@@ -240,6 +266,54 @@ func TestProductionScaleLayoutUpgradeClearsSeedVersion(t *testing.T) {
 	for _, needle := range checks {
 		if !strings.Contains(text, needle) {
 			t.Fatalf("expected production scale layout upgrade script to contain %q", needle)
+		}
+	}
+}
+
+func TestProductionScaleDescriptionUpgradeSetsCurrentVersions(t *testing.T) {
+	root := repoRoot(t)
+	data, err := os.ReadFile(filepath.Join(root, "bin", "production_db_upgrade_scale_descriptions.sh"))
+	if err != nil {
+		t.Fatalf("read production_db_upgrade_scale_descriptions.sh: %v", err)
+	}
+	text := string(data)
+	checks := []string{
+		"expected production schema version 5 or 6",
+		"ALTER TABLE scales ADD COLUMN IF NOT EXISTS description TEXT;",
+		"scale description upgrade left missing descriptions",
+		"ALTER TABLE scales ALTER COLUMN description SET NOT NULL;",
+		"SET schema_version = 6,",
+		"seed_data_format_version = 3",
+	}
+	for _, needle := range checks {
+		if !strings.Contains(text, needle) {
+			t.Fatalf("expected production scale description upgrade script to contain %q", needle)
+		}
+	}
+}
+
+func TestProductionScaleCatalogUpgradeSetsCurrentVersions(t *testing.T) {
+	root := repoRoot(t)
+	data, err := os.ReadFile(filepath.Join(root, "bin", "production_db_upgrade_scale_catalog.sh"))
+	if err != nil {
+		t.Fatalf("read production_db_upgrade_scale_catalog.sh: %v", err)
+	}
+	text := string(data)
+	checks := []string{
+		"expected production schema version 7 or 8",
+		"ALTER TABLE scales ADD COLUMN IF NOT EXISTS musical_name TEXT;",
+		"ALTER TABLE scales ADD COLUMN IF NOT EXISTS aliases JSONB NOT NULL DEFAULT '[]'::jsonb;",
+		"ALTER TABLE scales ADD COLUMN IF NOT EXISTS parent_family TEXT;",
+		"ALTER TABLE scales ADD COLUMN IF NOT EXISTS parent_mode_number SMALLINT;",
+		"ALTER TABLE scales ADD COLUMN IF NOT EXISTS latent BOOLEAN NOT NULL DEFAULT FALSE;",
+		"scale catalog upgrade left missing scale metadata",
+		"DELETE FROM scale_intervals WHERE scale_id = (SELECT id FROM scales WHERE external_id =",
+		"SET schema_version = 8,",
+		"seed_data_format_version = 5",
+	}
+	for _, needle := range checks {
+		if !strings.Contains(text, needle) {
+			t.Fatalf("expected production scale catalog upgrade script to contain %q", needle)
 		}
 	}
 }
