@@ -1,6 +1,14 @@
 import React from "https://esm.sh/react@18";
 
-export function NoteSelector({ visibleGroups, onVisibleGroupsChange, noteGroups, threeNpsEnabled, onThreeNpsChange, threeNpsAvailable }) {
+export function NoteSelector({
+  visibleGroups,
+  onVisibleGroupsChange,
+  noteGroups,
+  threeNpsEnabled,
+  onThreeNpsChange,
+  threeNpsAvailable,
+  showThreeNps = true,
+}) {
   return React.createElement(
     "div",
     { className: "filter-panel" },
@@ -20,21 +28,27 @@ export function NoteSelector({ visibleGroups, onVisibleGroupsChange, noteGroups,
         React.createElement("span", { className: "filter-label" }, group.label)
       )
     ),
-    React.createElement("div", { className: "filter-divider", "aria-hidden": "true" }),
-    React.createElement(
-      "label",
-      { className: "filter-row", key: "threeNps" },
-      React.createElement("input", {
-        type: "checkbox",
-        checked: threeNpsEnabled,
-        disabled: !threeNpsAvailable,
-        onChange: onThreeNpsChange,
-      }),
-      React.createElement(
-        "span",
-        { className: `filter-label ${threeNpsAvailable ? "" : "filter-label-disabled"}` },
-        "3NPS"
-      )
-    )
+    showThreeNps
+      ? React.createElement(
+          React.Fragment,
+          null,
+          React.createElement("div", { className: "filter-divider", "aria-hidden": "true" }),
+          React.createElement(
+            "label",
+            { className: "filter-row", key: "threeNps" },
+            React.createElement("input", {
+              type: "checkbox",
+              checked: threeNpsEnabled,
+              disabled: !threeNpsAvailable,
+              onChange: onThreeNpsChange,
+            }),
+            React.createElement(
+              "span",
+              { className: `filter-label ${threeNpsAvailable ? "" : "filter-label-disabled"}` },
+              "3NPS"
+            )
+          )
+        )
+      : null
   );
 }

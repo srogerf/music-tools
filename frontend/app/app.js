@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "https://esm.sh/react@18";
 import { createRoot } from "https://esm.sh/react-dom@18/client";
 import { ScalesPage } from "scales-page";
+import { ProgressionsPage } from "progressions-page";
 
 const NAV_ITEMS = ["Home", "Scales", "Chords", "Progressions"];
 const BASE_TITLE = "Rifferone";
@@ -158,6 +159,8 @@ function App() {
       routeState: routeState.scales,
       onRouteChange: updateScalesRoute,
     });
+  } else if (activeSection === "Progressions") {
+    sectionContent = React.createElement(ProgressionsPage);
   } else {
     sectionContent = React.createElement(
       "section",

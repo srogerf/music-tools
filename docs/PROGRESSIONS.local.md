@@ -79,6 +79,49 @@ Example interaction:
   - the chord-focused scale name
   - the parent or tonal-center relationship when relevant
 
+### Matching Priority
+
+The matching and ranking logic should follow these steps in order:
+
+1. The candidate scale must contain the full chord.
+2. Exact tonal-center pitch-set matches rank first.
+3. After exact matches, show tonal-center scales that fully support the chord,
+   even if the candidate row is not the same named root-based scale.
+4. After those, allow chord-root candidates whose full pitch set maps cleanly
+   back to the selected tonal center.
+5. After those, allow broader chord-compatible colors and remoter collections.
+
+This preserves an important distinction:
+
+- `candidate scale` answers: what is this scale called from the chord root?
+- `parent scale` answers: which selected tonal-center scale supports this chord
+  or this color?
+
+Examples:
+
+- Over `Am7b5` in `G minor`, `G Harmonic Minor` should be available as a parent
+  scale because the chord belongs to that tonal-center collection, even if the
+  candidate row is shown as `A Locrian #6`.
+- If a candidate and a tonal-center scale are the exact same pitch set, that
+  exact same-note-set relationship should outrank looser support relationships.
+- If a tonal-center scale contains all the chord tones but not the candidate's
+  full note set, it should still be shown as a valid tonal-center support
+  result, but not mislabeled as an exact pitch-set match.
+
+### Theory Basis
+
+This rule set follows a practical chord-scale approach:
+
+- start with full chord-tone containment
+- then prefer exact pitch-set agreement with the chosen tonal center
+- then allow tonal-center support scales that contain the chord
+- then allow remoter colors
+
+In minor `ii-V-i` situations, the tonal center should act as a strong prior.
+For example, harmonic minor should rank strongly as a progression-level parent
+collection when it supports the active chord, even if the row also offers other
+modal or color-based labels.
+
 Example result shape:
 
 - `A Locrian #6`
@@ -161,6 +204,80 @@ Potential upper-structure layers:
 - Long term: support more curated guitar-realistic voicing libraries.
 - We may still want generated or stored chord-layout data, but that should not
   block the first progression-aware scale search.
+
+## Position Continuity
+
+- The Progressions tab should support a progression-level neck-area concept,
+  not only an isolated per-row position selector.
+- A user should be able to keep successive chord-scale choices in roughly the
+  same part of the neck instead of re-centering every row independently.
+- This can be expressed as either:
+  - `Lock position`
+  - or `Suggest position`
+- `Lock position` means later rows should strongly prefer shapes and layouts in
+  the same fret region as the current row.
+- `Suggest position` means later rows may still move, but should first offer
+  options that preserve local neck continuity.
+
+Example:
+
+- If `Am7b5` is chosen in `A position`, that implies a fret region roughly
+  around the `A-shape` area for that chord scale.
+- For the next row `D7`, staying in the same area may imply a different shape
+  label, such as a `D-shape`, if that keeps the notes in the same region.
+- For `Gm7`, the best continuation may return to an `A-shape` or move to a
+  nearby `G-shape`, depending on which choice keeps the line localized.
+
+Important implication:
+
+- `position` should not be interpreted only as a static CAGED letter attached
+  to each row.
+- We also need a notion of `fret region continuity` across rows.
+- So the progression engine should distinguish:
+  - symbolic layout family or shape name
+  - actual fret window or neck area
+
+Recommended rule:
+
+1. Choose the chord scale for the current row.
+2. Determine the active fret region from the selected layout.
+3. For the next row, rank candidate layouts by:
+   - same or overlapping fret region first
+   - nearby region second
+   - remote region later
+4. Allow the shape name to change if that preserves the musical area on the
+   neck.
+
+This means a later row may legitimately change from `A position` to `D
+position` while still honoring a locked or suggested neck area.
+
+UI direction:
+
+- Add a progression-level control such as:
+  - `Position flow: Free / Same / Ascending / Descending`
+- `Position flow` should be separate from the row-level `position` selector.
+- In `Free` mode, the row-level `position` selector stays editable and acts as
+  a direct manual choice.
+- `Same` is the lock behavior:
+  - keep later rows in the same local fret region when possible
+  - allow shape labels to change if needed to stay in that area
+- `Ascending` means later rows should favor staying in the same area first,
+  then moving up the neck rather than down.
+- `Descending` means later rows should favor staying in the same area first,
+  then moving down the neck rather than up.
+- In non-`Free` modes, the row-level `position` selector should be locked and
+  derived from the selected scale/layout result instead of being edited
+  manually.
+
+This is preferable to a vague `Suggest` label because it expresses actual
+directional movement on the guitar neck.
+
+Possible later extension:
+
+- if needed, we could also expose explicit directional nudges such as:
+  - `Up one position`
+  - `Down one position`
+- but that likely belongs after the broader flow modes above are working well.
 
 ## Suggested First Scope
 
@@ -392,6 +509,139 @@ We can call milestone one successful when:
 - the result labels clearly distinguish chord-root naming from parent-key
   context
 - the user can add a next row and repeat the flow for the next chord
+
+## Current Status Snapshot
+
+This section captures what is actually implemented now in the frontend, what
+is working well enough to iterate on, and what is still provisional.
+
+### Implemented Now
+
+- The Progressions tab exists as a real scaffold, not just a placeholder.
+- The tab has a `Scales` / `Chords` switch with the same overall feel as the
+  Scales page.
+- The current practical flow is per-row and the rows are labeled:
+  - `Chord 1`
+  - `Chord 2`
+  - and so on
+- Each chord row currently supports:
+  - tonal center
+  - chord symbol
+  - position
+  - per-row `Position flow`
+- A chord row can produce a candidate scale list, allow one scale to be
+  selected, then collapse down to a selected-scale summary state.
+- There is an `Add Next Row` flow so a progression can be built downward one
+  chord at a time.
+
+### Current Matching And Ranking Behavior
+
+- Matching is currently chord-tone driven.
+- The chord symbol is parsed in the frontend and its chord tones are spelled
+  directly in the row UI.
+- Candidate matching uses pitch-class containment so enharmonic equivalents
+  can still match.
+- `Chromatic` is intentionally excluded from the Progressions candidate pool
+  because it does not add useful value in this view.
+- The `Comprehensive` checkbox is available on the Progressions summary card.
+- `Comprehensive` controls whether latent scales are included in the candidate
+  pool.
+- Current ranking direction is:
+  - exact tonal-center support first
+  - then tonal-center scales that contain the chord notes
+  - then broader same-center colors
+- The current result labeling distinguishes family fit inside the chosen tonal
+  center, so same-family minor-center results can sort ahead of major-leaning
+  reinterpretations in examples such as `G minor`.
+
+### Current Candidate Presentation
+
+- The candidate list is currently centered on the chosen tonal center rather
+  than only on chord-root reinterpretation names.
+- The candidate table currently uses:
+  - `Candidate scale`
+  - `Spelling`
+  - `Parent scale`
+  - `Match type`
+- `Parent scale` is intended to reference the selected tonal center rather
+  than only the scale's original modal source.
+- `Match type` is intentionally simpler than a long explanation and currently
+  uses labels such as:
+  - `Exact`
+  - `Contains notes`
+  - with same-family / different-family context layered into the label
+- Richer explanation is shown as hover text instead of a permanently open
+  explanatory box.
+
+### Current Selected-Scale Row Direction
+
+- Once a scale is selected, the candidate list is hidden for that row.
+- The row then becomes a compact comparison between:
+  - `Chord tones`
+  - `Selected scale <name>`
+- The intended visual format is:
+  - chord label on the left
+  - selected-scale label on the right
+  - chord notes directly under the chord label
+  - selected-scale notes directly under the selected-scale label
+  - `Change scale` as the action on the right
+- This selected-summary layout is still being tuned and is one of the active
+  polish areas right now.
+
+### Current Position-Flow Behavior
+
+- `Position flow` is now per row, not progression-global.
+- The current modes are:
+  - `Free`
+  - `Same`
+  - `Ascending`
+  - `Descending`
+- `Free` keeps the row `position` selector manually editable.
+- Non-`Free` modes derive the effective position from the previous row and the
+  current selected flow.
+- The intended behavior is:
+  - `Same`: stay in the same local neck area when possible
+  - `Ascending`: prefer the same area first, then move upward
+  - `Descending`: prefer the same area first, then move downward
+- This logic is implemented as a first-pass anchor-fret heuristic rather than
+  a final layout-aware engine.
+- The user example to preserve is:
+  - `Am7b5` in `E`
+  - then `D7` in `C`
+  - then `Gm7`
+  - with descending expected to move that last row toward `E`
+
+### Fretboard Preview Status
+
+- The fretboard preview currently lives under each chord card.
+- The intended next behavior is that the selected scale will draw there with
+  the active chord tones highlighted.
+- At the moment this area is still a preview placeholder rather than the final
+  progression-aware fretboard rendering.
+
+### Theory And Architecture Status
+
+- The current chord parser and spelling helper are frontend-first and
+  intentionally limited.
+- This is useful for UI iteration, but it is not yet the final architecture.
+- The durable goal still stands:
+  - shared chord parsing in `src/`
+  - shared chord-tone generation in `src/`
+  - frontend consuming shared results rather than owning all theory logic
+- The current frontend implementation should therefore be treated as a proving
+  ground for UI and ranking behavior, not the final theory source of truth.
+
+### Immediate Known Gaps
+
+- The selected-summary layout is still being refined visually.
+- Position-flow behavior is better than before, but still heuristic and not
+  yet tied to real chosen scale layouts.
+- The chord parser is not yet the shared `src/` implementation.
+- The final fretboard rendering for selected progression scales is not yet in
+  place.
+- Candidate naming, parent-scale language, and match-type language may still
+  need more musical tuning as we keep comparing Progressions against the
+  Scales finder.
 
 ## Open Questions
 
