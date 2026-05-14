@@ -653,3 +653,81 @@ is working well enough to iterate on, and what is still provisional.
   different progression-level centers?
 - When we add chord layouts, should we store canonical guitar shapes in data or
   generate them from interval rules plus fretboard constraints?
+
+## Users And Saved Progressions
+
+- Saved progressions should support two visibility classes:
+  - `public`
+  - `private`
+- `Public` progressions are curated/shared progressions owned by the app.
+- `Private` progressions are owned by an individual user and only visible to
+  that user.
+- The first implementation target is private personal use, with later
+  monetization possible if server/storage usage grows enough to require cost
+  recovery.
+
+### User Model
+
+- Do not expose account creation in the API or GUI.
+- Only allow users to be created directly in the database by an operator.
+- The app may later support login for pre-created users, but not signup.
+- Keep the initial user model minimal:
+  - `id`
+  - `username`
+  - `password_hash` or equivalent credential field
+  - `active`
+  - timestamps
+
+### Saved Progression Model
+
+- Store enough state to fully regenerate the progression UI without guessing.
+- A saved progression record should include at least:
+  - progression title or label
+  - owner user id for private progressions
+  - visibility (`public` or `private`)
+  - optional description/notes
+  - timestamps
+- Each saved progression row should include at least:
+  - row order
+  - tonal center
+  - chord symbol
+  - selected scale id
+  - selected scale label if needed for historical stability
+  - manual/base position
+  - effective position
+  - position flow
+- Consider also storing view state that affects exact reconstruction:
+  - note filter group choices
+  - `Comprehensive` on/off
+  - `3NPS` on/off
+- The goal is that a saved progression can reopen to the same layout and
+  selection state the user last chose.
+
+### Database Safety Rules
+
+- User and saved-progression tables must be treated as application data, not
+  seed/reference data.
+- Do not put user accounts or saved progressions into reseed scripts.
+- Do not let production seed/upgrade flows erase or recreate user progression
+  data if it already exists.
+- Production DB upgrades for this area should be forward-only additive
+  migrations.
+- Reference-data seeding for scales/layouts must remain separate from user data
+  persistence.
+
+## Repo Strategy
+
+- A private fork of the current public repo is useful if we want a safe place
+  to continue proprietary feature work without immediately changing the public
+  upstream.
+- A private fork is better for:
+  - experimentation
+  - staging private feature development
+  - keeping the public repo unchanged for now
+- A fully private repo is better if the main active product direction is
+  becoming proprietary and we no longer want the primary upstream to stay
+  public.
+- Current leaning:
+  - a private fork is a lower-risk first move
+  - a full move to private can be reconsidered once saved progressions,
+    accounts, and richer paid/private functionality become central

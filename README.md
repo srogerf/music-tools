@@ -6,6 +6,12 @@
 
 `music-tools` is a collection of music theory and fretboard tools with a Go backend and a browser-based frontend.
 
+## License
+
+This repository is proprietary and all rights are reserved. No permission is
+granted to use, copy, modify, or distribute this software without prior
+written permission.
+
 ## What Is Here
 
 - Go packages for scales, chords, tuning, and related music logic
