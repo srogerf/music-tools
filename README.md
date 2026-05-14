@@ -1,6 +1,6 @@
-[![CI](https://github.com/srogerf/music-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/srogerf/music-tools/actions/workflows/ci.yml)
-[![Container](https://github.com/srogerf/music-tools/actions/workflows/container.yml/badge.svg)](https://github.com/srogerf/music-tools/actions/workflows/container.yml)
-[![Terraform](https://github.com/srogerf/music-tools/actions/workflows/terraform.yml/badge.svg)](https://github.com/srogerf/music-tools/actions/workflows/terraform.yml)
+[![CI](https://github.com/srogerf/music-tools-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/srogerf/music-tools-studio/actions/workflows/ci.yml)
+[![Container](https://github.com/srogerf/music-tools-studio/actions/workflows/container.yml/badge.svg)](https://github.com/srogerf/music-tools-studio/actions/workflows/container.yml)
+[![Terraform](https://github.com/srogerf/music-tools-studio/actions/workflows/terraform.yml/badge.svg)](https://github.com/srogerf/music-tools-studio/actions/workflows/terraform.yml)
 
 # music-tools
 
