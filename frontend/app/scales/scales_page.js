@@ -3,7 +3,7 @@ import { DEFAULT_TUNING_NAME } from "defaults";
 import { LearningModePanel } from "./learning_mode/learning_mode_panel.js";
 import { FinderModePanel } from "./finder_mode/finder_mode.js";
 import { NotePlayer } from "./note_controls/note_player.js";
-import { NoteSelector } from "./note_controls/note_selector.js";
+import { NoteSelector } from "../shared/note_controls/note_selector.js";
 import { ScaleSelector } from "./scale_selector/scale_selector.js";
 import { FretboardPanel } from "./fretboard_panel/fretboard_panel.js";
 import { TabPanel } from "./tab_panel/tab_panel.js";

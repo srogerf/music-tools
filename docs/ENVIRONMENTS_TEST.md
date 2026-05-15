@@ -15,7 +15,7 @@ This document describes the pre-container artifact test environment.
 - frontend assets:
   - bundled Vite output under `build/test/frontend/app/`
 - optional debug frontend output:
-  - `build/test/frontend-debug/app/`
+  - `tmp/frontend-debug/app/`
 - database:
   - shared local Postgres cluster with a dedicated test database and user
 - private config:
@@ -74,6 +74,13 @@ Optional readable frontend artifact:
 ```bash
 bash bin/build_frontend.sh --debug
 ```
+
+- disposable frontend-only local build output:
+  - `tmp/frontend/vite/app/`
+- `tmp/` is intended as a safe scratch area at repo root.
+  - it is not checked in
+  - scripts create it as needed
+  - it can be erased at any time
 
 ## Design Notes
 

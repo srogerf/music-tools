@@ -35,7 +35,7 @@ export default defineConfig(({ mode }) => {
       }
     },
     build: {
-      outDir: resolve(repoRoot, "build/test/frontend/app"),
+      outDir: resolve(repoRoot, "tmp/frontend/vite/app"),
       emptyOutDir: true,
       manifest: true,
       minify: !isDebugBuild,

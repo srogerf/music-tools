@@ -37,7 +37,7 @@ done
 if [[ -n "${BUILD_FRONTEND_DIR:-}" ]]; then
   BUILD_FRONTEND_DIR="$(realpath -m "$BUILD_FRONTEND_DIR")"
 elif [[ "$BUILD_MODE" == "debug" ]]; then
-  BUILD_FRONTEND_DIR="$ROOT_DIR/build/test/frontend-debug"
+  BUILD_FRONTEND_DIR="$ROOT_DIR/tmp/frontend-debug"
 else
   BUILD_FRONTEND_DIR="$ROOT_DIR/build/test/frontend"
 fi

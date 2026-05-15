@@ -28,7 +28,7 @@ const ADDITIONS = {
 function parseChordSymbol(symbol) {
   const raw = String(symbol || "").trim();
   if (!raw) {
-    return { ok: false, error: "Enter a chord symbol." };
+    return { ok: false, error: "" };
   }
 
   const match = raw.match(/^([A-Ga-g])([b#]?)(.*)$/);
